@@ -6,7 +6,7 @@
     <title>Video Archive</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Reenie+Beanie&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap" rel="stylesheet">
 
     <style>
         /* --- ОСНОВНИЙ СТИЛЬ --- */
@@ -16,9 +16,9 @@
             color: #222;
             margin: 0;
             padding: 30px;
+            overflow-x: hidden; /* Щоб не було горизонтального скролу */
         }
 
-        /* Індикатор завантаження (зникає після старту) */
         #loading-indicator {
             font-size: 24px; color: #666; text-align: center; margin-top: 50px;
         }
@@ -26,19 +26,21 @@
         .main-wrapper {
             max-width: 1200px;
             margin: 0 auto;
-            display: none; /* Ховаємо поки не завантажиться */
+            display: none;
         }
 
-        /* ГОЛОВНИЙ ЗАГОЛОВОК "ЛОВИ ДЕНЬ" */
+        /* ЗАГОЛОВОК "ЛОВИ ДЕНЬ" */
         .site-title {
-            font-family: 'Reenie Beanie', cursive; /* Рукописний шрифт */
-            font-size: 80px;
-            font-weight: 500;
+            font-family: 'Rock Salt', cursive; /* Брутальний маркер */
+            font-size: 90px;
             color: #222;
-            margin: 0 0 40px 0;
-            line-height: 0.8;
-            transform: rotate(-2deg); /* Легкий нахил для недбалості */
+            margin: 10px 0 50px 0;
+            line-height: 1;
+            transform: rotate(-3deg); /* Нахил для ефекту недбалості */
             display: inline-block;
+            
+            /* ГАРАНТІЯ ОДНОГО РЯДКА */
+            white-space: nowrap; 
         }
 
         /* РІК */
@@ -60,30 +62,26 @@
             gap: 15px; 
         }
 
-        /* КЛІТИНКА ДНЯ */
+        /* КЛІТИНКА */
         .day-cell {
             aspect-ratio: 16/9; 
             position: relative;
         }
 
-        /* --- ДИЗАЙН, КОЛИ ВІДЕО НЕМАЄ --- */
         .day-cell.empty-day {
-            display: flex;
-            align-items: flex-start; 
-            justify-content: flex-start;
+            display: flex; align-items: flex-start; justify-content: flex-start;
         }
         .day-plain-number {
             font-size: 18px; color: #ccc; font-weight: normal; padding: 5px;
         }
 
-        /* --- ДИЗАЙН, КОЛИ ВІДЕО Є --- */
+        /* ВІДЕО */
         .video-link {
             display: block; width: 100%; height: 100%;
             position: relative; cursor: pointer; overflow: hidden;
             border-radius: 3px;
             background: #eee;
         }
-
         .video-thumb {
             width: 100%; height: 100%; object-fit: cover;
             transition: transform 0.3s ease;
@@ -96,31 +94,40 @@
             pointer-events: none;
         }
 
-        /* ЦИФРА НА ОБКЛАДИНЦІ (Зліва Зверху) */
+        /* ТЕКСТИ НА ОБКЛАДИНЦІ */
         .overlay-number {
             position: absolute; top: 6px; left: 8px;
             color: white; font-size: 18px; font-weight: bold;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
-            z-index: 10;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8); z-index: 10;
         }
 
-        /* НАЗВА ВІДЕО НА ОБКЛАДИНЦІ (Зліва Знизу) */
         .overlay-title {
             position: absolute; bottom: 6px; left: 8px; right: 8px;
             color: white; font-size: 12px; font-weight: 500;
-            text-shadow: 1px 1px 2px black;
-            z-index: 10;
+            text-shadow: 1px 1px 2px black; z-index: 10;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             text-align: left;
         }
 
-        /* СТАТУС ПЕРЕГЛЯНУТО */
         .day-cell.watched .video-thumb {
             filter: grayscale(100%) contrast(0.8); opacity: 0.7;
         }
 
-        @media (max-width: 900px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } .year-header { font-size: 80px; } }
-        @media (max-width: 600px) { .calendar-grid { grid-template-columns: repeat(2, 1fr); } .year-header { font-size: 60px; } }
+        /* АДАПТИВНІСТЬ */
+        @media (max-width: 900px) { 
+            .calendar-grid { grid-template-columns: repeat(4, 1fr); } 
+            .year-header { font-size: 80px; } 
+            /* Зменшуємо заголовок на планшетах */
+            .site-title { font-size: 70px; } 
+        }
+
+        @media (max-width: 600px) { 
+            .calendar-grid { grid-template-columns: repeat(2, 1fr); } 
+            .year-header { font-size: 60px; } 
+            /* Сильно зменшуємо заголовок на телефонах, щоб вліз в рядок */
+            .site-title { font-size: 42px; margin-bottom: 30px; } 
+            body { padding: 15px; }
+        }
     </style>
 </head>
 <body>
@@ -129,7 +136,6 @@
 
 <div class="main-wrapper" id="main-content">
     <h1 class="site-title">Лови День</h1>
-    
     <div id="app"></div>
 </div>
 
@@ -137,7 +143,7 @@
     // --- ВАШІ ДАНІ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
     const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
-    // ЗМІНЕНО ДАТУ НА 11 СІЧНЯ 2026 (Місяць 0 = Січень)
+    // ДАТА СТАРТУ: 11 СІЧНЯ 2026
     const START_DATE = new Date(2026, 0, 11); 
     // -----------------
 
@@ -148,13 +154,10 @@
     const videosMap = {};
     let watchedVideos = [];
 
-    try {
-        watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]');
-    } catch (e) {}
+    try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
 
     async function init() {
         let success = false;
-        // Таймер 2.5 сек
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 2500); 
 
@@ -178,10 +181,7 @@
         } catch (err) { console.warn("API fail, switching to demo"); }
         clearTimeout(timeoutId);
 
-        if (!success) {
-            console.log("Mode: DEMO");
-            generateDemoData();
-        }
+        if (!success) generateDemoData();
 
         render();
         loadingIndicator.style.display = 'none';
