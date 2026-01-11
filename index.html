@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Archive</title>
     <style>
-        /* --- МІНІМАЛІСТИЧНИЙ ДИЗАЙН (Як на скріншоті) --- */
+        /* --- ЧИСТИЙ МІНІМАЛІЗМ --- */
         body {
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             background-color: #ffffff;
@@ -14,67 +14,68 @@
             padding: 40px;
         }
 
-        /* Контейнер для центрування, але без рамок */
+        /* Контейнер по центру */
         .main-wrapper {
             max-width: 1200px;
             margin: 0 auto;
         }
 
-        /* РІК - Тонкий і величезний */
+        /* РІК - Тонкий і великий, як на референсі */
         .year-header {
             font-size: 100px;
-            font-weight: 100; /* Дуже тонкий шрифт */
+            font-weight: 100; /* Дуже тонкий */
             color: #333;
             margin-bottom: 40px;
             line-height: 1;
-            letter-spacing: -2px;
+            letter-spacing: -3px;
         }
 
-        /* МІСЯЦЬ - Червоний і простий */
+        /* МІСЯЦЬ - Червоний */
         .month-header {
             color: #e62117; /* YouTube Red */
             font-size: 32px;
             font-weight: 400;
             text-transform: uppercase;
             margin-top: 60px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee; /* Легка лінія розділення */
+            padding-bottom: 10px;
         }
 
-        /* СІТКА КАЛЕНДАРЯ */
+        /* СІТКА */
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr); /* 7 днів */
-            column-gap: 20px; /* Відступи між стовпчиками */
-            row-gap: 40px;    /* Відступи між рядами */
+            column-gap: 20px;
+            row-gap: 50px; /* Більше повітря між рядами */
         }
 
-        /* КЛІТИНКА ДНЯ */
+        /* КЛІТИНКА */
         .day-cell {
             position: relative;
             width: 100%;
-            min-height: 80px; /* Місце для цифри */
         }
 
-        /* ЦИФРА - Просто текст над відео */
+        /* ЦИФРА ДНЯ */
         .day-number {
             font-size: 18px;
             color: #333;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             display: block;
+            font-weight: normal;
         }
 
-        /* ВІДЕО - Обгортка */
+        /* КОНТЕЙНЕР ВІДЕО */
         .video-container {
             position: relative;
             width: 100%;
             aspect-ratio: 16/9;
-            background: #f0f0f0;
+            background: #f4f4f4;
             cursor: pointer;
             overflow: hidden;
             display: none; /* Ховаємо, якщо відео нема */
         }
 
-        /* Якщо відео є, показуємо контейнер */
         .day-cell.has-video .video-container {
             display: block;
         }
@@ -86,43 +87,55 @@
             transition: transform 0.3s ease;
         }
 
+        /* Ефект збільшення при наведенні */
         .video-container:hover .video-thumb {
             transform: scale(1.05);
         }
 
-        /* НАЗВА ВІДЕО - Накладена на картинку знизу (як у Casey) */
+        /* НАЗВА ВІДЕО (з'являється при наведенні) */
         .video-title {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            padding: 8px;
+            padding: 10px;
             box-sizing: border-box;
             background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
             color: white;
-            font-size: 13px;
-            font-weight: 500;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            text-shadow: 0 1px 2px black;
         }
 
-        /* Стиль для переглянутого відео */
+        .video-container:hover .video-title {
+            opacity: 1;
+        }
+
+        /* СТАТУС ПЕРЕГЛЯДУ */
         .day-cell.watched .video-thumb {
             filter: grayscale(100%);
-            opacity: 0.6;
+            opacity: 0.5;
         }
 
-        /* БЛОК СТАТУСУ */
+        /* БЛОК ПОМИЛОК */
         #status-msg {
-            font-size: 20px;
+            font-family: monospace;
+            padding: 20px;
+            font-size: 16px;
             color: #666;
-            margin-top: 50px;
         }
-        .error-text { color: red; font-weight: bold; }
+        .error-red {
+            color: red;
+            border: 1px solid red;
+            background: #fffafa;
+            padding: 15px;
+            margin-top: 20px;
+        }
 
-        /* Адаптивність */
+        /* АДАПТИВНІСТЬ */
         @media (max-width: 900px) {
             .calendar-grid { grid-template-columns: repeat(4, 1fr); }
             .year-header { font-size: 60px; }
@@ -136,8 +149,8 @@
 <body>
 
 <div class="main-wrapper">
-    <div id="app"></div>
     <div id="status-msg">Connecting to YouTube...</div>
+    <div id="app"></div>
 </div>
 
 <script>
@@ -152,53 +165,55 @@
     const videosMap = {};
     let watchedVideos = [];
 
-    // Завантаження статусу переглядів
+    // Глобальний перехоплювач помилок
+    window.onerror = function(msg, url, line) {
+        statusMsg.innerHTML = `<div class="error-red"><b>JS Error:</b> ${msg}<br>Line: ${line}</div>`;
+    };
+
     try {
         watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]');
-    } catch (e) { console.log("Local storage error", e); }
+    } catch (e) {}
 
     async function start() {
+        // Таймер: якщо за 5 секунд нічого не відбулось - показуємо помилку
+        const timeout = setTimeout(() => {
+            if (statusMsg.style.display !== 'none') {
+                statusMsg.innerHTML = `<div class="error-red"><b>Time Out:</b> YouTube не відповідає.<br>1. Перевірте "Application restrictions" в Google Cloud Console.<br>2. Спробуйте вимкнути AdBlock.</div>`;
+            }
+        }, 5000);
+
         try {
-            // 1. Отримуємо плейлист Uploads
-            statusMsg.innerText = "Отримання даних каналу...";
-            
+            // КРОК 1: Канал
             const channelResp = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`);
+            
+            if (!channelResp.ok) {
+                throw new Error(`API Error: ${channelResp.status} (${channelResp.statusText})`);
+            }
+            
             const channelData = await channelResp.json();
-
-            if (channelData.error) {
-                throw new Error("API Error: " + channelData.error.message);
-            }
-            if (!channelData.items || !channelData.items.length) {
-                throw new Error("Канал не знайдено. Перевірте ID.");
-            }
-
+            if (!channelData.items) throw new Error("Channel ID not found");
             const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
 
-            // 2. Отримуємо відео (50 штук)
-            statusMsg.innerText = "Завантаження списку відео...";
+            // КРОК 2: Відео
             const videosResp = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`);
             const videosData = await videosResp.json();
 
-            if (videosData.error) {
-                throw new Error("Video API Error: " + videosData.error.message);
-            }
+            clearTimeout(timeout); // Все ок, таймер скасовуємо
 
-            // 3. Обробка відео
             if (videosData.items) {
                 videosData.items.forEach(item => {
                     const d = new Date(item.snippet.publishedAt);
-                    const key = d.toISOString().split('T')[0]; // YYYY-MM-DD
+                    const key = d.toISOString().split('T')[0];
                     videosMap[key] = item;
                 });
             }
 
-            // 4. Малюємо календар
             statusMsg.style.display = 'none';
             render();
 
         } catch (err) {
-            statusMsg.innerHTML = `<div class="error-text">ПОМИЛКА:<br>${err.message}<br><br>Спробуйте оновити сторінку (Ctrl+F5). Якщо помилка "Referer", перевірте налаштування ключа в Google Cloud.</div>`;
-            console.error(err);
+            clearTimeout(timeout);
+            statusMsg.innerHTML = `<div class="error-red"><b>Помилка завантаження:</b><br>${err.message}<br><br>Перевірте API Key в консолі Google.</div>`;
         }
     }
 
@@ -211,10 +226,100 @@
             const y = loop.getFullYear();
             const m = loop.getMonth();
 
-            // Рік
             if (y !== currentYear) {
                 const yearEl = document.createElement('div');
                 yearEl.className = 'year-header';
                 yearEl.innerText = y;
                 app.appendChild(yearEl);
-                current
+                currentYear = y;
+            }
+
+            createMonth(y, m);
+            loop.setMonth(loop.getMonth() + 1);
+        }
+    }
+
+    function createMonth(year, month) {
+        // Короткі назви місяців, як в оригіналі (MAR, APR...)
+        const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+        
+        const mTitle = document.createElement('div');
+        mTitle.className = 'month-header';
+        mTitle.innerText = months[month];
+        app.appendChild(mTitle);
+
+        const grid = document.createElement('div');
+        grid.className = 'calendar-grid';
+
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        let startDay = new Date(year, month, 1).getDay(); 
+        startDay = (startDay === 0) ? 6 : startDay - 1; // ПН - перший
+
+        for(let i=0; i<startDay; i++) {
+            grid.appendChild(document.createElement('div'));
+        }
+
+        for(let d=1; d<=daysInMonth; d++) {
+            const cell = document.createElement('div');
+            cell.className = 'day-cell';
+
+            // Тільки цифра
+            const num = document.createElement('span');
+            num.className = 'day-number';
+            num.innerText = d;
+            
+            const checkDate = new Date(year, month, d);
+            const mStr = (month + 1).toString().padStart(2, '0');
+            const dStr = d.toString().padStart(2, '0');
+            const key = `${year}-${mStr}-${dStr}`;
+
+            if (checkDate < START_DATE) {
+                num.style.opacity = '0.3';
+                cell.appendChild(num);
+                grid.appendChild(cell);
+                continue;
+            }
+
+            cell.appendChild(num);
+
+            if (videosMap[key]) {
+                const vid = videosMap[key];
+                cell.classList.add('has-video');
+                
+                const vidId = vid.snippet.resourceId.videoId;
+                if (watchedVideos.includes(vidId)) cell.classList.add('watched');
+
+                // Отримуємо кращу якість картинки
+                const thumbs = vid.snippet.thumbnails;
+                const thumbUrl = thumbs.maxres?.url || thumbs.medium?.url || thumbs.default?.url;
+
+                const link = document.createElement('a');
+                link.className = 'video-container';
+                link.href = `https://www.youtube.com/watch?v=${vidId}`;
+                link.target = "_blank";
+                link.onclick = (e) => {
+                    if(!watchedVideos.includes(vidId)){
+                        watchedVideos.push(vidId);
+                        localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos));
+                    }
+                    cell.classList.add('watched');
+                };
+
+                link.innerHTML = `
+                    <img src="${thumbUrl}" class="video-thumb" loading="lazy">
+                    <div class="video-title">${vid.snippet.title}</div>
+                `;
+                cell.appendChild(link);
+            }
+
+            grid.appendChild(cell);
+        }
+
+        app.appendChild(grid);
+    }
+
+    start();
+</script>
+
+</body>
+</html>
