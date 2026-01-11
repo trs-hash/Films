@@ -4,142 +4,156 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Мій Архів</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Patrick+Hand&display=swap" rel="stylesheet">
+
     <style>
         :root {
             --bg-color: #ffffff;
-            --text-color: #000000;
+            --text-color: #222;
+            --accent-color: #e62117; /* YouTube Red */
         }
 
         body {
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Patrick Hand', cursive, sans-serif; /* Рукописний шрифт для тексту */
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
+            padding: 40px;
         }
 
-        /* Стиль року */
+        /* Величезний рік (як на скріншоті 2015) */
         .year-header {
-            font-size: 8em;
-            font-weight: bold;
-            line-height: 0.8;
-            margin-top: 40px;
-            margin-bottom: 20px;
-            letter-spacing: -5px;
-            border-bottom: 4px solid black;
-            padding-bottom: 10px;
+            font-family: 'Permanent Marker', cursive; /* Жирний маркер */
+            font-size: 120px;
+            line-height: 1;
+            color: #333;
+            margin-top: 20px;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #ddd; /* Тонка лінія розділення */
         }
 
-        /* Назва місяця */
+        /* Місяць (Червоний, як на скріншоті MAR/APR) */
         .month-title {
-            font-size: 2em;
-            font-weight: bold;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 40px;
+            color: var(--accent-color);
+            margin-top: 60px;
+            margin-bottom: 20px;
             text-transform: uppercase;
-            margin-top: 40px;
-            margin-bottom: 15px;
-            color: #d00;
         }
 
-        /* Сітка */
+        /* Невидима сітка */
         .calendar-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
+            grid-template-columns: repeat(7, 1fr); /* 7 днів */
+            gap: 15px; /* Відступи між відео */
+            margin-bottom: 50px;
         }
 
         /* Клітинка дня */
         .day-cell {
             aspect-ratio: 16/9;
-            background: #eee;
             position: relative;
-            overflow: hidden;
-            border: 1px solid #000;
+            /* Рамок немає, фону немає */
         }
 
         /* Номер дня */
         .day-number {
             position: absolute;
             top: 5px;
-            left: 8px;
-            font-size: 1.2em;
-            font-weight: bold;
-            z-index: 3;
-            color: #000;
-            pointer-events: none;
-            text-shadow: 1px 1px 0px #fff; /* Біла обводка для читабельності */
+            left: 10px;
+            font-size: 18px;
+            z-index: 5;
+            font-family: 'Permanent Marker', cursive;
         }
 
-        /* Картинка відео */
+        /* Якщо клітинка пуста (відео немає) */
+        .day-cell.empty-day .day-number {
+            color: #333; /* Чорна цифра на білому фоні */
+            position: relative; /* Щоб цифра не накладалась, а стояла на своєму місці */
+            display: block;
+            margin-bottom: 100%; /* Розтягуємо блок */
+        }
+
+        /* Якщо є відео */
+        .day-cell.has-video {
+            transition: transform 0.2s;
+        }
+        
+        .day-cell.has-video:hover {
+            transform: scale(1.03);
+            z-index: 10;
+        }
+
+        /* Цифра на відео стає білою */
+        .day-cell.has-video .day-number {
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+
+        /* Картинка */
         .video-thumb {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-            filter: grayscale(100%);
-            transition: all 0.3s ease;
+            border-radius: 2px;
+            display: block;
+            /* Ніякого чорно-білого фільтру */
         }
 
-        /* НАЗВА ВІДЕО */
+        /* Назва відео */
         .video-title {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.85); /* Чорний фон */
+            bottom: 5px;
+            left: 8px;
+            right: 8px;
             color: white;
-            font-size: 11px; /* Дрібний шрифт, щоб влазило */
-            padding: 4px 6px;
-            box-sizing: border-box;
-            z-index: 2;
+            font-size: 14px;
+            line-height: 1.1;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.9); /* Тінь щоб читалось на будь-якому фоні */
+            z-index: 6;
             
-            /* Обрізаємо, якщо назва занадто довга (в 1 рядок) */
-            white-space: nowrap; 
+            /* Обрізаємо довгий текст */
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            text-overflow: ellipsis;
-            font-weight: normal;
+            pointer-events: none;
         }
 
-        /* Ефекти при наведенні */
-        .day-cell:hover .video-thumb {
-            filter: grayscale(0%);
-            transform: scale(1.05);
+        /* Посилання на відео */
+        .video-link {
+            display: block;
+            width: 100%;
+            height: 100%;
+            text-decoration: none;
         }
 
-        .day-cell:hover .video-title {
-            background: #d00; /* Червоний при наведенні */
-        }
-        
-        /* Якщо є відео, номер білий */
-        .day-cell.has-video .day-number {
-            color: white;
-            text-shadow: 1px 1px 2px #000;
-        }
-
-        .empty-cell {
-            background: transparent;
-            border: none;
-        }
-
-        /* Статус бар */
+        /* Повідомлення про завантаження */
         #status-display {
-            font-size: 1.5em;
+            font-family: 'Permanent Marker', cursive;
+            font-size: 24px;
+            color: #999;
             margin-top: 50px;
-            font-weight: bold;
         }
-        .error-msg { color: red; border: 2px solid red; padding: 20px; background: #fff0f0; }
+        .error-msg { color: var(--accent-color); }
 
-        @media (max-width: 768px) {
-            .year-header { font-size: 5em; }
-            .calendar-grid { grid-template-columns: repeat(2, 1fr); } /* 2 стовпчики на мобільному */
+        /* Адаптивність */
+        @media (max-width: 900px) {
+            .calendar-grid { grid-template-columns: repeat(4, 1fr); }
+            .year-header { font-size: 80px; }
+        }
+        @media (max-width: 600px) {
+            .calendar-grid { grid-template-columns: repeat(2, 1fr); }
+            .year-header { font-size: 60px; }
         }
     </style>
 </head>
 <body>
 
-<div id="status-display">ЗАВАНТАЖЕННЯ ДАНИХ...</div>
+<div id="status-display">Завантаження архіву...</div>
 <div id="app"></div>
 
 <script>
@@ -155,5 +169,137 @@
 
     async function init() {
         try {
-            // 1. Плейлист
-            const channelUrl = `
+            // 1. Отримуємо ID плейлиста
+            const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`;
+            const channelRes = await fetch(channelUrl);
+            const channelData = await channelRes.json();
+
+            if (channelData.error) throw new Error(channelData.error.message);
+            if (!channelData.items || channelData.items.length === 0) throw new Error("Канал не знайдено");
+
+            const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
+
+            // 2. Отримуємо відео (50 штук)
+            const videosUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`;
+            const videosRes = await fetch(videosUrl);
+            const videosData = await videosRes.json();
+
+            if (videosData.error) throw new Error(videosData.error.message);
+
+            // 3. Кешування
+            if (videosData.items) {
+                videosData.items.forEach(item => {
+                    const dateRaw = new Date(item.snippet.publishedAt);
+                    const dateKey = dateRaw.toISOString().split('T')[0];
+                    videosMap[dateKey] = item;
+                });
+            }
+
+            statusDisplay.style.display = 'none';
+            renderCalendar();
+
+        } catch (err) {
+            statusDisplay.innerHTML = `<div class="error-msg">Помилка: ${err.message}</div>`;
+        }
+    }
+
+    function renderCalendar() {
+        const today = new Date();
+        let loopDate = new Date(START_DATE.getFullYear(), START_DATE.getMonth(), 1);
+        let currentYear = 0;
+
+        while (loopDate <= today) {
+            const year = loopDate.getFullYear();
+            const month = loopDate.getMonth();
+
+            // Якщо новий рік
+            if (year !== currentYear) {
+                const yearDiv = document.createElement('div');
+                yearDiv.className = 'year-header';
+                yearDiv.innerText = year;
+                app.appendChild(yearDiv);
+                currentYear = year;
+            }
+
+            createMonthBlock(year, month);
+            loopDate.setMonth(loopDate.getMonth() + 1);
+        }
+    }
+
+    function createMonthBlock(year, month) {
+        // Скорочені назви місяців англійською (як у Casey) або повні українською.
+        // Зробимо українські скорочені для стилю.
+        const monthNames = ["СІЧ", "ЛЮТ", "БЕР", "КВІ", "ТРА", "ЧЕР", 
+                           "ЛИП", "СЕР", "ВЕР", "ЖОВ", "ЛИС", "ГРУ"];
+        
+        const wrapper = document.createElement('div');
+        
+        const title = document.createElement('div');
+        title.className = 'month-title';
+        title.innerText = monthNames[month];
+        wrapper.appendChild(title);
+
+        const grid = document.createElement('div');
+        grid.className = 'calendar-grid';
+
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        let firstDayIndex = new Date(year, month, 1).getDay(); 
+        firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
+
+        // Пусті клітинки
+        for (let i = 0; i < firstDayIndex; i++) {
+            const empty = document.createElement('div');
+            grid.appendChild(empty); // Просто пустий div, без рамок
+        }
+
+        // Дні
+        for (let day = 1; day <= daysInMonth; day++) {
+            const cell = document.createElement('div');
+            
+            const mStr = (month + 1).toString().padStart(2, '0');
+            const dStr = day.toString().padStart(2, '0');
+            const dateKey = `${year}-${mStr}-${dStr}`;
+            const checkDate = new Date(year, month, day);
+
+            // Якщо дата до початку проекту - показуємо просто цифру
+            if (checkDate < START_DATE) {
+                 cell.className = 'day-cell empty-day';
+                 cell.innerHTML = `<div class="day-number" style="opacity: 0.3">${day}</div>`;
+                 grid.appendChild(cell);
+                 continue;
+            }
+
+            if (videosMap[dateKey]) {
+                // ВІДЕО Є
+                const vid = videosMap[dateKey];
+                const thumb = vid.snippet.thumbnails.high?.url || vid.snippet.thumbnails.medium.url;
+                const videoId = vid.snippet.resourceId.videoId;
+                const videoTitle = vid.snippet.title;
+                
+                cell.className = 'day-cell has-video';
+                cell.innerHTML = `
+                    <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" class="video-link">
+                        <span class="day-number">${day}</span>
+                        <img src="${thumb}" class="video-thumb" loading="lazy">
+                        <div class="video-title">${videoTitle}</div>
+                    </a>
+                `;
+            } else {
+                // ВІДЕО НЕМАЄ (ПРОПУСК)
+                // Залишаємо просто цифру, як на скріншоті у пустих днях
+                cell.className = 'day-cell empty-day';
+                cell.innerHTML = `<span class="day-number">${day}</span>`;
+            }
+
+            grid.appendChild(cell);
+        }
+
+        wrapper.appendChild(grid);
+        app.appendChild(wrapper);
+    }
+
+    init();
+</script>
+
+</body>
+</html>
