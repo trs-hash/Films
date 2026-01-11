@@ -3,123 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мій Відео Календар (1000 Days)</title>
+    <title>Video Calendar 1000</title>
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #1a1a1a;
-            color: #ffffff;
-            margin: 0;
-            padding: 20px;
-        }
-        header { text-align: center; margin-bottom: 40px; }
-        h1 { font-weight: 300; letter-spacing: 1px; margin-bottom: 5px; }
-        
-        /* Сітка календаря */
-        .calendar-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333;
+            --accent-color: #ff0000; /* YouTube red */
+            --grid-border: #eee;
         }
 
-        /* Картка відео */
-        .video-card {
-            background: #2a2a2a;
-            border-radius: 8px;
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 40px;
+        }
+
+        h1.main-title {
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            font-size: 4em;
+            margin: 0 0 10px 0;
+            line-height: 1;
+        }
+
+        p.subtitle {
+            color: #888;
+            font-size: 1.2em;
+            margin-bottom: 50px;
+        }
+
+        /* Стиль місяця */
+        .month-block {
+            margin-bottom: 60px;
+        }
+
+        .month-title {
+            font-size: 2.5em;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--accent-color);
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--text-color);
+            display: inline-block;
+        }
+
+        /* Сітка календаря */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr); /* 7 днів тижня */
+            gap: 10px;
+        }
+
+        /* Дні тижня (ПН, ВТ...) */
+        .weekday-header {
+            font-weight: bold;
+            color: #999;
+            text-align: center;
+            padding-bottom: 10px;
+        }
+
+        /* Клітинка дня */
+        .day-cell {
+            aspect-ratio: 16/9; /* Формат відео */
+            background: #f5f5f5;
+            position: relative;
+            border: 1px solid #ddd;
             overflow: hidden;
             transition: transform 0.2s;
-            text-decoration: none;
-            color: white;
-            display: flex;
-            flex-direction: column;
         }
-        .video-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        .thumbnail { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #333; }
-        .info { padding: 15px; }
-        .date { font-size: 0.85em; color: #888; margin-bottom: 5px; text-transform: uppercase; }
-        .title { font-size: 1.1em; font-weight: 500; line-height: 1.4; }
-        
-        /* Статуси */
-        #loading { text-align: center; font-size: 1.2em; color: #666; margin-top: 50px; }
-        .error { color: #ff6b6b; padding: 20px; border: 1px solid #ff6b6b; display: inline-block; border-radius: 5px;}
+
+        .day-cell:hover {
+            z-index: 10;
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            border-color: #333;
+        }
+
+        /* Номер дня */
+        .day-number {
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #ccc;
+            z-index: 1;
+        }
+
+        /* Якщо це пуста клітинка (не день місяця) */
+        .day-cell.empty {
+            background: transparent;
+            border: none;
+        }
+
+        /* Картинка відео */
+        .video-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2; /* Поверх номера */
+            filter: grayscale(20%);
+            transition: filter 0.3s;
+        }
+
+        .day-cell:hover .video-thumb {
+            filter: grayscale(0%);
+        }
+
+        /* Посилання на всю клітинку */
+        .cell-link {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #loading { font-size: 2em; font-weight: bold; color: #ccc; }
+        .error { color: red; font-weight: bold; border: 1px solid red; padding: 20px; }
+
+        /* Адаптивність для мобільних */
+        @media (max-width: 768px) {
+            .calendar-grid { grid-template-columns: repeat(3, 1fr); }
+            h1.main-title { font-size: 2.5em; }
+        }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>VIDEO DIARY / ARCHIVE</h1>
-    <p style="color: #666;">Відстеження щоденного прогресу</p>
+    <h1 class="main-title">1000 Days</h1>
+    <p class="subtitle">Video Archive starting Dec 16, 2025</p>
 </header>
 
-<div id="loading">Завантаження відео...</div>
-<div class="calendar-container" id="app"></div>
+<div id="loading">Loading calendar...</div>
+<div id="app"></div>
 
 <script>
-    // --- НАЛАШТУВАННЯ ---
+    // --- ВАШІ ДАНІ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
-    const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; // Ваш ID (Тарас Максим'як)
-    // --------------------
-
-    const container = document.getElementById('app');
-    const loading = document.getElementById('loading');
-
-    async function fetchVideos() {
-        try {
-            // 1. Отримуємо ID плейлиста "Uploads"
-            const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`;
-            const channelRes = await fetch(channelUrl);
-            const channelData = await channelRes.json();
-            
-            if (!channelData.items || channelData.items.length === 0) {
-                loading.innerHTML = `<div class="error">Помилка API: Не вдалося знайти канал.<br>Перевірте ключ або квоти.</div>`;
-                console.error(channelData);
-                return;
-            }
-
-            const uploadsPlaylistId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
-
-            // 2. Отримуємо відео
-            const videosUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=50&key=${API_KEY}`;
-            const videosRes = await fetch(videosUrl);
-            const videosData = await videosRes.json();
-
-            loading.style.display = 'none';
-
-            if (!videosData.items) {
-                 loading.innerHTML = `<div class="error">Помилка: Відео не знайдено.</div>`;
-                 return;
-            }
-
-            // 3. Малюємо картки
-            videosData.items.forEach(item => {
-                const videoId = item.snippet.resourceId.videoId;
-                const title = item.snippet.title;
-                const thumb = item.snippet.thumbnails.high?.url || item.snippet.thumbnails.medium?.url || item.snippet.thumbnails.default?.url;
-                const publishedAt = new Date(item.snippet.publishedAt);
-                const dateStr = publishedAt.toLocaleDateString('uk-UA', { 
-                    year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' 
-                });
-
-                container.innerHTML += `
-                    <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" class="video-card">
-                        <img src="${thumb}" alt="${title}" class="thumbnail" loading="lazy">
-                        <div class="info">
-                            <div class="date">${dateStr}</div>
-                            <div class="title">${title}</div>
-                        </div>
-                    </a>`;
-            });
-
-        } catch (error) {
-            console.error(error);
-            loading.innerHTML = `<div class="error">Критична помилка JS. Деталі в консолі.</div>`;
-        }
-    }
-
-    fetchVideos();
-</script>
-
-</body>
-</html>
+    const CHANNEL_ID = 'UC
