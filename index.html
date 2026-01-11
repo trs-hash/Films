@@ -78,6 +78,10 @@
             color: #666;
             margin-top: 50px;
         }
+        
+        .error {
+            color: #ff6b6b;
+        }
     </style>
 </head>
 <body>
@@ -91,9 +95,9 @@
 <div class="calendar-container" id="app"></div>
 
 <script>
-    // --- НАЛАШТУВАННЯ (ЗАПОВНІТЬ ЦІ ДАНІ) ---
-    const API_KEY = 'ВАШ_API_KEY_ТУТ'; 
-    const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
+    // --- ВАШІ ДАНІ ВЖЕ ВСТАВЛЕНІ ---
+    const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
+    const CHANNEL_HANDLE = '@taras.maksymiak'; // Використовуємо хендл замість ID
     // ----------------------------------------
 
     const container = document.getElementById('app');
@@ -101,34 +105,43 @@
 
     async function fetchVideos() {
         try {
-            // 1. Отримуємо ID плейлиста "Uploads" (всі завантаження каналу)
-            const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`;
+            // 1. Спочатку знаходимо ID каналу за його хендлом (@name)
+            const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&forHandle=${encodeURIComponent(CHANNEL_HANDLE)}&key=${API_KEY}`;
             const channelRes = await fetch(channelUrl);
             const channelData = await channelRes.json();
             
-            if (!channelData.items) {
-                loading.innerText = "Помилка: Невірний Channel ID або API Key";
+            if (!channelData.items || channelData.items.length === 0) {
+                loading.innerHTML = `<span class="error">Помилка: Не вдалося знайти канал з ніком <b>${CHANNEL_HANDLE}</b>.<br>Перевірте правильність написання або налаштування API Key.</span>`;
+                console.error("API Response:", channelData);
                 return;
             }
 
             const uploadsPlaylistId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
 
             // 2. Отримуємо відео з цього плейлиста (перші 50 штук)
-            // Для повного архіву потрібно буде додати пагінацію (loop через nextPageToken)
             const videosUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=50&key=${API_KEY}`;
             const videosRes = await fetch(videosUrl);
             const videosData = await videosRes.json();
 
             loading.style.display = 'none';
 
+            if (!videosData.items) {
+                 loading.style.display = 'block';
+                 loading.innerHTML = `<span class="error">Відео не знайдено або помилка доступу.</span>`;
+                 return;
+            }
+
             // 3. Відображаємо відео
             videosData.items.forEach(item => {
                 const videoId = item.snippet.resourceId.videoId;
                 const title = item.snippet.title;
-                const thumb = item.snippet.thumbnails.high ? item.snippet.thumbnails.high.url : item.snippet.thumbnails.medium.url;
+                // Безпечна перевірка наявності картинки
+                const thumb = item.snippet.thumbnails.high ? item.snippet.thumbnails.high.url : 
+                             (item.snippet.thumbnails.medium ? item.snippet.thumbnails.medium.url : item.snippet.thumbnails.default.url);
+                
                 const publishedAt = new Date(item.snippet.publishedAt);
                 
-                // Форматування дати
+                // Форматування дати українською
                 const dateStr = publishedAt.toLocaleDateString('uk-UA', { 
                     year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' 
                 });
@@ -147,16 +160,12 @@
 
         } catch (error) {
             console.error(error);
-            loading.innerText = "Сталася помилка при завантаженні.";
+            loading.innerHTML = `<span class="error">Сталася технічна помилка. Деталі в консолі (F12).</span>`;
         }
     }
 
     // Запуск
-    if (API_KEY === 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc') {
-        loading.innerText = "Будь ласка, вставте ваш API Key у код файлу index.html";
-    } else {
-        fetchVideos();
-    }
+    fetchVideos();
 </script>
 
 </body>
