@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Archive</title>
     <style>
-        /* --- СТИЛЬ ЯК НА СКРІНШОТІ 2015 (МІНІМАЛІЗМ) --- */
+        /* --- СТИЛЬ (МІНІМАЛІЗМ) --- */
         body {
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             background-color: #ffffff;
@@ -19,33 +19,32 @@
             margin: 0 auto;
         }
 
-        /* РІК: Тонкий, величезний */
+        /* РІК */
         .year-header {
             font-size: 110px;
-            font-weight: 100; /* Thin */
+            font-weight: 100;
             color: #333;
             margin-bottom: 40px;
             line-height: 1;
             letter-spacing: -3px;
         }
 
-        /* МІСЯЦЬ: Червоний, великий, капсом */
+        /* МІСЯЦЬ */
         .month-header {
-            color: #e62117; /* Casey Red */
+            color: #e62117; /* Червоний */
             font-size: 36px;
             font-weight: 400;
             text-transform: uppercase;
             margin-top: 80px;
             margin-bottom: 40px;
-            /* Без підкреслення, як на скріншоті */
         }
 
         /* СІТКА */
         .calendar-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr); /* 7 днів */
-            column-gap: 20px; /* Простір між колонками */
-            row-gap: 60px;    /* Великий простір між рядами */
+            grid-template-columns: repeat(7, 1fr);
+            column-gap: 20px;
+            row-gap: 60px;
         }
 
         /* КЛІТИНКА */
@@ -54,7 +53,7 @@
             width: 100%;
         }
 
-        /* ЦИФРА: Просто число над відео */
+        /* ЦИФРА */
         .day-number {
             font-size: 18px;
             color: #333;
@@ -73,6 +72,7 @@
             overflow: hidden;
             display: block;
             text-decoration: none;
+            border-radius: 2px;
         }
 
         .video-thumb {
@@ -86,7 +86,7 @@
             transform: scale(1.05);
         }
 
-        /* НАЗВА ВІДЕО: Знизу на картинці */
+        /* НАЗВА ВІДЕО (ПОСТІЙНО ВИДИМА) */
         .video-title {
             position: absolute;
             bottom: 0;
@@ -94,26 +94,27 @@
             width: 100%;
             padding: 8px 10px;
             box-sizing: border-box;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            
+            /* Градієнт знизу, щоб білий текст читався на будь-якому фоні */
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+            
             color: white;
             font-size: 13px;
             font-weight: 500;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            opacity: 0;
-            transition: opacity 0.2s;
+            opacity: 1; /* Завжди видимо */
+            text-shadow: 0 1px 2px black; /* Тінь для кращої читабельності */
         }
 
-        .video-container:hover .video-title { opacity: 1; }
-
-        /* Якщо відео переглянуте */
+        /* СТАТУС ПЕРЕГЛЯНУТО */
         .day-cell.watched .video-thumb {
             filter: grayscale(100%);
             opacity: 0.6;
         }
 
-        /* Інформаційні повідомлення */
+        /* Статус бар */
         #status-bar {
             position: fixed;
             bottom: 10px;
@@ -123,6 +124,7 @@
             background: rgba(255,255,255,0.9);
             padding: 5px;
             border: 1px solid #eee;
+            border-radius: 4px;
         }
 
         /* АДАПТИВНІСТЬ */
@@ -147,194 +149,4 @@
 
 <script>
     // --- ВАШІ ДАНІ ---
-    const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
-    const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
-    const START_DATE = new Date(2025, 11, 16); // 16 Грудня 2025
-    // -----------------
-
-    const app = document.getElementById('app');
-    const statusBar = document.getElementById('status-bar');
-    const videosMap = {};
-    let watchedVideos = [];
-
-    // Завантаження кешу
-    try {
-        watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]');
-    } catch (e) {}
-
-    // --- ГОЛОВНА ФУНКЦІЯ ---
-    async function init() {
-        let success = false;
-        
-        // Спробуємо отримати реальні дані (таймаут 3 сек)
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 секунди на з'єднання
-
-            const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`;
-            const channelRes = await fetch(channelUrl, { signal: controller.signal });
-            clearTimeout(timeoutId);
-            
-            const channelData = await channelRes.json();
-            
-            if (channelData.items) {
-                const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
-                const videosRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`);
-                const videosData = await videosRes.json();
-                
-                if (videosData.items) {
-                    videosData.items.forEach(item => {
-                        const d = new Date(item.snippet.publishedAt);
-                        const key = d.toISOString().split('T')[0];
-                        videosMap[key] = item;
-                    });
-                    success = true;
-                    statusBar.innerText = "YouTube API Connected";
-                }
-            }
-        } catch (err) {
-            console.warn("YouTube API failed, switching to DEMO mode", err);
-        }
-
-        // Якщо YouTube не відповів - вантажимо ДЕМО дані, щоб показати дизайн
-        if (!success) {
-            statusBar.innerText = "Mode: DEMO (API Issue or AdBlock)";
-            statusBar.style.color = "red";
-            generateDemoData();
-        }
-
-        render();
-    }
-
-    // --- ГЕНЕРАЦІЯ ДЕМО ДАНИХ (Для тесту дизайну) ---
-    function generateDemoData() {
-        // Створимо фейкові відео для кожного дня починаючи зі старту
-        let d = new Date(START_DATE);
-        const today = new Date();
-        while (d <= today) {
-            const key = d.toISOString().split('T')[0];
-            // Імітуємо структуру YouTube API
-            videosMap[key] = {
-                id: "demo-" + key,
-                snippet: {
-                    title: "Vlog Day " + key,
-                    resourceId: { videoId: "dQw4w9WgXcQ" }, // Rick Roll як заглушка :)
-                    thumbnails: {
-                        medium: { url: `https://picsum.photos/seed/${key}/320/180` } // Випадкова картинка
-                    }
-                }
-            };
-            d.setDate(d.getDate() + 1);
-        }
-    }
-
-    // --- МАЛЮВАННЯ КАЛЕНДАРЯ ---
-    function render() {
-        const today = new Date();
-        // Якщо демо режим - показуємо хоча б до сьогодні
-        // Якщо реальний - показуємо теж до сьогодні
-        let loop = new Date(START_DATE.getFullYear(), START_DATE.getMonth(), 1);
-        let currentYear = 0;
-
-        while (loop <= today) {
-            const y = loop.getFullYear();
-            const m = loop.getMonth();
-
-            if (y !== currentYear) {
-                const yearEl = document.createElement('div');
-                yearEl.className = 'year-header';
-                yearEl.innerText = y;
-                app.appendChild(yearEl);
-                currentYear = y;
-            }
-
-            createMonth(y, m);
-            loop.setMonth(loop.getMonth() + 1);
-        }
-    }
-
-    function createMonth(year, month) {
-        const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-        
-        const mTitle = document.createElement('div');
-        mTitle.className = 'month-header';
-        mTitle.innerText = months[month];
-        app.appendChild(mTitle);
-
-        const grid = document.createElement('div');
-        grid.className = 'calendar-grid';
-
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        let startDay = new Date(year, month, 1).getDay(); 
-        startDay = (startDay === 0) ? 6 : startDay - 1; 
-
-        // Пусті
-        for(let i=0; i<startDay; i++) {
-            grid.appendChild(document.createElement('div'));
-        }
-
-        // Дні
-        for(let d=1; d<=daysInMonth; d++) {
-            const cell = document.createElement('div');
-            cell.className = 'day-cell';
-
-            // Номер
-            const num = document.createElement('span');
-            num.className = 'day-number';
-            num.innerText = d;
-            
-            const mStr = (month + 1).toString().padStart(2, '0');
-            const dStr = d.toString().padStart(2, '0');
-            const key = `${year}-${mStr}-${dStr}`;
-            const checkDate = new Date(year, month, d);
-
-            if (checkDate < START_DATE) {
-                num.style.opacity = '0.3';
-                cell.appendChild(num);
-                grid.appendChild(cell);
-                continue;
-            }
-
-            cell.appendChild(num);
-
-            if (videosMap[key]) {
-                const vid = videosMap[key];
-                cell.classList.add('has-video');
-                
-                const vidId = vid.snippet.resourceId ? vid.snippet.resourceId.videoId : vid.id;
-                const isWatched = watchedVideos.includes(vidId);
-                if (isWatched) cell.classList.add('watched');
-
-                const thumb = vid.snippet.thumbnails.maxres ? vid.snippet.thumbnails.maxres.url : 
-                              (vid.snippet.thumbnails.medium ? vid.snippet.thumbnails.medium.url : vid.snippet.thumbnails.medium.url);
-
-                const link = document.createElement('a');
-                link.className = 'video-container';
-                link.href = `https://www.youtube.com/watch?v=${vidId}`;
-                link.target = "_blank";
-                link.onclick = () => {
-                    if(!watchedVideos.includes(vidId)){
-                        watchedVideos.push(vidId);
-                        localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos));
-                    }
-                    cell.classList.add('watched');
-                };
-
-                link.innerHTML = `
-                    <img src="${thumb}" class="video-thumb" loading="lazy">
-                    <div class="video-title">${vid.snippet.title}</div>
-                `;
-                cell.appendChild(link);
-            }
-
-            grid.appendChild(cell);
-        }
-
-        app.appendChild(grid);
-    }
-
-    init();
-</script>
-
-</body>
-</html>
+    const API_KEY = 'AIzaSyC918RP
