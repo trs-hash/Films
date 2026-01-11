@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мій Архів</title>
+    <title>Мій Архів 1000</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Patrick+Hand&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --bg-color: #ffffff;
+            --bg-color: #fafafa; /* Трохи сірий фон, приємніший */
+            --paper-color: #ffffff;
             --text-color: #222;
-            --accent-color: #e62117; /* Червоний */
+            --accent-color: #e62117;
         }
 
         body {
@@ -20,34 +21,38 @@
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 20px;
-            overflow-y: scroll; /* Завжди показувати скрол, щоб не скакало */
+            padding: 0;
+            overflow-y: scroll;
         }
 
-        /* КОНТЕЙНЕР - Центрує сайт і обмежує ширину */
+        /* КОНТЕЙНЕР: Виглядає як аркуш по центру */
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 15px;
+            max-width: 1000px;
+            margin: 40px auto;
+            background: var(--paper-color);
+            padding: 40px 60px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); /* Тінь аркуша */
+            min-height: 100vh;
         }
 
         /* РІК */
         .year-header {
             font-family: 'Permanent Marker', cursive;
-            font-size: 80px; /* Зменшив, щоб не було гігантським */
+            font-size: 90px;
             line-height: 1;
             color: #333;
-            margin-top: 40px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #333;
+            margin-top: 10px;
+            margin-bottom: 30px;
+            text-align: left;
+            border-bottom: 3px solid #333;
         }
 
         /* МІСЯЦЬ */
         .month-title {
             font-family: 'Permanent Marker', cursive;
-            font-size: 36px;
+            font-size: 40px;
             color: var(--accent-color);
-            margin-top: 40px;
+            margin-top: 50px;
             margin-bottom: 20px;
             text-transform: uppercase;
         }
@@ -55,9 +60,9 @@
         /* СІТКА */
         .calendar-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr); /* 7 днів на ПК */
-            gap: 15px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(7, 1fr); /* 7 днів */
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
         /* КЛІТИНКА */
@@ -65,86 +70,92 @@
             aspect-ratio: 16/9;
             position: relative;
             cursor: pointer;
-            transition: transform 0.2s;
         }
 
         /* Номер дня */
         .day-number {
             position: absolute;
-            top: -25px; /* Виніс цифру над відео, щоб не заважала */
+            top: -22px;
             left: 5px;
-            font-size: 20px;
-            font-family: 'Permanent Marker', cursive;
-            color: #ccc;
+            font-size: 18px;
+            font-family: 'Patrick Hand', cursive;
+            color: #999;
+            font-weight: bold;
             z-index: 5;
         }
 
-        /* Якщо це просто пустий день без відео */
+        /* Порожні дні */
         .day-cell.empty-day {
             pointer-events: none;
         }
         .day-cell.empty-day .day-number {
-            top: 0;
-            color: #ddd;
+            color: #eee;
         }
 
-        /* ВІДЕО */
+        /* КАРТИНКА ВІДЕО */
         .video-thumb {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border-radius: 4px;
+            border-radius: 3px;
             display: block;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-            transition: all 0.2s;
+            background: #eee;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .day-cell.has-video:hover .video-thumb {
-            transform: scale(1.03);
-            box-shadow: 4px 4px 10px rgba(0,0,0,0.3);
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 10;
+            position: relative;
         }
 
-        /* НАЗВА ВІДЕО */
+        /* НАЗВА ВІДЕО (Знизу на картинці) */
         .video-title {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            padding: 20px 5px 5px 5px;
-            
-            /* Градієнт, щоб текст читався */
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
-            
+            background: rgba(0,0,0,0.7);
             color: white;
-            font-size: 16px; /* Збільшив шрифт */
-            font-weight: bold;
+            font-size: 12px;
             line-height: 1.2;
-            text-shadow: 1px 1px 2px black;
-            border-radius: 0 0 4px 4px;
+            padding: 4px 6px;
+            box-sizing: border-box;
+            border-radius: 0 0 3px 3px;
             
             /* Обрізка тексту */
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            opacity: 0; /* Приховано за замовчуванням */
+            transition: opacity 0.2s;
         }
 
-        /* --- СТИЛЬ ПЕРЕГЛЯНУТОГО (КЕШ) --- */
+        .day-cell.has-video:hover .video-title {
+            opacity: 1; /* Показуємо при наведенні */
+        }
+
+        /* --- ЕФЕКТ "ПЕРЕГЛЯНУТО" --- */
         .day-cell.watched .video-thumb {
-            filter: grayscale(100%) contrast(0.8); /* Чб і тьмяне */
-            opacity: 0.7;
+            filter: grayscale(100%) opacity(0.6);
         }
-
+        
+        /* Червоний хрест поверх переглянутого */
         .day-cell.watched::after {
-            content: '';
+            content: "✕";
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' stroke='red' stroke-width='3' fill='none'><line x1='0' y1='0' x2='100%' y2='100%' /><line x1='100%' y1='0' x2='0' y2='100%' /></svg>");
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 40px;
+            color: red;
+            font-family: sans-serif;
             opacity: 0.8;
             pointer-events: none;
-            z-index: 10;
+            text-shadow: 0 0 5px white;
         }
 
-        /* Посилання */
         .video-link {
             display: block;
             width: 100%;
@@ -152,40 +163,51 @@
             text-decoration: none;
         }
 
+        /* СТАТУС БАР (Завантаження/Помилки) */
         #status-display {
             text-align: center;
             font-size: 24px;
-            color: #999;
-            margin-top: 100px;
+            color: #666;
+            padding: 50px;
+        }
+        .error-box {
+            color: #d00;
+            border: 2px dashed #d00;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 14px;
+            text-align: left;
+            background: #fff0f0;
         }
 
-        /* --- АДАПТИВНІСТЬ (Мобільні) --- */
-        @media (max-width: 1024px) {
-            .container { max-width: 900px; }
-            .calendar-grid { grid-template-columns: repeat(4, 1fr); gap: 10px;}
+        /* АДАПТИВНІСТЬ */
+        @media (max-width: 900px) {
+            .container { padding: 20px; width: auto; margin: 0; }
+            .calendar-grid { grid-template-columns: repeat(4, 1fr); }
             .year-header { font-size: 60px; }
         }
-
         @media (max-width: 600px) {
-            .calendar-grid { 
-                grid-template-columns: repeat(2, 1fr); /* 2 колонки на телефоні */
-                gap: 8px;
-            }
+            .calendar-grid { grid-template-columns: repeat(2, 1fr); }
             .year-header { font-size: 50px; text-align: center; }
-            .month-title { text-align: center; margin-top: 20px;}
-            .day-number { font-size: 16px; top: -20px; }
-            .video-title { font-size: 14px; }
+            .month-title { text-align: center; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="status-display">Завантаження...</div>
+    <div id="status-display">Завантаження вашого архіву...</div>
     <div id="app"></div>
 </div>
 
 <script>
+    // --- ГЛОБАЛЬНИЙ ЗАХИСТ ВІД ПОМИЛОК ---
+    window.onerror = function(msg, url, line) {
+        document.getElementById('status-display').innerHTML = 
+            `<div class="error-box">КРИТИЧНА ПОМИЛКА СКРИПТА:<br>${msg}<br>Line: ${line}</div>`;
+    };
+
     // --- ВАШІ ДАНІ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
     const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
@@ -195,27 +217,33 @@
     const app = document.getElementById('app');
     const statusDisplay = document.getElementById('status-display');
     const videosMap = {};
+    let watchedVideos = [];
 
-    // Завантажуємо список переглянутих відео з пам'яті
-    let watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]');
+    // Безпечне отримання даних з пам'яті (щоб не ламало сайт)
+    try {
+        watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]');
+    } catch (e) {
+        console.error("Помилка localStorage:", e);
+        watchedVideos = [];
+    }
 
     async function init() {
         try {
-            // 1. Отримуємо ID плейлиста Uploads
+            // 1. Отримуємо ID плейлиста "Uploads"
             const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`;
             const channelRes = await fetch(channelUrl);
+            
+            if (!channelRes.ok) throw new Error(`API Error: ${channelRes.status} ${channelRes.statusText}`);
             const channelData = await channelRes.json();
 
-            if (!channelData.items) throw new Error("Канал не знайдено");
+            if (channelData.error) throw new Error(`YouTube API: ${channelData.error.message}`);
+            if (!channelData.items || channelData.items.length === 0) throw new Error("Канал не знайдено або квота вичерпана.");
+
             const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
 
-            // 2. Отримуємо відео
+            // 2. Отримуємо відео (50 штук)
             const videosUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`;
             const videosRes = await fetch(videosUrl);
             const videosData = await videosRes.json();
 
-            // 3. Кешування
-            if (videosData.items) {
-                videosData.items.forEach(item => {
-                    const dateRaw = new Date(item.snippet.publishedAt);
-                    const dateKey = dateRaw.toISOString().split('T')
+            if
