@@ -8,18 +8,17 @@
         :root {
             --bg-color: #ffffff;
             --text-color: #000000;
-            --accent-color: #000000;
         }
 
         body {
-            font-family: 'Courier New', Courier, monospace; /* Ефект друкарської машинки */
+            font-family: 'Courier New', Courier, monospace;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
             padding: 20px;
         }
 
-        /* Стиль року - величезний і простий */
+        /* Стиль року */
         .year-header {
             font-size: 8em;
             font-weight: bold;
@@ -38,14 +37,14 @@
             text-transform: uppercase;
             margin-top: 40px;
             margin-bottom: 15px;
-            color: #d00; /* Червоний акцент, як у YouTube/Casey */
+            color: #d00;
         }
 
         /* Сітка */
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 4px; /* Мінімальні відступи */
+            gap: 4px;
         }
 
         /* Клітинка дня */
@@ -54,7 +53,7 @@
             background: #eee;
             position: relative;
             overflow: hidden;
-            border: 1px solid #000; /* Чітка рамка */
+            border: 1px solid #000;
         }
 
         /* Номер дня */
@@ -64,9 +63,10 @@
             left: 8px;
             font-size: 1.2em;
             font-weight: bold;
-            z-index: 2;
+            z-index: 3;
             color: #000;
-            pointer-events: none; /* Щоб клікати крізь цифру */
+            pointer-events: none;
+            text-shadow: 1px 1px 0px #fff; /* Біла обводка для читабельності */
         }
 
         /* Картинка відео */
@@ -78,20 +78,44 @@
             top: 0;
             left: 0;
             z-index: 1;
-            filter: grayscale(100%); /* Чорно-білі прев'ю */
+            filter: grayscale(100%);
             transition: all 0.3s ease;
         }
 
-        /* Ефект при наведенні - стає кольоровим */
+        /* НАЗВА ВІДЕО */
+        .video-title {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.85); /* Чорний фон */
+            color: white;
+            font-size: 11px; /* Дрібний шрифт, щоб влазило */
+            padding: 4px 6px;
+            box-sizing: border-box;
+            z-index: 2;
+            
+            /* Обрізаємо, якщо назва занадто довга (в 1 рядок) */
+            white-space: nowrap; 
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: normal;
+        }
+
+        /* Ефекти при наведенні */
         .day-cell:hover .video-thumb {
             filter: grayscale(0%);
-            transform: scale(1.1);
+            transform: scale(1.05);
+        }
+
+        .day-cell:hover .video-title {
+            background: #d00; /* Червоний при наведенні */
         }
         
-        /* Якщо на фоні картинка, цифру робимо білою з тінню */
+        /* Якщо є відео, номер білий */
         .day-cell.has-video .day-number {
             color: white;
-            text-shadow: 2px 2px 0px #000;
+            text-shadow: 1px 1px 2px #000;
         }
 
         .empty-cell {
@@ -99,7 +123,7 @@
             border: none;
         }
 
-        /* Лоадер і помилки */
+        /* Статус бар */
         #status-display {
             font-size: 1.5em;
             margin-top: 50px;
@@ -109,7 +133,7 @@
 
         @media (max-width: 768px) {
             .year-header { font-size: 5em; }
-            .calendar-grid { grid-template-columns: repeat(3, 1fr); }
+            .calendar-grid { grid-template-columns: repeat(2, 1fr); } /* 2 стовпчики на мобільному */
         }
     </style>
 </head>
@@ -131,149 +155,5 @@
 
     async function init() {
         try {
-            // 1. Отримуємо ID плейлиста "Uploads"
-            const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`;
-            const channelRes = await fetch(channelUrl);
-            const channelData = await channelRes.json();
-
-            if (channelData.error) {
-                throw new Error(`YouTube API Error: ${channelData.error.message}`);
-            }
-            if (!channelData.items || channelData.items.length === 0) {
-                throw new Error("Канал не знайдено. Перевірте ID каналу.");
-            }
-
-            const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
-
-            // 2. Отримуємо відео (50 штук)
-            const videosUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`;
-            const videosRes = await fetch(videosUrl);
-            const videosData = await videosRes.json();
-
-            if (videosData.error) {
-                throw new Error(`Video Fetch Error: ${videosData.error.message}`);
-            }
-
-            // 3. Зберігаємо відео в об'єкт по датах
-            if (videosData.items) {
-                videosData.items.forEach(item => {
-                    const dateRaw = new Date(item.snippet.publishedAt);
-                    const dateKey = dateRaw.toISOString().split('T')[0]; // YYYY-MM-DD
-                    videosMap[dateKey] = item;
-                });
-            } else {
-                statusDisplay.innerText = "Відео не знайдено (можливо, список порожній).";
-            }
-
-            // 4. Малюємо календар
-            statusDisplay.style.display = 'none'; // Ховаємо напис завантаження
-            renderCalendar();
-
-        } catch (err) {
-            statusDisplay.innerHTML = `<div class="error-msg">ПОМИЛКА:<br>${err.message}</div>`;
-            console.error(err);
-        }
-    }
-
-    function renderCalendar() {
-        const today = new Date();
-        // Встановлюємо дату "сьогодні" трохи вперед, щоб перевірити відображення (для тесту)
-        // today.setMonth(today.getMonth() + 1); 
-
-        let loopDate = new Date(START_DATE.getFullYear(), START_DATE.getMonth(), 1);
-        let currentYear = 0;
-
-        while (loopDate <= today) {
-            const year = loopDate.getFullYear();
-            const month = loopDate.getMonth();
-
-            // Якщо змінився рік, малюємо величезний заголовок року
-            if (year !== currentYear) {
-                const yearDiv = document.createElement('div');
-                yearDiv.className = 'year-header';
-                yearDiv.innerText = year;
-                app.appendChild(yearDiv);
-                currentYear = year;
-            }
-
-            createMonthBlock(year, month);
-            
-            // Наступний місяць
-            loopDate.setMonth(loopDate.getMonth() + 1);
-        }
-    }
-
-    function createMonthBlock(year, month) {
-        const monthNames = ["СІЧЕНЬ", "ЛЮТИЙ", "БЕРЕЗЕНЬ", "КВІТЕНЬ", "ТРАВЕНЬ", "ЧЕРВЕНЬ", 
-                           "ЛИПЕНЬ", "СЕРПЕНЬ", "ВЕРЕСЕНЬ", "ЖОВТЕНЬ", "ЛИСТОПАД", "ГРУДЕНЬ"];
-        
-        const wrapper = document.createElement('div');
-        
-        const title = document.createElement('div');
-        title.className = 'month-title';
-        title.innerText = monthNames[month];
-        wrapper.appendChild(title);
-
-        const grid = document.createElement('div');
-        grid.className = 'calendar-grid';
-
-        // Логіка сітки
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        let firstDayIndex = new Date(year, month, 1).getDay(); 
-        // Корекція на укр. тиждень (ПН - перший)
-        firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
-
-        // Пусті клітинки
-        for (let i = 0; i < firstDayIndex; i++) {
-            const empty = document.createElement('div');
-            empty.className = 'empty-cell';
-            grid.appendChild(empty);
-        }
-
-        // Дні
-        for (let day = 1; day <= daysInMonth; day++) {
-            const cell = document.createElement('div');
-            cell.className = 'day-cell';
-            
-            // Дата для пошуку
-            const mStr = (month + 1).toString().padStart(2, '0');
-            const dStr = day.toString().padStart(2, '0');
-            const dateKey = `${year}-${mStr}-${dStr}`;
-            
-            // Перевіряємо, чи цей день входить в діапазон (після 16 грудня)
-            const checkDate = new Date(year, month, day);
-            
-            // Якщо день менше дати старту - робимо його напівпрозорим
-            if (checkDate < START_DATE) {
-                cell.style.opacity = '0.3';
-            }
-
-            let content = `<span class="day-number">${day}</span>`;
-
-            // Якщо є відео
-            if (videosMap[dateKey]) {
-                const vid = videosMap[dateKey];
-                const thumb = vid.snippet.thumbnails.high?.url || vid.snippet.thumbnails.medium.url;
-                const videoId = vid.snippet.resourceId.videoId;
-                
-                cell.classList.add('has-video');
-                content += `
-                    <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" style="display:block;width:100%;height:100%">
-                        <img src="${thumb}" class="video-thumb">
-                    </a>
-                `;
-            }
-
-            cell.innerHTML = content + `<span class="day-number">${day}</span>`; // Ще раз номер, щоб був зверху
-            grid.appendChild(cell);
-        }
-
-        wrapper.appendChild(grid);
-        app.appendChild(wrapper);
-    }
-
-    init();
-</script>
-
-</body>
-</html>
+            // 1. Плейлист
+            const channelUrl = `
