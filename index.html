@@ -5,49 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Archive</title>
     <style>
-        /* --- ЧИСТИЙ МІНІМАЛІЗМ --- */
+        /* --- СТИЛЬ ЯК НА СКРІНШОТІ 2015 (МІНІМАЛІЗМ) --- */
         body {
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             background-color: #ffffff;
-            color: #333;
+            color: #222;
             margin: 0;
             padding: 40px;
         }
 
-        /* Контейнер по центру */
         .main-wrapper {
             max-width: 1200px;
             margin: 0 auto;
         }
 
-        /* РІК - Тонкий і великий, як на референсі */
+        /* РІК: Тонкий, величезний */
         .year-header {
-            font-size: 100px;
-            font-weight: 100; /* Дуже тонкий */
+            font-size: 110px;
+            font-weight: 100; /* Thin */
             color: #333;
             margin-bottom: 40px;
             line-height: 1;
             letter-spacing: -3px;
         }
 
-        /* МІСЯЦЬ - Червоний */
+        /* МІСЯЦЬ: Червоний, великий, капсом */
         .month-header {
-            color: #e62117; /* YouTube Red */
-            font-size: 32px;
+            color: #e62117; /* Casey Red */
+            font-size: 36px;
             font-weight: 400;
             text-transform: uppercase;
-            margin-top: 60px;
-            margin-bottom: 30px;
-            border-bottom: 1px solid #eee; /* Легка лінія розділення */
-            padding-bottom: 10px;
+            margin-top: 80px;
+            margin-bottom: 40px;
+            /* Без підкреслення, як на скріншоті */
         }
 
         /* СІТКА */
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr); /* 7 днів */
-            column-gap: 20px;
-            row-gap: 50px; /* Більше повітря між рядами */
+            column-gap: 20px; /* Простір між колонками */
+            row-gap: 60px;    /* Великий простір між рядами */
         }
 
         /* КЛІТИНКА */
@@ -56,7 +54,7 @@
             width: 100%;
         }
 
-        /* ЦИФРА ДНЯ */
+        /* ЦИФРА: Просто число над відео */
         .day-number {
             font-size: 18px;
             color: #333;
@@ -70,14 +68,11 @@
             position: relative;
             width: 100%;
             aspect-ratio: 16/9;
-            background: #f4f4f4;
+            background: #eee;
             cursor: pointer;
             overflow: hidden;
-            display: none; /* Ховаємо, якщо відео нема */
-        }
-
-        .day-cell.has-video .video-container {
             display: block;
+            text-decoration: none;
         }
 
         .video-thumb {
@@ -87,138 +82,157 @@
             transition: transform 0.3s ease;
         }
 
-        /* Ефект збільшення при наведенні */
         .video-container:hover .video-thumb {
             transform: scale(1.05);
         }
 
-        /* НАЗВА ВІДЕО (з'являється при наведенні) */
+        /* НАЗВА ВІДЕО: Знизу на картинці */
         .video-title {
             position: absolute;
             bottom: 0;
             left: 0;
             width: 100%;
-            padding: 10px;
+            padding: 8px 10px;
             box-sizing: border-box;
             background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
             color: white;
-            font-size: 12px;
-            opacity: 0;
-            transition: opacity 0.2s;
+            font-size: 13px;
+            font-weight: 500;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            opacity: 0;
+            transition: opacity 0.2s;
         }
 
-        .video-container:hover .video-title {
-            opacity: 1;
-        }
+        .video-container:hover .video-title { opacity: 1; }
 
-        /* СТАТУС ПЕРЕГЛЯДУ */
+        /* Якщо відео переглянуте */
         .day-cell.watched .video-thumb {
             filter: grayscale(100%);
-            opacity: 0.5;
+            opacity: 0.6;
         }
 
-        /* БЛОК ПОМИЛОК */
-        #status-msg {
-            font-family: monospace;
-            padding: 20px;
-            font-size: 16px;
-            color: #666;
-        }
-        .error-red {
-            color: red;
-            border: 1px solid red;
-            background: #fffafa;
-            padding: 15px;
-            margin-top: 20px;
+        /* Інформаційні повідомлення */
+        #status-bar {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: #999;
+            background: rgba(255,255,255,0.9);
+            padding: 5px;
+            border: 1px solid #eee;
         }
 
         /* АДАПТИВНІСТЬ */
         @media (max-width: 900px) {
             .calendar-grid { grid-template-columns: repeat(4, 1fr); }
-            .year-header { font-size: 60px; }
+            .year-header { font-size: 80px; }
             body { padding: 20px; }
         }
         @media (max-width: 600px) {
             .calendar-grid { grid-template-columns: repeat(2, 1fr); }
+            .year-header { font-size: 60px; }
         }
     </style>
 </head>
 <body>
 
 <div class="main-wrapper">
-    <div id="status-msg">Connecting to YouTube...</div>
     <div id="app"></div>
 </div>
 
+<div id="status-bar">Connecting...</div>
+
 <script>
-    // --- НАЛАШТУВАННЯ ---
+    // --- ВАШІ ДАНІ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
     const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
     const START_DATE = new Date(2025, 11, 16); // 16 Грудня 2025
-    // --------------------
+    // -----------------
 
     const app = document.getElementById('app');
-    const statusMsg = document.getElementById('status-msg');
+    const statusBar = document.getElementById('status-bar');
     const videosMap = {};
     let watchedVideos = [];
 
-    // Глобальний перехоплювач помилок
-    window.onerror = function(msg, url, line) {
-        statusMsg.innerHTML = `<div class="error-red"><b>JS Error:</b> ${msg}<br>Line: ${line}</div>`;
-    };
-
+    // Завантаження кешу
     try {
         watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]');
     } catch (e) {}
 
-    async function start() {
-        // Таймер: якщо за 5 секунд нічого не відбулось - показуємо помилку
-        const timeout = setTimeout(() => {
-            if (statusMsg.style.display !== 'none') {
-                statusMsg.innerHTML = `<div class="error-red"><b>Time Out:</b> YouTube не відповідає.<br>1. Перевірте "Application restrictions" в Google Cloud Console.<br>2. Спробуйте вимкнути AdBlock.</div>`;
-            }
-        }, 5000);
-
+    // --- ГОЛОВНА ФУНКЦІЯ ---
+    async function init() {
+        let success = false;
+        
+        // Спробуємо отримати реальні дані (таймаут 3 сек)
         try {
-            // КРОК 1: Канал
-            const channelResp = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 секунди на з'єднання
+
+            const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`;
+            const channelRes = await fetch(channelUrl, { signal: controller.signal });
+            clearTimeout(timeoutId);
             
-            if (!channelResp.ok) {
-                throw new Error(`API Error: ${channelResp.status} (${channelResp.statusText})`);
-            }
+            const channelData = await channelRes.json();
             
-            const channelData = await channelResp.json();
-            if (!channelData.items) throw new Error("Channel ID not found");
-            const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
-
-            // КРОК 2: Відео
-            const videosResp = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`);
-            const videosData = await videosResp.json();
-
-            clearTimeout(timeout); // Все ок, таймер скасовуємо
-
-            if (videosData.items) {
-                videosData.items.forEach(item => {
-                    const d = new Date(item.snippet.publishedAt);
-                    const key = d.toISOString().split('T')[0];
-                    videosMap[key] = item;
-                });
+            if (channelData.items) {
+                const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
+                const videosRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`);
+                const videosData = await videosRes.json();
+                
+                if (videosData.items) {
+                    videosData.items.forEach(item => {
+                        const d = new Date(item.snippet.publishedAt);
+                        const key = d.toISOString().split('T')[0];
+                        videosMap[key] = item;
+                    });
+                    success = true;
+                    statusBar.innerText = "YouTube API Connected";
+                }
             }
-
-            statusMsg.style.display = 'none';
-            render();
-
         } catch (err) {
-            clearTimeout(timeout);
-            statusMsg.innerHTML = `<div class="error-red"><b>Помилка завантаження:</b><br>${err.message}<br><br>Перевірте API Key в консолі Google.</div>`;
+            console.warn("YouTube API failed, switching to DEMO mode", err);
+        }
+
+        // Якщо YouTube не відповів - вантажимо ДЕМО дані, щоб показати дизайн
+        if (!success) {
+            statusBar.innerText = "Mode: DEMO (API Issue or AdBlock)";
+            statusBar.style.color = "red";
+            generateDemoData();
+        }
+
+        render();
+    }
+
+    // --- ГЕНЕРАЦІЯ ДЕМО ДАНИХ (Для тесту дизайну) ---
+    function generateDemoData() {
+        // Створимо фейкові відео для кожного дня починаючи зі старту
+        let d = new Date(START_DATE);
+        const today = new Date();
+        while (d <= today) {
+            const key = d.toISOString().split('T')[0];
+            // Імітуємо структуру YouTube API
+            videosMap[key] = {
+                id: "demo-" + key,
+                snippet: {
+                    title: "Vlog Day " + key,
+                    resourceId: { videoId: "dQw4w9WgXcQ" }, // Rick Roll як заглушка :)
+                    thumbnails: {
+                        medium: { url: `https://picsum.photos/seed/${key}/320/180` } // Випадкова картинка
+                    }
+                }
+            };
+            d.setDate(d.getDate() + 1);
         }
     }
 
+    // --- МАЛЮВАННЯ КАЛЕНДАРЯ ---
     function render() {
         const today = new Date();
+        // Якщо демо режим - показуємо хоча б до сьогодні
+        // Якщо реальний - показуємо теж до сьогодні
         let loop = new Date(START_DATE.getFullYear(), START_DATE.getMonth(), 1);
         let currentYear = 0;
 
@@ -240,7 +254,6 @@
     }
 
     function createMonth(year, month) {
-        // Короткі назви місяців, як в оригіналі (MAR, APR...)
         const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
         
         const mTitle = document.createElement('div');
@@ -253,25 +266,27 @@
 
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         let startDay = new Date(year, month, 1).getDay(); 
-        startDay = (startDay === 0) ? 6 : startDay - 1; // ПН - перший
+        startDay = (startDay === 0) ? 6 : startDay - 1; 
 
+        // Пусті
         for(let i=0; i<startDay; i++) {
             grid.appendChild(document.createElement('div'));
         }
 
+        // Дні
         for(let d=1; d<=daysInMonth; d++) {
             const cell = document.createElement('div');
             cell.className = 'day-cell';
 
-            // Тільки цифра
+            // Номер
             const num = document.createElement('span');
             num.className = 'day-number';
             num.innerText = d;
             
-            const checkDate = new Date(year, month, d);
             const mStr = (month + 1).toString().padStart(2, '0');
             const dStr = d.toString().padStart(2, '0');
             const key = `${year}-${mStr}-${dStr}`;
+            const checkDate = new Date(year, month, d);
 
             if (checkDate < START_DATE) {
                 num.style.opacity = '0.3';
@@ -286,18 +301,18 @@
                 const vid = videosMap[key];
                 cell.classList.add('has-video');
                 
-                const vidId = vid.snippet.resourceId.videoId;
-                if (watchedVideos.includes(vidId)) cell.classList.add('watched');
+                const vidId = vid.snippet.resourceId ? vid.snippet.resourceId.videoId : vid.id;
+                const isWatched = watchedVideos.includes(vidId);
+                if (isWatched) cell.classList.add('watched');
 
-                // Отримуємо кращу якість картинки
-                const thumbs = vid.snippet.thumbnails;
-                const thumbUrl = thumbs.maxres?.url || thumbs.medium?.url || thumbs.default?.url;
+                const thumb = vid.snippet.thumbnails.maxres ? vid.snippet.thumbnails.maxres.url : 
+                              (vid.snippet.thumbnails.medium ? vid.snippet.thumbnails.medium.url : vid.snippet.thumbnails.medium.url);
 
                 const link = document.createElement('a');
                 link.className = 'video-container';
                 link.href = `https://www.youtube.com/watch?v=${vidId}`;
                 link.target = "_blank";
-                link.onclick = (e) => {
+                link.onclick = () => {
                     if(!watchedVideos.includes(vidId)){
                         watchedVideos.push(vidId);
                         localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos));
@@ -306,7 +321,7 @@
                 };
 
                 link.innerHTML = `
-                    <img src="${thumbUrl}" class="video-thumb" loading="lazy">
+                    <img src="${thumb}" class="video-thumb" loading="lazy">
                     <div class="video-title">${vid.snippet.title}</div>
                 `;
                 cell.appendChild(link);
@@ -318,7 +333,7 @@
         app.appendChild(grid);
     }
 
-    start();
+    init();
 </script>
 
 </body>
