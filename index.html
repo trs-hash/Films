@@ -5,143 +5,122 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Archive</title>
     <style>
-        /* --- СТИЛЬ (МІНІМАЛІЗМ) --- */
+        /* --- ОСНОВНИЙ СТИЛЬ --- */
         body {
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             background-color: #ffffff;
             color: #222;
             margin: 0;
-            padding: 40px;
+            padding: 30px;
+        }
+
+        /* Індикатор, який видно одразу */
+        #loading-indicator {
+            font-size: 24px; color: #666; text-align: center; margin-top: 50px;
         }
 
         .main-wrapper {
             max-width: 1200px;
             margin: 0 auto;
+            display: none; /* Ховаємо поки не завантажиться */
         }
 
         /* РІК */
         .year-header {
-            font-size: 110px;
-            font-weight: 100;
-            color: #333;
-            margin-bottom: 40px;
-            line-height: 1;
-            letter-spacing: -3px;
+            font-size: 100px; font-weight: 100; color: #333;
+            margin-bottom: 30px; line-height: 1; letter-spacing: -2px;
         }
 
         /* МІСЯЦЬ */
         .month-header {
-            color: #e62117; /* Червоний */
-            font-size: 36px;
-            font-weight: 400;
-            text-transform: uppercase;
-            margin-top: 80px;
-            margin-bottom: 40px;
+            color: #e62117; font-size: 32px; font-weight: 400;
+            text-transform: uppercase; margin-top: 60px; margin-bottom: 25px;
         }
 
         /* СІТКА */
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            column-gap: 20px;
-            row-gap: 60px;
+            gap: 15px; /* Однаковий відступ з усіх боків для лаконічності */
         }
 
-        /* КЛІТИНКА */
+        /* КЛІТИНКА ДНЯ */
         .day-cell {
+            aspect-ratio: 16/9; /* Всі клітинки мають форму відео */
             position: relative;
-            width: 100%;
         }
 
-        /* ЦИФРА */
-        .day-number {
-            font-size: 18px;
-            color: #333;
-            margin-bottom: 15px;
-            display: block;
-            font-weight: normal;
+        /* --- ДИЗАЙН, КОЛИ ВІДЕО НЕМАЄ --- */
+        .day-cell.empty-day {
+            display: flex;
+            align-items: flex-start; /* Цифра зверху */
+            justify-content: flex-start; /* Цифра зліва */
+        }
+        .day-plain-number {
+            font-size: 18px; color: #ccc; font-weight: normal; padding: 5px;
         }
 
-        /* КОНТЕЙНЕР ВІДЕО */
-        .video-container {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 16/9;
+        /* --- ДИЗАЙН, КОЛИ ВІДЕО Є --- */
+        .video-link {
+            display: block; width: 100%; height: 100%;
+            position: relative; cursor: pointer; overflow: hidden;
+            border-radius: 3px;
             background: #eee;
-            cursor: pointer;
-            overflow: hidden;
-            display: block;
-            text-decoration: none;
-            border-radius: 2px;
         }
 
+        /* Картинка */
         .video-thumb {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            width: 100%; height: 100%; object-fit: cover;
             transition: transform 0.3s ease;
         }
+        .video-link:hover .video-thumb { transform: scale(1.05); }
 
-        .video-container:hover .video-thumb {
-            transform: scale(1.05);
+        /* Затемнення знизу для читабельності тексту */
+        .video-link::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%);
+            pointer-events: none;
         }
 
-        /* НАЗВА ВІДЕО (ПОСТІЙНО ВИДИМА) */
-        .video-title {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            padding: 8px 10px;
-            box-sizing: border-box;
-            
-            /* Градієнт знизу, щоб білий текст читався на будь-якому фоні */
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
-            
-            color: white;
-            font-size: 13px;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            opacity: 1; /* Завжди видимо */
-            text-shadow: 0 1px 2px black; /* Тінь для кращої читабельності */
+        /* ЦИФРА НА ОБКЛАДИНЦІ (Зліва Зверху) */
+        .overlay-number {
+            position: absolute; top: 6px; left: 8px;
+            color: white; font-size: 18px; font-weight: bold;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        /* НАЗВА ВІДЕО НА ОБКЛАДИНЦІ (Зліва Знизу) */
+        .overlay-title {
+            position: absolute; bottom: 6px; left: 8px; right: 8px;
+            color: white; font-size: 12px; font-weight: 500;
+            text-shadow: 1px 1px 2px black;
+            z-index: 10;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            text-align: left;
         }
 
         /* СТАТУС ПЕРЕГЛЯНУТО */
         .day-cell.watched .video-thumb {
-            filter: grayscale(100%);
-            opacity: 0.6;
+            filter: grayscale(100%) contrast(0.8); opacity: 0.7;
         }
 
         /* Статус бар */
         #status-bar {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            font-size: 12px;
-            color: #999;
-            background: rgba(255,255,255,0.9);
-            padding: 5px;
-            border: 1px solid #eee;
-            border-radius: 4px;
+            position: fixed; bottom: 10px; right: 10px;
+            font-size: 12px; color: #999; background: rgba(255,255,255,0.9);
+            padding: 5px; border-radius: 4px;
         }
 
-        /* АДАПТИВНІСТЬ */
-        @media (max-width: 900px) {
-            .calendar-grid { grid-template-columns: repeat(4, 1fr); }
-            .year-header { font-size: 80px; }
-            body { padding: 20px; }
-        }
-        @media (max-width: 600px) {
-            .calendar-grid { grid-template-columns: repeat(2, 1fr); }
-            .year-header { font-size: 60px; }
-        }
+        @media (max-width: 900px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } .year-header { font-size: 80px; } }
+        @media (max-width: 600px) { .calendar-grid { grid-template-columns: repeat(2, 1fr); } .year-header { font-size: 60px; } }
     </style>
 </head>
 <body>
 
-<div class="main-wrapper">
+<div id="loading-indicator">Завантаження архіву...</div>
+
+<div class="main-wrapper" id="main-content">
     <div id="app"></div>
 </div>
 
@@ -149,4 +128,150 @@
 
 <script>
     // --- ВАШІ ДАНІ ---
-    const API_KEY = 'AIzaSyC918RP
+    const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
+    const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
+    const START_DATE = new Date(2025, 11, 16); // 16 Грудня 2025
+    // -----------------
+
+    const app = document.getElementById('app');
+    const statusBar = document.getElementById('status-bar');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const mainContent = document.getElementById('main-content');
+    
+    const videosMap = {};
+    let watchedVideos = [];
+
+    try {
+        watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]');
+    } catch (e) {}
+
+    async function init() {
+        let success = false;
+        // Таймер 2 секунди: якщо YouTube тупить, вмикаємо демо
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000); 
+
+        try {
+            const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`, { signal: controller.signal });
+            const channelData = await channelRes.json();
+            
+            if (channelData.items) {
+                const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
+                const videosRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`);
+                const videosData = await videosRes.json();
+                
+                if (videosData.items) {
+                    videosData.items.forEach(item => {
+                        const d = new Date(item.snippet.publishedAt);
+                        videosMap[d.toISOString().split('T')[0]] = item;
+                    });
+                    success = true;
+                    statusBar.innerText = "API: Connected"; statusBar.style.color = "green";
+                }
+            }
+        } catch (err) { console.warn("API fail, switching to demo"); }
+        clearTimeout(timeoutId);
+
+        if (!success) {
+            statusBar.innerText = "Mode: DEMO (Ліміти або AdBlock)"; statusBar.style.color = "orange";
+            generateDemoData();
+        }
+
+        render();
+        // Ховаємо лоадер, показуємо сайт
+        loadingIndicator.style.display = 'none';
+        mainContent.style.display = 'block';
+    }
+
+    function generateDemoData() {
+        let d = new Date(START_DATE);
+        const today = new Date();
+        while (d <= today) {
+            const key = d.toISOString().split('T')[0];
+            videosMap[key] = {
+                id: "demo-" + key,
+                snippet: {
+                    title: "Тестовий Влог " + key.slice(5),
+                    resourceId: { videoId: "dQw4w9WgXcQ" },
+                    thumbnails: { medium: { url: `https://picsum.photos/seed/${key}/400/225` } }
+                }
+            };
+            d.setDate(d.getDate() + 1);
+        }
+    }
+
+    function render() {
+        const today = new Date();
+        let loop = new Date(START_DATE.getFullYear(), START_DATE.getMonth(), 1);
+        let currentYear = 0;
+
+        while (loop <= today) {
+            const y = loop.getFullYear();
+            const m = loop.getMonth();
+
+            if (y !== currentYear) {
+                const yearEl = document.createElement('div'); yearEl.className = 'year-header'; yearEl.innerText = y;
+                app.appendChild(yearEl); currentYear = y;
+            }
+            createMonth(y, m);
+            loop.setMonth(loop.getMonth() + 1);
+        }
+    }
+
+    function createMonth(year, month) {
+        const months = ["СІЧЕНЬ", "ЛЮТИЙ", "БЕРЕЗЕНЬ", "КВІТЕНЬ", "ТРАВЕНЬ", "ЧЕРВЕНЬ", "ЛИПЕНЬ", "СЕРПЕНЬ", "ВЕРЕСЕНЬ", "ЖОВТЕНЬ", "ЛИСТОПАД", "ГРУДЕНЬ"];
+        const mTitle = document.createElement('div'); mTitle.className = 'month-header'; mTitle.innerText = months[month];
+        app.appendChild(mTitle);
+
+        const grid = document.createElement('div'); grid.className = 'calendar-grid';
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        let startDay = new Date(year, month, 1).getDay(); 
+        startDay = (startDay === 0) ? 6 : startDay - 1; 
+
+        for(let i=0; i<startDay; i++) grid.appendChild(document.createElement('div'));
+
+        for(let d=1; d<=daysInMonth; d++) {
+            const cell = document.createElement('div');
+            const checkDate = new Date(year, month, d);
+            if (checkDate < START_DATE) { grid.appendChild(document.createElement('div')); continue; }
+
+            const mStr = (month + 1).toString().padStart(2, '0');
+            const dStr = d.toString().padStart(2, '0');
+            const key = `${year}-${mStr}-${dStr}`;
+
+            if (videosMap[key]) {
+                // ВІДЕО Є
+                const vid = videosMap[key];
+                cell.className = 'day-cell has-video';
+                const vidId = vid.snippet.resourceId ? vid.snippet.resourceId.videoId : vid.id;
+                if (watchedVideos.includes(vidId)) cell.classList.add('watched');
+                const thumb = vid.snippet.thumbnails.maxres?.url || vid.snippet.thumbnails.medium.url;
+
+                cell.innerHTML = `
+                    <a href="https://www.youtube.com/watch?v=${vidId}" target="_blank" class="video-link" onclick="markWatched('${vidId}', this.parentElement)">
+                        <span class="overlay-number">${d}</span>
+                        <img src="${thumb}" class="video-thumb" loading="lazy">
+                        <div class="overlay-title">${vid.snippet.title}</div>
+                    </a>
+                `;
+            } else {
+                // ВІДЕО НЕМАЄ (Просто цифра)
+                cell.className = 'day-cell empty-day';
+                cell.innerHTML = `<span class="day-plain-number">${d}</span>`;
+            }
+            grid.appendChild(cell);
+        }
+        app.appendChild(grid);
+    }
+
+    window.markWatched = function(id, cell) {
+        if(!watchedVideos.includes(id)) {
+            watchedVideos.push(id); localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos));
+        }
+        cell.classList.add('watched');
+    }
+
+    init();
+</script>
+</body>
+</html>
