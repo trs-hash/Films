@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Video Archive</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Reenie+Beanie&display=swap" rel="stylesheet">
+
     <style>
         /* --- ОСНОВНИЙ СТИЛЬ --- */
         body {
@@ -14,7 +18,7 @@
             padding: 30px;
         }
 
-        /* Індикатор, який видно одразу */
+        /* Індикатор завантаження (зникає після старту) */
         #loading-indicator {
             font-size: 24px; color: #666; text-align: center; margin-top: 50px;
         }
@@ -23,6 +27,18 @@
             max-width: 1200px;
             margin: 0 auto;
             display: none; /* Ховаємо поки не завантажиться */
+        }
+
+        /* ГОЛОВНИЙ ЗАГОЛОВОК "ЛОВИ ДЕНЬ" */
+        .site-title {
+            font-family: 'Reenie Beanie', cursive; /* Рукописний шрифт */
+            font-size: 80px;
+            font-weight: 500;
+            color: #222;
+            margin: 0 0 40px 0;
+            line-height: 0.8;
+            transform: rotate(-2deg); /* Легкий нахил для недбалості */
+            display: inline-block;
         }
 
         /* РІК */
@@ -41,20 +57,20 @@
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 15px; /* Однаковий відступ з усіх боків для лаконічності */
+            gap: 15px; 
         }
 
         /* КЛІТИНКА ДНЯ */
         .day-cell {
-            aspect-ratio: 16/9; /* Всі клітинки мають форму відео */
+            aspect-ratio: 16/9; 
             position: relative;
         }
 
         /* --- ДИЗАЙН, КОЛИ ВІДЕО НЕМАЄ --- */
         .day-cell.empty-day {
             display: flex;
-            align-items: flex-start; /* Цифра зверху */
-            justify-content: flex-start; /* Цифра зліва */
+            align-items: flex-start; 
+            justify-content: flex-start;
         }
         .day-plain-number {
             font-size: 18px; color: #ccc; font-weight: normal; padding: 5px;
@@ -68,14 +84,12 @@
             background: #eee;
         }
 
-        /* Картинка */
         .video-thumb {
             width: 100%; height: 100%; object-fit: cover;
             transition: transform 0.3s ease;
         }
         .video-link:hover .video-thumb { transform: scale(1.05); }
 
-        /* Затемнення знизу для читабельності тексту */
         .video-link::after {
             content: ''; position: absolute; inset: 0;
             background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%);
@@ -105,13 +119,6 @@
             filter: grayscale(100%) contrast(0.8); opacity: 0.7;
         }
 
-        /* Статус бар */
-        #status-bar {
-            position: fixed; bottom: 10px; right: 10px;
-            font-size: 12px; color: #999; background: rgba(255,255,255,0.9);
-            padding: 5px; border-radius: 4px;
-        }
-
         @media (max-width: 900px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } .year-header { font-size: 80px; } }
         @media (max-width: 600px) { .calendar-grid { grid-template-columns: repeat(2, 1fr); } .year-header { font-size: 60px; } }
     </style>
@@ -121,20 +128,20 @@
 <div id="loading-indicator">Завантаження архіву...</div>
 
 <div class="main-wrapper" id="main-content">
+    <h1 class="site-title">Лови День</h1>
+    
     <div id="app"></div>
 </div>
-
-<div id="status-bar">Connecting...</div>
 
 <script>
     // --- ВАШІ ДАНІ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
     const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
-    const START_DATE = new Date(2025, 11, 16); // 16 Грудня 2025
+    // ЗМІНЕНО ДАТУ НА 11 СІЧНЯ 2026 (Місяць 0 = Січень)
+    const START_DATE = new Date(2026, 0, 11); 
     // -----------------
 
     const app = document.getElementById('app');
-    const statusBar = document.getElementById('status-bar');
     const loadingIndicator = document.getElementById('loading-indicator');
     const mainContent = document.getElementById('main-content');
     
@@ -147,9 +154,9 @@
 
     async function init() {
         let success = false;
-        // Таймер 2 секунди: якщо YouTube тупить, вмикаємо демо
+        // Таймер 2.5 сек
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000); 
+        const timeoutId = setTimeout(() => controller.abort(), 2500); 
 
         try {
             const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`, { signal: controller.signal });
@@ -166,19 +173,17 @@
                         videosMap[d.toISOString().split('T')[0]] = item;
                     });
                     success = true;
-                    statusBar.innerText = "API: Connected"; statusBar.style.color = "green";
                 }
             }
         } catch (err) { console.warn("API fail, switching to demo"); }
         clearTimeout(timeoutId);
 
         if (!success) {
-            statusBar.innerText = "Mode: DEMO (Ліміти або AdBlock)"; statusBar.style.color = "orange";
+            console.log("Mode: DEMO");
             generateDemoData();
         }
 
         render();
-        // Ховаємо лоадер, показуємо сайт
         loadingIndicator.style.display = 'none';
         mainContent.style.display = 'block';
     }
@@ -191,7 +196,7 @@
             videosMap[key] = {
                 id: "demo-" + key,
                 snippet: {
-                    title: "Тестовий Влог " + key.slice(5),
+                    title: "Влог " + key,
                     resourceId: { videoId: "dQw4w9WgXcQ" },
                     thumbnails: { medium: { url: `https://picsum.photos/seed/${key}/400/225` } }
                 }
@@ -240,7 +245,6 @@
             const key = `${year}-${mStr}-${dStr}`;
 
             if (videosMap[key]) {
-                // ВІДЕО Є
                 const vid = videosMap[key];
                 cell.className = 'day-cell has-video';
                 const vidId = vid.snippet.resourceId ? vid.snippet.resourceId.videoId : vid.id;
@@ -255,7 +259,6 @@
                     </a>
                 `;
             } else {
-                // ВІДЕО НЕМАЄ (Просто цифра)
                 cell.className = 'day-cell empty-day';
                 cell.innerHTML = `<span class="day-plain-number">${d}</span>`;
             }
