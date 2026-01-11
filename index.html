@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Archive</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap" rel="stylesheet">
+    
+    <title>Кіно архів</title>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦧</text></svg>">
 
     <style>
         /* --- ОСНОВНИЙ СТИЛЬ --- */
@@ -15,12 +15,12 @@
             background-color: #ffffff;
             color: #222;
             margin: 0;
-            padding: 30px;
-            overflow-x: hidden; /* Щоб не було горизонтального скролу */
+            padding: 40px;
+            overflow-x: hidden;
         }
 
         #loading-indicator {
-            font-size: 24px; color: #666; text-align: center; margin-top: 50px;
+            font-size: 24px; color: #666; text-align: center; margin-top: 50px; font-weight: 300;
         }
 
         .main-wrapper {
@@ -29,30 +29,38 @@
             display: none;
         }
 
-        /* ЗАГОЛОВОК "ЛОВИ ДЕНЬ" */
+        /* ЗАГОЛОВОК СТОРІНКИ */
         .site-title {
-            font-family: 'Rock Salt', cursive; /* Брутальний маркер */
-            font-size: 90px;
-            color: #222;
-            margin: 10px 0 50px 0;
-            line-height: 1;
-            transform: rotate(-3deg); /* Нахил для ефекту недбалості */
-            display: inline-block;
-            
-            /* ГАРАНТІЯ ОДНОГО РЯДКА */
-            white-space: nowrap; 
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 60px;
+            font-weight: 300;
+            color: #111;
+            margin: 0 0 60px 0;
+            line-height: 1.2;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
 
         /* РІК */
         .year-header {
-            font-size: 100px; font-weight: 100; color: #333;
-            margin-bottom: 30px; line-height: 1; letter-spacing: -2px;
+            font-size: 100px; 
+            font-weight: 100; 
+            color: #333;
+            margin-bottom: 30px; 
+            line-height: 1; 
+            letter-spacing: -3px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 10px;
         }
 
         /* МІСЯЦЬ */
         .month-header {
-            color: #e62117; font-size: 32px; font-weight: 400;
-            text-transform: uppercase; margin-top: 60px; margin-bottom: 25px;
+            color: #e62117; 
+            font-size: 32px; 
+            font-weight: 500;
+            text-transform: uppercase; 
+            margin-top: 60px; 
+            margin-bottom: 25px;
         }
 
         /* СІТКА */
@@ -72,14 +80,14 @@
             display: flex; align-items: flex-start; justify-content: flex-start;
         }
         .day-plain-number {
-            font-size: 18px; color: #ccc; font-weight: normal; padding: 5px;
+            font-size: 18px; color: #ddd; font-weight: normal; padding: 5px;
         }
 
         /* ВІДЕО */
         .video-link {
             display: block; width: 100%; height: 100%;
             position: relative; cursor: pointer; overflow: hidden;
-            border-radius: 3px;
+            border-radius: 2px;
             background: #eee;
         }
         .video-thumb {
@@ -90,42 +98,42 @@
 
         .video-link::after {
             content: ''; position: absolute; inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 40%);
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%);
             pointer-events: none;
         }
 
         /* ТЕКСТИ НА ОБКЛАДИНЦІ */
         .overlay-number {
-            position: absolute; top: 6px; left: 8px;
-            color: white; font-size: 18px; font-weight: bold;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.8); z-index: 10;
+            position: absolute; top: 8px; left: 10px;
+            color: white; font-size: 16px; font-weight: 500;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5); z-index: 10;
         }
 
         .overlay-title {
-            position: absolute; bottom: 6px; left: 8px; right: 8px;
-            color: white; font-size: 12px; font-weight: 500;
+            position: absolute; bottom: 8px; left: 10px; right: 10px;
+            color: white; font-size: 13px; font-weight: 500;
             text-shadow: 1px 1px 2px black; z-index: 10;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             text-align: left;
+            letter-spacing: 0.5px;
         }
 
         .day-cell.watched .video-thumb {
-            filter: grayscale(100%) contrast(0.8); opacity: 0.7;
+            filter: grayscale(100%) contrast(0.9); opacity: 0.8;
         }
 
         /* АДАПТИВНІСТЬ */
         @media (max-width: 900px) { 
             .calendar-grid { grid-template-columns: repeat(4, 1fr); } 
             .year-header { font-size: 80px; } 
-            /* Зменшуємо заголовок на планшетах */
-            .site-title { font-size: 70px; } 
+            .site-title { font-size: 48px; }
+            body { padding: 20px; }
         }
 
         @media (max-width: 600px) { 
             .calendar-grid { grid-template-columns: repeat(2, 1fr); } 
             .year-header { font-size: 60px; } 
-            /* Сильно зменшуємо заголовок на телефонах, щоб вліз в рядок */
-            .site-title { font-size: 42px; margin-bottom: 30px; } 
+            .site-title { font-size: 36px; margin-bottom: 30px; } 
             body { padding: 15px; }
         }
     </style>
@@ -135,7 +143,7 @@
 <div id="loading-indicator">Завантаження архіву...</div>
 
 <div class="main-wrapper" id="main-content">
-    <h1 class="site-title">Лови День</h1>
+    <h1 class="site-title">Кіно Архів</h1>
     <div id="app"></div>
 </div>
 
