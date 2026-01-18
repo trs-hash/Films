@@ -126,3 +126,163 @@
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
     const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
     const START_DATE = new Date(2026, 0, 11); // 11 СІЧНЯ 2026
+    // --------------------
+
+    const container = document.getElementById('weeks-container');
+    let watchedVideos = [];
+    try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
+
+    // 1. ГОЛОВНА ФУНКЦІЯ
+    async function init() {
+        // Запускаємо таймер безпеки: якщо API думає більше 2 секунд, показуємо демо
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Timeout")), 2500)
+        );
+
+        try {
+            // Пробуємо отримати дані з YouTube
+            const videos = await Promise.race([fetchVideos(), timeoutPromise]);
+            render(videos);
+        } catch (err) {
+            console.warn("API Error/Timeout. Loading Demo Mode.", err);
+            // Якщо будь-яка помилка - показуємо демо, щоб сайт не був пустим
+            render(getDemoData());
+        }
+    }
+
+    // 2. ОТРИМАННЯ ДАНИХ (API)
+    async function fetchVideos() {
+        const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`);
+        if (!channelRes.ok) throw new Error("Channel Error");
+        const channelData = await channelRes.json();
+        const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
+
+        const playlistRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`);
+        if (!playlistRes.ok) throw new Error("Playlist Error");
+        const playlistData = await playlistRes.json();
+
+        return playlistData.items.map(item => ({
+            date: new Date(item.snippet.publishedAt),
+            item: item,
+            type: 'video'
+        }));
+    }
+
+    // 3. ДЕМО ДАНІ (Запасний варіант)
+    function getDemoData() {
+        return [{
+            date: START_DATE,
+            item: {
+                snippet: {
+                    title: "Епізод 1: Початок шляху",
+                    resourceId: { videoId: "dQw4w9WgXcQ" },
+                    thumbnails: { maxres: { url: "https://picsum.photos/id/180/1280/720" } }
+                }
+            },
+            type: 'video'
+        }];
+    }
+
+    // 4. РЕНДЕРИНГ (Малювання на екрані)
+    function render(videos) {
+        container.innerHTML = ''; // Очищаємо "Завантаження..."
+
+        // Якщо масив пустий (навіть після API), беремо демо
+        if (!videos || videos.length === 0) videos = getDemoData();
+
+        // Сортуємо: Нові зверху
+        videos.sort((a, b) => b.date - a.date);
+
+        // Додаємо слот "В МОНТАЖІ"
+        const lastDate = videos[0].date;
+        let futureStart = new Date(lastDate); futureStart.setDate(futureStart.getDate() + 1);
+        let futureEnd = new Date(futureStart);
+        while (futureEnd.getDay() !== 0) futureEnd.setDate(futureEnd.getDate() + 1);
+
+        videos.unshift({
+            date: futureStart, type: 'future',
+            rangeStr: `${formatDate(futureStart)} — ${formatDate(futureEnd)}`
+        });
+
+        // Малюємо
+        let lastYear = null, lastSeason = null;
+
+        videos.forEach(obj => {
+            const date = obj.date;
+            const year = date.getFullYear();
+            const season = getSeason(date.getMonth());
+
+            if (year !== lastYear || season !== lastSeason) {
+                let html = '<div class="separator-container">';
+                if (year !== lastYear) { html += `<span class="year-separator">${year}</span>`; lastYear = year; }
+                if (season !== lastSeason) { html += `<span class="season-separator">${season}</span>`; lastSeason = season; }
+                html += '</div>';
+                container.innerHTML += html;
+            }
+
+            if (obj.type === 'future') {
+                container.innerHTML += `
+                    <div class="film-row future">
+                        <div class="film-info">
+                            <div class="week-range">${obj.rangeStr}</div>
+                            <h2 class="film-title">В процесі монтажу...</h2>
+                        </div>
+                        <div class="film-cover-link"><div class="empty-placeholder">COMING SOON</div></div>
+                    </div>`;
+            } else {
+                const vid = obj.item;
+                const id = vid.snippet.resourceId.videoId;
+                const thumb = (vid.snippet.thumbnails.maxres && vid.snippet.thumbnails.maxres.url) || 
+                              (vid.snippet.thumbnails.medium && vid.snippet.thumbnails.medium.url) || "";
+                const isWatched = watchedVideos.includes(id) ? 'watched' : '';
+                
+                // Рахуємо тиждень
+                let wStart = new Date(date);
+                const day = wStart.getDay() || 7; 
+                if (day !== 1) wStart.setHours(-24 * (day - 1));
+                let wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6);
+
+                container.innerHTML += `
+                    <div class="film-row ${isWatched}" id="row-${id}">
+                        <div class="film-info">
+                            <div class="week-range">${formatDate(wStart)} — ${formatDate(wEnd)}</div>
+                            <h2 class="film-title">${vid.snippet.title}</h2>
+                            <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="watch-btn" onclick="toggle('${id}')">
+                                ${isWatched ? 'Переглянуто' : 'Дивитись фільм'}
+                            </a>
+                        </div>
+                        <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="film-cover-link" onclick="toggle('${id}')">
+                            <img src="${thumb}" class="film-thumb" loading="lazy">
+                        </a>
+                    </div>`;
+            }
+        });
+    }
+
+    // --- UTILS ---
+    function formatDate(d) {
+        return `${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getFullYear().toString().slice(-2)}`;
+    }
+    function getSeason(m) {
+        if (m === 11 || m <= 1) return "ЗИМА";
+        if (m >= 2 && m <= 4) return "ВЕСНА";
+        if (m >= 5 && m <= 7) return "ЛІТО";
+        return "ОСІНЬ";
+    }
+    window.toggle = function(id) {
+        if (!watchedVideos.includes(id)) {
+            watchedVideos.push(id);
+            localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos));
+            const row = document.getElementById(`row-${id}`);
+            if(row) {
+                row.classList.add('watched');
+                row.querySelector('.watch-btn').innerText = "Переглянуто";
+            }
+        }
+    }
+
+    // ЗАПУСК
+    init();
+</script>
+</body>
+</html>
