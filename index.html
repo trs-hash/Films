@@ -7,12 +7,11 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
 
     <style>
-        /* --- СТИЛЬ "RALEWAY LEFT ALIGN" --- */
         body {
             font-family: 'Raleway', sans-serif;
             background-color: #ffffff;
@@ -22,7 +21,6 @@
             overflow-x: hidden;
             font-weight: 300;
         }
-
         .main-wrapper { max-width: 900px; margin: 0 auto; }
 
         /* HEADER */
@@ -32,79 +30,45 @@
             padding-bottom: 20px;
             display: flex; justify-content: space-between; align-items: baseline;
         }
-        .site-title {
-            font-size: 32px; font-weight: 200; text-transform: uppercase;
-            margin: 0; letter-spacing: 4px; color: #000;
-        }
-        .site-subtitle {
-            font-size: 11px; color: #999; font-weight: 500;
-            text-transform: uppercase; letter-spacing: 2px;
-        }
+        .site-title { font-size: 32px; font-weight: 200; text-transform: uppercase; margin: 0; letter-spacing: 4px; color: #000; }
+        .site-subtitle { font-size: 11px; color: #999; font-weight: 500; text-transform: uppercase; letter-spacing: 2px; }
 
         /* SORTING */
-        .sort-controls {
-            display: flex; gap: 25px; margin-bottom: 50px; flex-wrap: wrap;
-        }
+        .sort-controls { display: flex; gap: 25px; margin-bottom: 50px; flex-wrap: wrap; }
         .sort-btn {
             background: none; border: none; padding: 0;
             font-family: 'Raleway', sans-serif; font-size: 11px; font-weight: 600;
             text-transform: uppercase; letter-spacing: 1.5px; color: #bbb;
-            cursor: pointer; transition: color 0.3s;
+            cursor: pointer; position: relative; transition: color 0.3s;
         }
         .sort-btn:hover { color: #666; }
         .sort-btn.active { color: #000; cursor: default; }
-        .sort-btn.active::after {
-            content: ''; position: absolute; bottom: -5px; left: 0;
-            width: 100%; height: 1px; background: #e62117;
-        }
+        .sort-btn.active::after { content: ''; position: absolute; bottom: -5px; left: 0; width: 100%; height: 1px; background: #e62117; }
 
-        /* LIST & GRID */
+        /* LIST */
         .weeks-list { display: flex; flex-direction: column; gap: 50px; padding-bottom: 80px; min-height: 200px; }
 
+        /* FILM ROW */
         .film-row {
             display: grid; grid-template-columns: 1fr 1.6fr; gap: 40px; align-items: center;
             opacity: 1; 
         }
-
-        /* SEPARATORS */
-        .separator-container { margin-top: 20px; margin-bottom: 10px; text-align: left; }
-        .year-separator { font-size: 60px; font-weight: 100; letter-spacing: 6px; line-height: 1; color: #000; display: block; }
-        .season-separator { font-size: 14px; font-weight: 500; letter-spacing: 4px; color: #e62117; text-transform: uppercase; display: block; margin-top: 10px; }
-
-        /* WATCHED STATE */
         .film-row.watched { opacity: 0.6; }
         .film-row.watched img { filter: grayscale(100%); transition: filter 0.5s ease; }
+        .film-row.watched .film-title, .film-row.watched .episode-label { color: #ccc; }
         .film-row.watched .watch-btn { border-color: #eee; color: #ccc; pointer-events: none; }
 
-        /* INFO - ALIGN LEFT */
-        .film-info { 
-            text-align: left; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: flex-start; /* Все притиснуто вліво */
-        }
-        
-        .episode-label { 
-            font-size: 11px; color: #e62117; font-weight: 700; 
-            letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; 
-        }
-        
-        .week-range { 
-            font-size: 10px; color: #bbb; font-weight: 600; 
-            letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; 
-        }
-        
-        .film-title { 
-            font-size: 32px; font-weight: 200; line-height: 1.2; 
-            margin: 0 0 10px 0; color: #000; 
-        }
+        /* INFO - LEFT ALIGN */
+        .film-info { text-align: left; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }
+        .episode-label { font-size: 11px; color: #e62117; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+        .week-range { font-size: 10px; color: #bbb; font-weight: 600; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+        .film-title { font-size: 32px; font-weight: 200; line-height: 1.2; margin: 0 0 10px 0; color: #000; }
         
         .watch-btn {
             display: inline-block; font-size: 11px; font-weight: 600; text-decoration: none;
             color: #e62117; border: 1px solid #e6e6e6; padding: 12px 30px;
-            border-radius: 50px; align-self: flex-start; /* Кнопка зліва */
-            transition: all 0.3s; text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+            border-radius: 50px; align-self: flex-start; transition: all 0.3s;
+            text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
         }
         .watch-btn:hover { background: #e62117; color: white; border-color: #e62117; }
 
@@ -116,8 +80,14 @@
         }
         .film-cover-link:hover { transform: scale(1.02); }
         .film-thumb { width: 100%; height: 100%; object-fit: cover; }
-        
+
+        /* SEPARATORS */
+        .separator-container { margin-top: 20px; margin-bottom: 10px; text-align: left; }
+        .year-separator { font-size: 60px; font-weight: 100; letter-spacing: 6px; line-height: 1; color: #000; display: block; }
+        .season-separator { font-size: 14px; font-weight: 500; letter-spacing: 4px; color: #e62117; text-transform: uppercase; display: block; margin-top: 10px; }
+
         #api-status { text-align: center; color: #eee; font-size: 9px; margin-top: 50px; }
+        #error-log { color: red; font-size: 10px; text-align: center; display: none; }
 
         @media (max-width: 900px) {
             body { padding: 30px 20px; }
@@ -147,6 +117,7 @@
     </div>
 
     <div id="weeks-container" class="weeks-list"></div>
+    <div id="error-log"></div>
     <div id="api-status"></div>
 </div>
 
@@ -158,11 +129,29 @@
 
     const container = document.getElementById('weeks-container');
     const statusDiv = document.getElementById('api-status');
-    let watchedVideos = [];
-    try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
+    const errorLog = document.getElementById('error-log');
 
-    // --- ДЕМО ДАНІ (РЯТУВАЛЬНИЙ КРУГ) ---
-    // Якщо API не спрацює, це відео буде показано
+    // --- БЕЗПЕЧНЕ ЗАВАНТАЖЕННЯ ДАНИХ (FIX LOCALSTORAGE BUG) ---
+    let watchedVideos = [];
+    try {
+        const stored = localStorage.getItem('my_watched_videos');
+        if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+                watchedVideos = parsed;
+            } else {
+                // Якщо дані биті (не масив), скидаємо їх
+                console.warn("Corrupt history found, resetting.");
+                watchedVideos = [];
+                localStorage.removeItem('my_watched_videos');
+            }
+        }
+    } catch (e) {
+        console.error("Storage Error:", e);
+        watchedVideos = []; // Fallback
+    }
+
+    // --- ДЕМО ДАНІ ---
     const DEMO_DATA = [{
         date: START_DATE,
         id: "dQw4w9WgXcQ",
@@ -176,11 +165,12 @@
         }
     }];
 
-    let globalVideos = [...DEMO_DATA]; // Починаємо з демо
+    let globalVideos = [...DEMO_DATA]; 
     let currentSortMode = 'newest';
 
-    // --- HELPERS ---
+    // --- UTILS ---
     function formatDisplayDate(date) {
+        if (!(date instanceof Date) || isNaN(date)) return "xx.xx.xx";
         const d = date.getDate().toString().padStart(2, '0');
         const m = (date.getMonth() + 1).toString().padStart(2, '0');
         const y = date.getFullYear().toString().slice(-2);
@@ -206,30 +196,33 @@
 
     // --- MAIN ---
     
-    // 1. Одразу малюємо демо (щоб не було білого екрану)
-    processAndRender();
+    // 1. Одразу малюємо демо (Запобіжник від білого екрану)
+    try {
+        processAndRender();
+    } catch(e) {
+        errorLog.style.display = 'block';
+        errorLog.innerText = "Error in initial render: " + e.message;
+    }
 
-    // 2. Фоново пробуємо завантажити реальні дані
+    // 2. Фоново пробуємо API
     fetchRealData();
 
     async function fetchRealData() {
         try {
             const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`);
-            if (!channelRes.ok) throw new Error("API Access Denied");
-            
+            if (!channelRes.ok) throw new Error("API Blocked");
             const channelData = await channelRes.json();
             const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
 
             const playlistRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`);
             if (!playlistRes.ok) throw new Error("Playlist Error");
-            
             const playlistData = await playlistRes.json();
             
             if (playlistData.items && playlistData.items.length > 0) {
                 let rawItems = playlistData.items;
                 let validVideos = [];
 
-                // Спроба отримати деталі для фільтрації
+                // Filter
                 try {
                     const ids = rawItems.map(i => i.snippet.resourceId.videoId).join(',');
                     const detailsRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails,liveStreamingDetails&id=${ids}&key=${API_KEY}`);
@@ -243,13 +236,10 @@
                             const vidId = item.snippet.resourceId.videoId;
                             const detail = detailsMap[vidId];
                             
-                            // ФІЛЬТРАЦІЯ
                             if (detail) {
-                                // 1. Прибираємо Live
-                                if (detail.liveStreamingDetails) return;
-                                // 2. Прибираємо Shorts (< 60s)
+                                if (detail.liveStreamingDetails) return; // Skip Live
                                 const duration = parseDuration(detail.contentDetails.duration);
-                                if (duration > 0 && duration <= 60) return;
+                                if (duration > 0 && duration <= 60) return; // Skip Shorts
                             }
                             
                             validVideos.push({
@@ -259,7 +249,7 @@
                             });
                         });
                     } else {
-                        // Fallback: якщо деталі недоступні, беремо все
+                        // Fallback (API error on details)
                         validVideos = rawItems.map(item => ({
                             date: new Date(item.snippet.publishedAt),
                             item: item,
@@ -267,7 +257,6 @@
                         }));
                     }
                 } catch(e) {
-                    // Fallback при помилці запиту деталей
                     validVideos = rawItems.map(item => ({
                         date: new Date(item.snippet.publishedAt),
                         item: item,
@@ -275,7 +264,6 @@
                     }));
                 }
 
-                // Якщо знайшли реальні відео - оновлюємо список
                 if (validVideos.length > 0) {
                     globalVideos = validVideos;
                     processAndRender();
@@ -283,19 +271,17 @@
                 }
             }
         } catch (err) {
-            console.log("Showing Demo Data:", err);
+            console.log("Demo Mode Active");
             statusDiv.innerText = "Архів (Offline Mode)";
         }
     }
 
     function processAndRender() {
-        // Нумерація: від найстарішого
-        globalVideos.sort((a, b) => a.date - b.date);
+        // Safe sort
+        globalVideos.sort((a, b) => (a.date && b.date) ? a.date - b.date : 0);
         globalVideos.forEach((video, index) => {
             video.episodeNumber = index + 1;
         });
-
-        // Сортування для показу
         applySort(currentSortMode);
     }
 
@@ -304,10 +290,12 @@
         
         document.querySelectorAll('.sort-btn').forEach(btn => btn.classList.remove('active'));
         const btns = document.querySelectorAll('.sort-btn');
-        if (mode === 'newest') btns[0].classList.add('active');
-        if (mode === 'oldest') btns[1].classList.add('active');
-        if (mode === 'unwatched') btns[2].classList.add('active');
-        if (mode === 'watched') btns[3].classList.add('active');
+        if(btns.length >= 4) {
+            if (mode === 'newest') btns[0].classList.add('active');
+            if (mode === 'oldest') btns[1].classList.add('active');
+            if (mode === 'unwatched') btns[2].classList.add('active');
+            if (mode === 'watched') btns[3].classList.add('active');
+        }
 
         let displayList = [...globalVideos];
 
@@ -321,9 +309,9 @@
     }
 
     function renderTimeline(videos) {
-        container.innerHTML = '';
+        let html = ''; // Будуємо HTML в рядок
 
-        if (videos.length === 0) {
+        if (!videos || videos.length === 0) {
             container.innerHTML = '<div style="text-align:center; color:#999; margin-top:50px; font-size:12px;">Список порожній.</div>';
             return;
         }
@@ -332,57 +320,62 @@
         let lastSeason = null;
 
         videos.forEach(obj => {
-            const date = obj.date;
-            const currentYear = date.getFullYear();
-            const currentSeason = getSeasonName(date.getMonth());
+            try {
+                const date = obj.date;
+                const currentYear = date.getFullYear();
+                const currentSeason = getSeasonName(date.getMonth());
 
-            if (currentYear !== lastYear || currentSeason !== lastSeason) {
-                let html = '<div class="separator-container">';
-                if (currentYear !== lastYear) {
-                    html += `<span class="year-separator">${currentYear}</span>`;
-                    lastYear = currentYear;
+                if (currentYear !== lastYear || currentSeason !== lastSeason) {
+                    html += '<div class="separator-container">';
+                    if (currentYear !== lastYear) {
+                        html += `<span class="year-separator">${currentYear}</span>`;
+                        lastYear = currentYear;
+                    }
+                    if (currentSeason !== lastSeason) {
+                        html += `<span class="season-separator">${currentSeason}</span>`;
+                        lastSeason = currentSeason;
+                    }
+                    html += '</div>';
                 }
-                if (currentSeason !== lastSeason) {
-                    html += `<span class="season-separator">${currentSeason}</span>`;
-                    lastSeason = currentSeason;
+
+                const vid = obj.item;
+                const id = obj.id;
+                
+                let thumbUrl = "https://via.placeholder.com/1280x720/ccc/333?text=No+Image";
+                if (vid.snippet.thumbnails) {
+                    if (vid.snippet.thumbnails.maxres) thumbUrl = vid.snippet.thumbnails.maxres.url;
+                    else if (vid.snippet.thumbnails.medium) thumbUrl = vid.snippet.thumbnails.medium.url;
                 }
-                html += '</div>';
-                container.innerHTML += html;
-            }
 
-            const vid = obj.item;
-            const id = obj.id;
-            
-            let thumbUrl = "https://via.placeholder.com/1280x720/ccc/333?text=No+Image";
-            if (vid.snippet.thumbnails) {
-                if (vid.snippet.thumbnails.maxres) thumbUrl = vid.snippet.thumbnails.maxres.url;
-                else if (vid.snippet.thumbnails.medium) thumbUrl = vid.snippet.thumbnails.medium.url;
-            }
+                const isWatched = watchedVideos.includes(id) ? 'watched' : '';
 
-            const isWatched = watchedVideos.includes(id) ? 'watched' : '';
+                let wStart = new Date(date);
+                const day = wStart.getDay() || 7; 
+                if (day !== 1) wStart.setHours(-24 * (day - 1));
+                let wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6);
 
-            let wStart = new Date(date);
-            const day = wStart.getDay() || 7; 
-            if (day !== 1) wStart.setHours(-24 * (day - 1));
-            let wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6);
-
-            container.innerHTML += `
-                <div class="film-row ${isWatched}" id="row-${id}">
-                    <div class="film-info">
-                        <div class="episode-label">Епізод ${obj.episodeNumber}</div>
-                        <h2 class="film-title">${vid.snippet.title}</h2>
-                        
-                        <div class="week-range">${formatDisplayDate(wStart)} — ${formatDisplayDate(wEnd)}</div>
-                        
-                        <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="watch-btn" onclick="toggle('${id}')">
-                            ${isWatched ? 'Переглянуто' : 'Дивитись фільм'}
+                html += `
+                    <div class="film-row ${isWatched}" id="row-${id}">
+                        <div class="film-info">
+                            <div class="episode-label">Епізод ${obj.episodeNumber}</div>
+                            <h2 class="film-title">${vid.snippet.title}</h2>
+                            
+                            <div class="week-range">${formatDisplayDate(wStart)} — ${formatDisplayDate(wEnd)}</div>
+                            
+                            <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="watch-btn" onclick="toggle('${id}')">
+                                ${isWatched ? 'Переглянуто' : 'Дивитись фільм'}
+                            </a>
+                        </div>
+                        <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="film-cover-link" onclick="toggle('${id}')">
+                            <img src="${thumbUrl}" class="film-thumb" loading="lazy">
                         </a>
-                    </div>
-                    <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="film-cover-link" onclick="toggle('${id}')">
-                        <img src="${thumbUrl}" class="film-thumb" loading="lazy">
-                    </a>
-                </div>`;
+                    </div>`;
+            } catch(renderErr) {
+                console.error("Row Render Error", renderErr);
+            }
         });
+
+        container.innerHTML = html; // Вставляємо все разом
     }
 
     window.toggle = function(id) {
@@ -392,7 +385,8 @@
             const row = document.getElementById(`row-${id}`);
             if(row) {
                 row.classList.add('watched');
-                row.querySelector('.watch-btn').innerText = "Переглянуто";
+                const btn = row.querySelector('.watch-btn');
+                if(btn) btn.innerText = "Переглянуто";
             }
         }
     }
