@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>Лови День — щотижнева серія</title>
+    <title>Лови День -- щотижнева серія</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,7 +12,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
 
     <style>
-        /* --- СТИЛЬ "RALEWAY SORT" --- */
+        /* --- СТИЛЬ "RALEWAY STABLE" --- */
         body {
             font-family: 'Raleway', sans-serif;
             background-color: #ffffff;
@@ -24,60 +23,85 @@
             font-weight: 300;
         }
 
-        .main-wrapper {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+        .main-wrapper { max-width: 900px; margin: 0 auto; }
 
         /* HEADER */
         .site-header {
             margin-bottom: 30px;
             border-bottom: 1px solid #f0f0f0;
             padding-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
+            display: flex; justify-content: space-between; align-items: baseline;
         }
-
         .site-title {
-            font-size: 32px;
-            font-weight: 200;
-            text-transform: uppercase;
-            margin: 0;
-            letter-spacing: 4px;
-            color: #000;
+            font-size: 32px; font-weight: 200; text-transform: uppercase;
+            margin: 0; letter-spacing: 4px; color: #000;
         }
-
         .site-subtitle {
-            font-size: 11px;
-            color: #999;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            font-size: 11px; color: #999; font-weight: 500;
+            text-transform: uppercase; letter-spacing: 2px;
         }
 
-        /* --- СОРТУВАННЯ --- */
+        /* SORTING */
         .sort-controls {
-            display: flex;
-            gap: 25px;
-            margin-bottom: 50px;
-            flex-wrap: wrap;
+            display: flex; gap: 25px; margin-bottom: 50px; flex-wrap: wrap;
         }
-
         .sort-btn {
-            background: none;
-            border: none;
-            padding: 0;
-            font-family: 'Raleway', sans-serif;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #bbb;
-            cursor: pointer;
-            transition: color 0.3s ease;
-            position: relative;
+            background: none; border: none; padding: 0;
+            font-family: 'Raleway', sans-serif; font-size: 11px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 1.5px; color: #bbb;
+            cursor: pointer; position: relative;
+        }
+        .sort-btn:hover { color: #666; }
+        .sort-btn.active { color: #000; cursor: default; }
+        .sort-btn.active::after {
+            content: ''; position: absolute; bottom: -5px; left: 0;
+            width: 100%; height: 1px; background: #e62117;
         }
 
-        .sort-btn:hover { color: #666; }
-        .sort-btn.active { color: #0
+        /* LIST */
+        .weeks-list { display: flex; flex-direction: column; gap: 40px; padding-bottom: 80px; min-height: 200px; }
+
+        /* SEPARATORS */
+        .separator-container { margin-top: 20px; margin-bottom: 20px; text-align: left; }
+        .year-separator { font-size: 60px; font-weight: 100; letter-spacing: 6px; line-height: 1; color: #000; display: block; }
+        .season-separator { font-size: 14px; font-weight: 500; letter-spacing: 4px; color: #e62117; text-transform: uppercase; display: block; margin-top: 10px; }
+
+        /* ROWS */
+        .film-row {
+            display: grid; grid-template-columns: 1fr 1.6fr; gap: 40px; align-items: center;
+            /* Прибрано анімацію opacity для надійності відображення */
+        }
+
+        /* WATCHED */
+        .film-row.watched { opacity: 0.6; }
+        .film-row.watched img { filter: grayscale(100%); transition: filter 0.5s ease; }
+        .film-row.watched .film-title { color: #bbb; }
+        .film-row.watched .episode-label { color: #ccc; }
+        .film-row.watched .watch-btn { border-color: #eee; color: #ccc; pointer-events: none; }
+
+        /* INFO */
+        .film-info { text-align: right; display: flex; flex-direction: column; justify-content: center; }
+        .episode-label { font-size: 11px; color: #e62117; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+        .week-range { font-size: 10px; color: #bbb; font-weight: 600; letter-spacing: 2px; margin-bottom: 15px; text-transform: uppercase; }
+        .film-title { font-size: 32px; font-weight: 200; line-height: 1.2; margin: 0 0 25px 0; color: #000; }
+        .watch-btn {
+            display: inline-block; font-size: 11px; font-weight: 600; text-decoration: none;
+            color: #e62117; border: 1px solid #e6e6e6; padding: 12px 30px;
+            border-radius: 50px; align-self: flex-end; transition: all 0.3s;
+            text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
+        }
+        .watch-btn:hover { background: #e62117; color: white; border-color: #e62117; }
+
+        /* COVER */
+        .film-cover-link {
+            position: relative; width: 100%; aspect-ratio: 16/9; background: #f9f9f9;
+            overflow: hidden; border-radius: 2px; display: block; text-decoration: none;
+            transition: transform 0.5s ease;
+        }
+        .film-cover-link:hover { transform: scale(1.02); }
+        .film-thumb { width: 100%; height: 100%; object-fit: cover; }
+        
+        #loading-msg { text-align: center; color: #ccc; font-size: 11px; margin-top: 50px; letter-spacing: 2px; font-weight: 500; }
+        .no-content-msg { text-align: center; color: #999; margin-top: 50px; font-size: 14px; font-weight: 300; }
+
+        @media (max-width: 9
