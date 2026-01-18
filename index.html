@@ -24,7 +24,7 @@
 
         /* ЗАГОЛОВОК */
         .site-header {
-            margin-bottom: 100px;
+            margin-bottom: 80px;
             border-bottom: 1px solid #eee;
             padding-bottom: 20px;
             display: flex;
@@ -50,22 +50,21 @@
         .weeks-list {
             display: flex;
             flex-direction: column;
-            gap: 80px; /* Відстань між тижнями */
+            gap: 60px;
         }
 
         /* ОДИН ЕЛЕМЕНТ (РЯДОК) */
         .film-row {
             display: grid;
-            grid-template-columns: 1fr 1.8fr; /* Текст займає 1 частину, Відео 1.8 частини */
+            grid-template-columns: 1fr 1.8fr;
             gap: 60px;
             align-items: center;
             opacity: 1;
-            transition: opacity 0.5s;
         }
 
         /* ЛІВА ЧАСТИНА (ІНФО) */
         .film-info {
-            text-align: right; /* Текст притиснутий до картинки */
+            text-align: right;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -82,23 +81,25 @@
 
         .film-title {
             font-size: 42px;
-            font-weight: 300; /* Thin style */
+            font-weight: 300; 
             line-height: 1.1;
-            margin: 0 0 20px 0;
+            margin: 0 0 25px 0;
             color: #111;
         }
 
         .watch-btn {
             display: inline-block;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             text-decoration: none;
             color: #e62117;
-            border: 1px solid #eee;
-            padding: 10px 20px;
+            border: 1px solid #e6e6e6;
+            padding: 12px 25px;
             border-radius: 50px;
-            align-self: flex-end; /* Вирівнювання по правому краю блоку */
-            transition: all 0.3s;
+            align-self: flex-end; 
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .watch-btn:hover {
@@ -115,14 +116,15 @@
             background: #f4f4f4;
             overflow: hidden;
             border-radius: 4px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08); /* М'яка тінь */
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease;
             cursor: pointer;
+            display: block;
         }
 
         .film-cover-wrapper:hover {
             transform: scale(1.02);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.12);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
 
         .film-thumb {
@@ -131,42 +133,36 @@
             object-fit: cover;
         }
 
-        /* Якщо відео немає */
+        /* СТАН: НЕМАЄ ВІДЕО */
         .film-row.empty {
-            opacity: 0.4;
-            pointer-events: none;
+            opacity: 1; /* Показуємо, але блідо */
         }
         .film-row.empty .film-title {
-            color: #ccc;
-            font-size: 30px;
+            color: #ddd;
         }
         .film-row.empty .film-cover-wrapper {
             background: #f9f9f9;
             box-shadow: none;
+            cursor: default;
         }
-
-        /* СТАТУС БАР */
-        #status-bar {
-            position: fixed; bottom: 20px; left: 20px;
-            font-size: 12px; color: #ccc;
+        .film-row.empty .film-cover-wrapper:hover {
+            transform: none;
+        }
+        /* Заглушка для пустої обкладинки */
+        .empty-placeholder {
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            color: #eee; font-size: 40px; font-weight: bold;
         }
 
         /* АДАПТИВНІСТЬ */
         @media (max-width: 900px) {
-            .film-row {
-                grid-template-columns: 1fr; /* Один під одним */
-                gap: 20px;
-            }
-            .film-info {
-                text-align: left; /* На мобільному текст зліва */
-                order: 2; /* Текст знизу */
-            }
-            .film-cover-wrapper {
-                order: 1; /* Картинка зверху */
-            }
+            .film-row { grid-template-columns: 1fr; gap: 20px; margin-bottom: 40px; border-bottom: 1px solid #f5f5f5; padding-bottom: 40px; }
+            .film-info { text-align: left; order: 2; align-items: flex-start; }
             .watch-btn { align-self: flex-start; }
+            .film-cover-wrapper { order: 1; }
             .site-title { font-size: 30px; }
-            .film-title { font-size: 32px; }
+            .film-title { font-size: 28px; }
         }
     </style>
 </head>
@@ -182,73 +178,25 @@
         </div>
 </div>
 
-<div id="status-bar">Connecting...</div>
-
 <script>
     // --- НАЛАШТУВАННЯ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
     const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
     
-    // ДАТА СТАРТУ: 19 СІЧНЯ 2026 (Понеділок)
-    // Місяці в JS: 0=Січ, 1=Лют...
+    // СТАРТ: 19 СІЧНЯ 2026
     const START_DATE = new Date(2026, 0, 19); 
     // --------------------
 
     const container = document.getElementById('weeks-container');
-    const statusBar = document.getElementById('status-bar');
     const videosMap = {};
 
-    async function init() {
-        // Таймер для демо режиму
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2500);
-
-        try {
-            // 1. Отримуємо відео
-            const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`, { signal: controller.signal });
-            const channelData = await channelRes.json();
-            
-            if (channelData.items) {
-                const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
-                const videosRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`);
-                const videosData = await videosRes.json();
-                
-                if (videosData.items) {
-                    videosData.items.forEach(item => {
-                        const d = new Date(item.snippet.publishedAt);
-                        // Зберігаємо відео по повній даті YYYY-MM-DD
-                        videosMap[d.toISOString().split('T')[0]] = item;
-                    });
-                    statusBar.innerText = "";
-                }
-            }
-        } catch (err) {
-            console.warn("API Issue, using demo logic");
-        }
-        clearTimeout(timeoutId);
-
-        // Для ТЕСТУ: Якщо сьогодні раніше 19.01.26, ми все одно покажемо перший тиждень
-        // і примусово вставимо туди ваше старе відео для демонстрації дизайну.
-        injectDemoVideo();
-
-        renderWeeks();
+    // Функція форматування дати без зсуву часових поясів (YYYY-MM-DD)
+    function formatDateKey(date) {
+        const y = date.getFullYear();
+        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+        const d = date.getDate().toString().padStart(2, '0');
+        return `${y}-${m}-${d}`;
     }
 
-    // Функція-фейк для демонстрації
-    function injectDemoVideo() {
-        // Ми беремо дату 11.01.26 (реальне відео) і мапимо його 
-        // ніби воно вийшло в межах першого тижня (наприклад 25.01)
-        // щоб ви побачили як виглядає заповнений слот.
-        
-        // Знаходимо реальне відео в мапі (якщо API спрацювало)
-        // Або створимо фейкове, якщо API не спрацювало (ліміти)
-        
-        const demoDateKey = "2026-01-25"; // Неділя першого тижня
-        
-        // Якщо API не віддало відео, створимо заглушку з реальним ID вашого відео
-        if (Object.keys(videosMap).length === 0) {
-            videosMap[demoDateKey] = {
-                snippet: {
-                    title: "Тестовий Епізод: Початок",
-                    resourceId: { videoId: "dQw4w9WgXcQ" }, // Заглушка
-                    thumbnails: { maxres: { url: "https://picsum
+    // Форматування для красивого відображення (19.01.26)
+    function formatDisplay
