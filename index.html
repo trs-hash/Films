@@ -343,4 +343,71 @@
             const currentSeason = getSeasonName(date.getMonth());
 
             if (currentYear !== lastYear || currentSeason !== lastSeason) {
-                let html = '<div
+                let html = '<div class="separator-container">';
+                if (currentYear !== lastYear) {
+                    html += `<span class="year-separator">${currentYear}</span>`;
+                    lastYear = currentYear;
+                }
+                if (currentSeason !== lastSeason) {
+                    html += `<span class="season-separator">${currentSeason}</span>`;
+                    lastSeason = currentSeason;
+                }
+                html += '</div>';
+                container.innerHTML += html;
+            }
+
+            if (obj.type === 'future') {
+                container.innerHTML += `
+                    <div class="film-row future">
+                        <div class="film-info">
+                            <div class="week-range">${obj.rangeStr}</div>
+                            <h2 class="film-title">В процесі монтажу...</h2>
+                        </div>
+                        <div class="film-cover-link"><div class="empty-placeholder">COMING SOON</div></div>
+                    </div>`;
+            } else {
+                const vid = obj.item;
+                const id = vid.snippet.resourceId.videoId;
+                const thumb = (vid.snippet.thumbnails.maxres && vid.snippet.thumbnails.maxres.url) || 
+                              (vid.snippet.thumbnails.medium && vid.snippet.thumbnails.medium.url) || "";
+                const isWatched = watchedVideos.includes(id) ? 'watched' : '';
+
+                // Діапазон тижня
+                let wStart = new Date(date);
+                const day = wStart.getDay() || 7; 
+                if (day !== 1) wStart.setHours(-24 * (day - 1));
+                let wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6);
+
+                container.innerHTML += `
+                    <div class="film-row ${isWatched}" id="row-${id}">
+                        <div class="film-info">
+                            <div class="week-range">${formatDisplayDate(wStart)} — ${formatDisplayDate(wEnd)}</div>
+                            <h2 class="film-title">${vid.snippet.title}</h2>
+                            <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="watch-btn" onclick="toggle('${id}')">
+                                ${isWatched ? 'Переглянуто' : 'Дивитись фільм'}
+                            </a>
+                        </div>
+                        <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="film-cover-link" onclick="toggle('${id}')">
+                            <img src="${thumb}" class="film-thumb" loading="lazy">
+                        </a>
+                    </div>`;
+            }
+        });
+    }
+
+    window.toggle = function(id) {
+        if (!watchedVideos.includes(id)) {
+            watchedVideos.push(id);
+            localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos));
+            const row = document.getElementById(`row-${id}`);
+            if(row) {
+                row.classList.add('watched');
+                row.querySelector('.watch-btn').innerText = "Переглянуто";
+            }
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>
