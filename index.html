@@ -5,33 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Лови День</title>
     
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@200;300;400;500;600&display=swap" rel="stylesheet">
-
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦧</text></svg>">
 
     <style>
-        /* --- СТИЛЬ "RALEWAY ELEGANCE" --- */
+        /* --- СТИЛЬ "КІНОБІБЛІОТЕКА" (HELVETICA) --- */
         body {
-            font-family: 'Raleway', sans-serif; /* Новий шрифт */
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             background-color: #ffffff;
             color: #111;
             margin: 0;
-            padding: 40px; /* Більше повітря */
+            padding: 40px;
             overflow-x: hidden;
-            font-weight: 300; /* Загальний тонкий стиль */
         }
 
         .main-wrapper {
-            max-width: 900px;
+            max-width: 1100px;
             margin: 0 auto;
         }
 
         /* ЗАГОЛОВОК */
         .site-header {
             margin-bottom: 60px;
-            border-bottom: 1px solid #f5f5f5; /* Дуже легка лінія */
+            border-bottom: 1px solid #eee;
             padding-bottom: 20px;
             display: flex;
             justify-content: space-between;
@@ -39,41 +34,64 @@
         }
 
         .site-title {
-            font-size: 32px;
-            font-weight: 200; /* Дуже тонкий */
+            font-size: 40px;
+            font-weight: 700;
             text-transform: uppercase;
             margin: 0;
-            letter-spacing: 3px; /* Широкі інтервали */
-            color: #000;
+            letter-spacing: 1px;
+            color: #111;
         }
 
         .site-subtitle {
-            font-size: 11px;
-            color: #999;
+            font-size: 14px;
+            color: #888;
             font-weight: 500;
             text-transform: uppercase;
-            letter-spacing: 2px;
         }
 
         /* СПИСОК */
         .weeks-list {
             display: flex;
             flex-direction: column;
-            gap: 30px;
-            padding-bottom: 60px;
-            min-height: 200px;
+            gap: 60px;
+            padding-bottom: 100px;
+            min-height: 300px; /* Мінімальна висота щоб не скакало */
         }
 
-        /* --- РОЗДІЛЬНИКИ (ЗМІНЕНО) --- */
+        /* РОЗДІЛЬНИКИ */
         .separator {
+            font-weight: 700;
             text-transform: uppercase;
-            color: #000;
-            text-align: left; /* Вирівнювання ліворуч */
+            letter-spacing: 2px;
+            color: #222;
+            text-align: center; /* Центруємо рік */
             margin-top: 40px;
         }
         
         .year-separator {
-            font-size: 50px;
-            font-weight: 200; /* Тонкий рік */
-            letter-spacing: 5px;
-            /* Підкрес
+            font-size: 60px;
+            border-bottom: 2px solid #222;
+            display: inline-block;
+            align-self: center; /* Центрування самого блоку */
+            margin-bottom: -20px;
+            line-height: 1;
+        }
+
+        .season-separator {
+            font-size: 24px;
+            color: #e62117;
+            margin-bottom: 20px;
+        }
+
+        /* РЯДОК ФІЛЬМУ */
+        .film-row {
+            display: grid;
+            grid-template-columns: 1fr 1.8fr;
+            gap: 60px;
+            align-items: center;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        /* ПЕРЕГЛЯНУТО */
+        .film-
