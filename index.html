@@ -22,9 +22,9 @@
             margin: 0 auto;
         }
 
-        /* ЗАГОЛОВОК */
+        /* ЗАГОЛОВОК САЙТУ */
         .site-header {
-            margin-bottom: 80px;
+            margin-bottom: 60px;
             border-bottom: 1px solid #eee;
             padding-bottom: 20px;
             display: flex;
@@ -44,13 +44,36 @@
             font-size: 14px;
             color: #888;
             font-weight: 500;
+            text-transform: uppercase;
         }
 
-        /* СПИСОК */
+        /* КОНТЕЙНЕР СПИСКУ */
         .weeks-list {
             display: flex;
             flex-direction: column;
             gap: 60px;
+            padding-bottom: 100px;
+        }
+
+        /* --- РОЗДІЛЬНИКИ (СЕЗОНИ ТА РОКИ) --- */
+        .separator {
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #222;
+            padding-top: 40px; /* Відступ від попереднього блоку */
+        }
+        
+        .year-separator {
+            font-size: 60px;
+            border-bottom: 2px solid #222;
+            margin-bottom: -20px; /* Підтягуємо сезон до року */
+        }
+
+        .season-separator {
+            font-size: 24px;
+            color: #e62117; /* Червоний акцент для сезону */
+            margin-bottom: 20px;
         }
 
         /* РЯДОК ФІЛЬМУ */
@@ -59,7 +82,22 @@
             grid-template-columns: 1fr 1.8fr;
             gap: 60px;
             align-items: center;
+            transition: all 0.3s ease;
         }
+
+        /* --- СТИЛЬ ПЕРЕГЛЯНУТОГО (ЧОРНО-БІЛИЙ) --- */
+        .film-row.watched .film-cover-wrapper img,
+        .film-row.watched .watch-btn {
+            filter: grayscale(100%); /* Чорно-білий */
+            opacity: 0.6; /* Трохи прозорий, щоб "відійти на задній план" */
+        }
+        
+        .film-row.watched .watch-btn:hover {
+             background: transparent;
+             color: #999;
+             border-color: #ccc;
+        }
+
 
         /* ІНФО (ЛІВА ЧАСТИНА) */
         .film-info {
@@ -99,6 +137,7 @@
             transition: all 0.2s;
             text-transform: uppercase;
             letter-spacing: 1px;
+            cursor: pointer;
         }
 
         .watch-btn:hover {
@@ -108,7 +147,7 @@
         }
 
         /* ОБКЛАДИНКА (ПРАВА ЧАСТИНА) */
-        .film-cover-wrapper {
+        .film-cover-link {
             position: relative;
             width: 100%;
             aspect-ratio: 16/9;
@@ -116,13 +155,12 @@
             overflow: hidden;
             border-radius: 4px;
             box-shadow: 0 15px 30px rgba(0,0,0,0.05);
-            transition: transform 0.3s ease;
-            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
             display: block;
             text-decoration: none;
         }
 
-        .film-cover-wrapper:hover {
+        .film-cover-link:hover {
             transform: scale(1.02);
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
         }
@@ -131,13 +169,13 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: filter 0.3s ease, opacity 0.3s ease;
         }
 
         /* ПУСТИЙ СЛОТ */
-        .film-row.empty { opacity: 1; }
         .film-row.empty .film-title { color: #ddd; }
-        .film-row.empty .film-cover-wrapper { background: #fafafa; box-shadow: none; cursor: default; }
-        .film-row.empty .film-cover-wrapper:hover { transform: none; }
+        .film-row.empty .film-cover-link { background: #fafafa; box-shadow: none; cursor: default; pointer-events: none; }
+        .film-row.empty .film-cover-link:hover { transform: none; }
         
         .empty-placeholder {
             width: 100%; height: 100%;
@@ -145,15 +183,15 @@
             color: #eee; font-size: 40px; font-weight: 700;
         }
 
-        #status-log { display: none; } /* Прихований лог */
-
         @media (max-width: 900px) {
             .film-row { grid-template-columns: 1fr; gap: 20px; margin-bottom: 40px; border-bottom: 1px solid #f5f5f5; padding-bottom: 40px; }
             .film-info { text-align: left; order: 2; align-items: flex-start; }
             .watch-btn { align-self: flex-start; }
-            .film-cover-wrapper { order: 1; }
+            .film-cover-link { order: 1; }
             .site-title { font-size: 30px; }
             .film-title { font-size: 28px; }
+            .year-separator { font-size: 40px; }
+            .season-separator { font-size: 20px; }
         }
     </style>
 </head>
@@ -162,7 +200,7 @@
 <div class="main-wrapper">
     <header class="site-header">
         <h1 class="site-title">Кіно архів</h1>
-        <span class="site-subtitle">Weekly Series • 2026</span>
+        <span class="site-subtitle">Щотижнева серія</span>
     </header>
 
     <div id="weeks-container" class="weeks-list">
@@ -173,14 +211,18 @@
     // --- НАЛАШТУВАННЯ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
     const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
-    
-    // СТАРТ: 11 СІЧНЯ 2026 (Я вказав Січень (0), якщо треба Червень - змініть 0 на 5)
+    // СТАРТ: 11 СІЧНЯ 2026
     const START_DATE = new Date(2026, 0, 11); 
     // --------------------
 
     const container = document.getElementById('weeks-container');
     const videosMap = {};
+    // Завантажуємо список переглянутих
+    let watchedVideos = [];
+    try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
 
+
+    // --- ДОПОМІЖНІ ФУНКЦІЇ ---
     function formatDateKey(date) {
         const y = date.getFullYear();
         const m = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -195,117 +237,156 @@
         return `${d}.${m}.${y}`;
     }
 
+    // Визначення сезону за місяцем
+    function getSeasonName(monthIndex) {
+        // 11(Гру), 0(Січ), 1(Лют) = ЗИМА
+        if (monthIndex === 11 || monthIndex === 0 || monthIndex === 1) return "Зима";
+        // 2, 3, 4 = ВЕСНА
+        if (monthIndex >= 2 && monthIndex <= 4) return "Весна";
+        // 5, 6, 7 = ЛІТО
+        if (monthIndex >= 5 && monthIndex <= 7) return "Літо";
+        // 8, 9, 10 = ОСІНЬ
+        return "Осінь";
+    }
+
+
     async function init() {
-        // 1. Спробуємо завантажити дані з YouTube
+        // 1. API YouTube
         try {
             const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`);
             const channelData = await channelRes.json();
-            
             if (channelData.items) {
                 const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
                 const videosRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`);
                 const videosData = await videosRes.json();
-                
                 if (videosData.items) {
                     videosData.items.forEach(item => {
                         const d = new Date(item.snippet.publishedAt);
-                        const key = formatDateKey(d);
-                        videosMap[key] = item;
+                        videosMap[formatDateKey(d)] = item;
                     });
                 }
             }
-        } catch (err) {
-            console.warn("API Issue:", err);
-        }
+        } catch (err) { console.warn("API Issue:", err); }
 
-        // 2. ГАРАНТІЯ ДАНИХ (ДЕМО)
-        // Якщо відео за 11.01 ще не завантажилось через API (або ліміти),
-        // ми створюємо його вручну, щоб сайт не був пустим.
+        // 2. ГАРАНТІЯ ДАНИХ (ДЕМО для 11.01.26)
         const startKey = formatDateKey(START_DATE);
-        
         if (!videosMap[startKey]) {
             videosMap[startKey] = {
                 id: "demo-start",
                 snippet: {
                     title: "Початок: Перший епізод",
-                    resourceId: { videoId: "dQw4w9WgXcQ" }, // Тут ваше відео або заглушка
-                    // Використаємо випадкове гарне фото як обкладинку для тесту
+                    resourceId: { videoId: "dQw4w9WgXcQ" },
                     thumbnails: { maxres: { url: "https://picsum.photos/id/16/1280/720" } } 
                 }
             };
         }
-
         renderWeeks();
     }
 
     function renderWeeks() {
         const today = new Date();
-        // Показуємо мінімум 1 тиждень від старту, навіть якщо "сьогодні" ще до старту
         let limitDate = (today < START_DATE) ? new Date(START_DATE.getTime() + 7*24*60*60*1000) : today;
-
+        
         let currentStart = new Date(START_DATE);
+        
+        // Масив для збереження всіх рядків (щоб потім перевернути)
+        let chronologicalRows = [];
 
-        // Цикл по тижнях (крок 7 днів)
+        // --- ГЕНЕРАЦІЯ ХРОНОЛОГІЧНО ---
         while (currentStart <= limitDate) {
             let currentEnd = new Date(currentStart);
             currentEnd.setDate(currentStart.getDate() + 6);
-
             const dateRangeStr = `${formatDisplayDate(currentStart)} — ${formatDisplayDate(currentEnd)}`;
 
-            // Шукаємо відео в цьому проміжку
+            // Пошук відео
             let foundVideo = null;
             let check = new Date(currentStart);
             while (check <= currentEnd) {
                 const key = formatDateKey(check);
-                if (videosMap[key]) {
-                    foundVideo = videosMap[key];
-                    break; 
-                }
+                if (videosMap[key]) { foundVideo = videosMap[key]; break; }
                 check.setDate(check.getDate() + 1);
             }
 
-            createWeekRow(dateRangeStr, foundVideo);
+            // Дані для побудови рядка і роздільників
+            chronologicalRows.push({
+                year: currentStart.getFullYear(),
+                season: getSeasonName(currentStart.getMonth()),
+                html: generateWeekHtml(dateRangeStr, foundVideo),
+                hasVideo: !!foundVideo
+            });
 
-            // Наступний тиждень
             currentStart.setDate(currentStart.getDate() + 7);
+        }
+
+        // --- ВІДОБРАЖЕННЯ У ЗВОРОТНОМУ ПОРЯДКУ (Нові зверху) ---
+        container.innerHTML = '';
+        let lastRenderedYear = null;
+        let lastRenderedSeason = null;
+
+        // Перебираємо масив з кінця до початку
+        for (let i = chronologicalRows.length - 1; i >= 0; i--) {
+            const rowData = chronologicalRows[i];
+            
+            // Логіка роздільників (перевіряємо, чи змінився рік/сезон порівняно з ПОПЕРЕДНІМ виведеним)
+            if (rowData.year !== lastRenderedYear) {
+                container.innerHTML += `<div class="separator year-separator">${rowData.year}</div>`;
+                lastRenderedYear = rowData.year;
+                lastRenderedSeason = null; // Скидаємо сезон при зміні року
+            }
+            if (rowData.season !== lastRenderedSeason) {
+                container.innerHTML += `<div class="separator season-separator">${rowData.season}</div>`;
+                lastRenderedSeason = rowData.season;
+            }
+
+            // Додаємо сам рядок тижня
+            container.innerHTML += rowData.html;
         }
     }
 
-    function createWeekRow(dateRange, videoItem) {
-        const row = document.createElement('div');
-        
+    // Функція генерації HTML для одного рядка
+    function generateWeekHtml(dateRange, videoItem) {
         if (videoItem) {
-            row.className = 'film-row';
-            const vidId = videoItem.snippet.resourceId ? videoItem.snippet.resourceId.videoId : "error";
-            const thumb = videoItem.snippet.thumbnails.maxres?.url || 
-                          videoItem.snippet.thumbnails.standard?.url || 
-                          videoItem.snippet.thumbnails.medium.url;
-            
-            row.innerHTML = `
-                <div class="film-info">
-                    <div class="week-range">${dateRange}</div>
-                    <h2 class="film-title">${videoItem.snippet.title}</h2>
-                    <a href="https://www.youtube.com/watch?v=${vidId}" target="_blank" class="watch-btn">Дивитись фільм</a>
+            const vidId = videoItem.snippet.resourceId ? videoItem.snippet.resourceId.videoId : "demo-id";
+            const thumb = videoItem.snippet.thumbnails.maxres?.url || videoItem.snippet.thumbnails.medium.url;
+            // Перевіряємо, чи переглянуто
+            const isWatchedClass = watchedVideos.includes(vidId) ? 'watched' : '';
+
+            return `
+                <div class="film-row ${isWatchedClass}" id="row-${vidId}">
+                    <div class="film-info">
+                        <div class="week-range">${dateRange}</div>
+                        <h2 class="film-title">${videoItem.snippet.title}</h2>
+                        <a href="https://www.youtube.com/watch?v=${vidId}" target="_blank" class="watch-btn" onclick="markWatched('${vidId}')">Дивитись фільм</a>
+                    </div>
+                    <a href="https://www.youtube.com/watch?v=${vidId}" target="_blank" class="film-cover-link" onclick="markWatched('${vidId}')">
+                        <img src="${thumb}" class="film-thumb" loading="lazy">
+                    </a>
                 </div>
-                <a href="https://www.youtube.com/watch?v=${vidId}" target="_blank" class="film-cover-wrapper">
-                    <img src="${thumb}" class="film-thumb" loading="lazy">
-                </a>
             `;
         } else {
-            row.className = 'film-row empty';
-            row.innerHTML = `
-                <div class="film-info">
-                    <div class="week-range">${dateRange}</div>
-                    <h2 class="film-title">Очікується</h2>
-                </div>
-                <div class="film-cover-wrapper">
-                    <div class="empty-placeholder">...</div>
+            return `
+                <div class="film-row empty">
+                    <div class="film-info">
+                        <div class="week-range">${dateRange}</div>
+                        <h2 class="film-title">Очікується</h2>
+                    </div>
+                    <div class="film-cover-link">
+                        <div class="empty-placeholder">...</div>
+                    </div>
                 </div>
             `;
         }
-        
-        // Додаємо нові зверху (щоб останній був першим)
-        container.insertBefore(row, container.firstChild);
+    }
+
+    // Функція збереження перегляду
+    window.markWatched = function(videoId) {
+        if (!watchedVideos.includes(videoId)) {
+            watchedVideos.push(videoId);
+            localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos));
+        }
+        // Знаходимо рядок і додаємо клас .watched для миттєвої зміни вигляду
+        const row = document.getElementById(`row-${videoId}`);
+        if (row) row.classList.add('watched');
     }
 
     init();
