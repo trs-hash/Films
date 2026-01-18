@@ -8,11 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@200;300;400;500;600&display=swap" rel="stylesheet">
-
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦧</text></svg>">
 
     <style>
-        /* --- СТИЛЬ "RALEWAY ELEGANCE" --- */
         body {
             font-family: 'Raleway', sans-serif;
             background-color: #ffffff;
@@ -22,174 +20,83 @@
             overflow-x: hidden;
             font-weight: 300;
         }
-
-        .main-wrapper {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        /* ЗАГОЛОВОК */
+        .main-wrapper { max-width: 900px; margin: 0 auto; }
+        
+        /* Header */
         .site-header {
             margin-bottom: 50px;
             border-bottom: 1px solid #f0f0f0;
             padding-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
+            display: flex; justify-content: space-between; align-items: baseline;
         }
-
         .site-title {
-            font-size: 32px;
-            font-weight: 200; /* Extra Thin */
-            text-transform: uppercase;
-            margin: 0;
-            letter-spacing: 4px;
-            color: #000;
+            font-size: 32px; font-weight: 200; text-transform: uppercase;
+            margin: 0; letter-spacing: 4px; color: #000;
         }
-
         .site-subtitle {
-            font-size: 11px;
-            color: #999;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            font-size: 11px; color: #999; font-weight: 500;
+            text-transform: uppercase; letter-spacing: 2px;
         }
 
-        /* СПИСОК */
-        .weeks-list {
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-            padding-bottom: 80px;
-            min-height: 200px;
-        }
+        /* List */
+        .weeks-list { display: flex; flex-direction: column; gap: 30px; padding-bottom: 80px; }
 
-        /* РОЗДІЛЬНИКИ (Зліва, без підкреслення) */
-        .separator-container {
-            margin-top: 40px;
-            margin-bottom: 10px;
-            text-align: left;
-        }
-        
-        .year-separator {
-            font-size: 50px;
-            font-weight: 200; 
-            letter-spacing: 5px;
-            line-height: 1;
-            color: #000;
-            display: block;
-        }
-
-        .season-separator {
-            font-size: 14px;
-            font-weight: 500;
-            letter-spacing: 3px;
-            color: #e62117;
-            text-transform: uppercase;
-            display: block;
-            margin-top: 5px;
-        }
-
-        /* РЯДОК ФІЛЬМУ */
+        /* Rows */
         .film-row {
-            display: grid;
-            grid-template-columns: 1fr 1.6fr;
-            gap: 30px;
-            align-items: center;
-            opacity: 1;
+            display: grid; grid-template-columns: 1fr 1.6fr; gap: 30px; align-items: center;
+            opacity: 0; animation: fadeIn 0.5s forwards; /* Плавна поява */
         }
+        @keyframes fadeIn { to { opacity: 1; } }
 
-        /* СТИЛЬ ПЕРЕГЛЯНУТОГО */
+        /* Watched State */
         .film-row.watched { opacity: 0.5; }
         .film-row.watched img { filter: grayscale(100%); }
-        .film-row.watched .film-title {
-            text-decoration: line-through;
-            text-decoration-thickness: 1px;
-            color: #ccc;
-        }
-        .film-row.watched .watch-btn {
-            border-color: #eee; color: #ccc; pointer-events: none;
-        }
+        .film-row.watched .film-title { text-decoration: line-through; color: #ccc; }
+        .film-row.watched .watch-btn { border-color: #eee; color: #ccc; pointer-events: none; }
 
-        /* ІНФО (ЛІВА ЧАСТИНА) */
-        .film-info {
-            text-align: right;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
+        /* Info */
+        .film-info { text-align: right; display: flex; flex-direction: column; justify-content: center; }
         .week-range {
-            font-size: 10px;
-            color: #bbb;
-            font-weight: 600;
-            letter-spacing: 2px;
-            margin-bottom: 15px;
-            text-transform: uppercase;
+            font-size: 10px; color: #bbb; font-weight: 600; letter-spacing: 2px;
+            margin-bottom: 15px; text-transform: uppercase;
         }
-
         .film-title {
-            font-size: 28px;
-            font-weight: 300; 
-            line-height: 1.2;
-            margin: 0 0 20px 0;
-            color: #000;
+            font-size: 28px; font-weight: 300; line-height: 1.2;
+            margin: 0 0 20px 0; color: #000;
         }
-
         .watch-btn {
-            display: inline-block;
-            font-size: 11px;
-            font-weight: 600;
-            text-decoration: none;
-            color: #e62117;
-            border: 1px solid #e6e6e6;
-            padding: 10px 25px;
-            border-radius: 50px;
-            align-self: flex-end; 
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
+            display: inline-block; font-size: 11px; font-weight: 600; text-decoration: none;
+            color: #e62117; border: 1px solid #e6e6e6; padding: 10px 25px;
+            border-radius: 50px; align-self: flex-end; transition: all 0.2s;
+            text-transform: uppercase; letter-spacing: 1px; cursor: pointer;
         }
+        .watch-btn:hover { background: #e62117; color: white; border-color: #e62117; }
 
-        .watch-btn:hover {
-            background: #e62117; color: white; border-color: #e62117;
-        }
-
-        /* ОБКЛАДИНКА (ПРАВА ЧАСТИНА) */
+        /* Cover */
         .film-cover-link {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 16/9;
-            background: #f9f9f9;
-            overflow: hidden;
-            border-radius: 2px;
-            display: block;
-            text-decoration: none;
+            position: relative; width: 100%; aspect-ratio: 16/9; background: #f9f9f9;
+            overflow: hidden; border-radius: 2px; display: block; text-decoration: none;
             transition: transform 0.3s ease;
         }
         .film-cover-link:hover { transform: scale(1.01); }
+        .film-thumb { width: 100%; height: 100%; object-fit: cover; }
 
-        .film-thumb {
-            width: 100%; height: 100%; object-fit: cover;
-        }
-
-        /* "В МОНТАЖІ" */
+        /* Future Slot */
         .film-row.future .film-title { color: #ccc; font-style: italic; font-weight: 300; }
         .film-row.future .film-cover-link { background: #fafafa; cursor: default; border: 1px solid #f0f0f0; box-shadow: none; }
         .film-row.future .film-cover-link:hover { transform: none; }
-        
         .empty-placeholder {
-            width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
             color: #eee; font-size: 12px; font-weight: 600; letter-spacing: 3px;
         }
-        
-        #status-msg { 
-            text-align: center; color: #ccc; font-size: 10px; margin-top: 50px; 
-            font-family: monospace; 
-        }
 
+        /* Separators */
+        .separator-container { margin-top: 40px; margin-bottom: 10px; text-align: left; }
+        .year-separator { font-size: 50px; font-weight: 200; letter-spacing: 5px; line-height: 1; color: #000; display: block; }
+        .season-separator { font-size: 14px; font-weight: 500; letter-spacing: 3px; color: #e62117; text-transform: uppercase; display: block; margin-top: 5px; }
+
+        #loading-msg { text-align: center; color: #ccc; margin-top: 50px; font-size: 12px; letter-spacing: 2px; }
+        
         @media (max-width: 900px) {
             body { padding: 30px 20px; }
             .film-row { grid-template-columns: 1fr; gap: 15px; margin-bottom: 40px; padding-bottom: 40px; border-bottom: 1px solid #f9f9f9; }
@@ -210,48 +117,12 @@
     </header>
 
     <div id="weeks-container" class="weeks-list">
-        <div style="text-align:center; padding: 50px; color:#999; letter-spacing: 2px;">ЗАВАНТАЖЕННЯ...</div>
+        <div id="loading-msg">ЗАВАНТАЖЕННЯ...</div>
     </div>
-    
-    <div id="status-msg"></div>
 </div>
 
 <script>
     // --- НАЛАШТУВАННЯ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
     const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
-    const START_DATE = new Date(2026, 0, 11); 
-    // --------------------
-
-    const container = document.getElementById('weeks-container');
-    const statusMsg = document.getElementById('status-msg');
-    let watchedVideos = [];
-    
-    // Безпечне завантаження localStorage
-    try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
-
-    function formatDisplayDate(date) {
-        const d = date.getDate().toString().padStart(2, '0');
-        const m = (date.getMonth() + 1).toString().padStart(2, '0');
-        const y = date.getFullYear().toString().slice(-2);
-        return `${d}.${m}.${y}`;
-    }
-
-    function getSeasonName(monthIndex) {
-        if (monthIndex === 11 || monthIndex === 0 || monthIndex === 1) return "ЗИМА";
-        if (monthIndex >= 2 && monthIndex <= 4) return "ВЕСНА";
-        if (monthIndex >= 5 && monthIndex <= 7) return "ЛІТО";
-        return "ОСІНЬ";
-    }
-
-    async function init() {
-        let videoItems = [];
-        let apiError = null;
-
-        try {
-            // Спроба API
-            const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`);
-            if (!channelRes.ok) throw new Error(`Status: ${channelRes.status}`);
-            
-            const channelData = await channelRes.json();
-            if
+    const START_DATE = new Date(2026, 0, 11); // 11 СІЧНЯ 2026
