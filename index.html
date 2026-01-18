@@ -1,3 +1,17 @@
+Це чудова ідея для структурування контенту. Це перетворює набір відео на справжній серіал.
+
+**Що зроблено:**
+
+1. **Логіка нумерації:** Скрипт спочатку сортує відео від старого до нового, присвоює їм номери (Епізод 1, Епізод 2...), а потім знову перевертає список, щоб показувати найсвіжіші зверху. Тобто найновіше відео матиме найбільший номер.
+2. **Дизайн:** Додав надпис "ЕПІЗОД №" над назвою фільму. Він зроблений маленьким, червоним шрифтом (акцентним), щоб виглядати стильно, як у Netflix чи Apple TV.
+
+### Інструкція
+
+1. Відкрийте `index.html`.
+2. Замініть код.
+3. **Ctrl + F5**.
+
+```html
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -12,7 +26,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦧</text></svg>">
 
     <style>
-        /* --- СТИЛЬ "RALEWAY CLEAN" (MOBILE FRIENDLY) --- */
+        /* --- СТИЛЬ "RALEWAY SERIAL" --- */
         body {
             font-family: 'Raleway', sans-serif;
             background-color: #ffffff;
@@ -59,14 +73,14 @@
         .weeks-list {
             display: flex;
             flex-direction: column;
-            gap: 40px;
+            gap: 50px; /* Трохи більше повітря між епізодами */
             padding-bottom: 80px;
         }
 
         /* РОЗДІЛЬНИКИ */
         .separator-container {
-            margin-top: 20px;
-            margin-bottom: 20px;
+            margin-top: 30px;
+            margin-bottom: 10px;
             text-align: left;
         }
         
@@ -103,13 +117,9 @@
         /* СТИЛЬ ПЕРЕГЛЯНУТОГО */
         .film-row.watched { opacity: 0.6; }
         .film-row.watched img { filter: grayscale(100%); transition: filter 0.5s ease; }
-        .film-row.watched .film-title {
-            color: #bbb;
-            text-decoration: none;
-        }
-        .film-row.watched .watch-btn {
-            border-color: #eee; color: #ccc; pointer-events: none;
-        }
+        .film-row.watched .film-title { color: #bbb; text-decoration: none; }
+        .film-row.watched .episode-label { color: #ccc; } /* Епізод теж сіріє */
+        .film-row.watched .watch-btn { border-color: #eee; color: #ccc; pointer-events: none; }
 
         /* ІНФО (ЛІВА ЧАСТИНА) */
         .film-info {
@@ -117,6 +127,16 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+        }
+
+        /* Стиль номера епізоду */
+        .episode-label {
+            font-size: 11px;
+            color: #e62117; /* Червоний акцент */
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
         }
 
         .week-range {
@@ -156,7 +176,7 @@
             background: #e62117; color: white; border-color: #e62117;
         }
 
-        /* ОБКЛАДИНКА (ПРАВА ЧАСТИНА) */
+        /* ОБКЛАДИНКА */
         .film-cover-link {
             position: relative;
             width: 100%;
@@ -170,9 +190,7 @@
         }
         .film-cover-link:hover { transform: scale(1.02); }
 
-        .film-thumb {
-            width: 100%; height: 100%; object-fit: cover;
-        }
+        .film-thumb { width: 100%; height: 100%; object-fit: cover; }
         
         #loading-msg { 
             text-align: center; color: #ccc; font-size: 11px; 
@@ -180,24 +198,14 @@
             font-weight: 500;
         }
 
-        /* АДАПТИВНІСТЬ ДЛЯ МОБІЛЬНИХ */
         @media (max-width: 900px) {
             body { padding: 30px 20px; }
-            /* На мобільних міняємо порядок: спочатку картинка, потім текст */
-            .film-row { 
-                grid-template-columns: 1fr; 
-                gap: 20px; 
-                margin-bottom: 50px; 
-                padding-bottom: 50px; 
-                border-bottom: 1px solid #fafafa; 
-            }
+            .film-row { grid-template-columns: 1fr; gap: 20px; margin-bottom: 50px; padding-bottom: 50px; border-bottom: 1px solid #fafafa; }
             .film-info { text-align: left; order: 2; align-items: flex-start; }
             .watch-btn { align-self: flex-start; }
             .film-cover-link { order: 1; }
-            
             .site-title { font-size: 24px; }
             .year-separator { font-size: 40px; }
-            .separator-container { margin-top: 10px; }
         }
     </style>
 </head>
@@ -245,15 +253,12 @@
         let videoItems = [];
 
         try {
-            // 1. Отримуємо список Uploads
             const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`);
             if (!channelRes.ok) throw new Error("Channel API Error");
             const channelData = await channelRes.json();
             
             if (channelData.items) {
                 const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
-                
-                // 2. Отримуємо відео з плейлиста
                 const playlistRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`);
                 if (!playlistRes.ok) throw new Error("Playlist API Error");
                 const playlistData = await playlistRes.json();
@@ -261,7 +266,7 @@
                 if (playlistData.items) {
                     let rawItems = playlistData.items;
 
-                    // 3. ФІЛЬТРАЦІЯ ПРЯМИХ ЕФІРІВ (Безпечна)
+                    // Безпечна фільтрація стрімів
                     try {
                         const videoIds = rawItems.map(i => i.snippet.resourceId.videoId).join(',');
                         const detailsRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${videoIds}&key=${API_KEY}`);
@@ -274,14 +279,10 @@
                                     if (v.liveStreamingDetails) isLiveMap[v.id] = true;
                                 });
                             }
-                            // Фільтруємо: лишаємо тільки те, що НЕ стрім
                             rawItems = rawItems.filter(item => !isLiveMap[item.snippet.resourceId.videoId]);
                         }
-                    } catch (filterErr) {
-                        console.warn("Live stream filter skipped due to API limits", filterErr);
-                    }
+                    } catch (filterErr) { console.warn("Filter skipped"); }
 
-                    // Формуємо фінальний список
                     rawItems.forEach(item => {
                         videoItems.push({
                             date: new Date(item.snippet.publishedAt),
@@ -291,17 +292,14 @@
                     });
                 }
             }
-        } catch (err) {
-            console.warn("API Error, using fallback", err);
-        }
+        } catch (err) { console.warn("Fallback mode", err); }
 
-        // 4. ДЕМО (якщо пусто)
         if (videoItems.length === 0) {
             videoItems.push({
                 date: START_DATE,
                 item: {
                     snippet: {
-                        title: "Епізод 1: Початок шляху",
+                        title: "Початок шляху",
                         resourceId: { videoId: "dQw4w9WgXcQ" },
                         thumbnails: { maxres: { url: "https://picsum.photos/id/180/1280/720" } }
                     }
@@ -316,10 +314,16 @@
     function renderTimeline(videos) {
         container.innerHTML = '';
 
-        // Сортування: Нові зверху
-        videos.sort((a, b) => b.date - a.date);
+        // 1. Сортуємо від СТАРИХ до НОВИХ, щоб проставити номери епізодів
+        videos.sort((a, b) => a.date - b.date);
 
-        // --- БЛОК "В МОНТАЖІ" ВИДАЛЕНО ---
+        // 2. Додаємо номер епізоду
+        videos.forEach((video, index) => {
+            video.episodeNumber = index + 1;
+        });
+
+        // 3. Сортуємо назад: НОВІ ЗВЕРХУ для відображення
+        videos.sort((a, b) => b.date - a.date);
 
         let lastYear = null;
         let lastSeason = null;
@@ -349,7 +353,6 @@
                           (vid.snippet.thumbnails.medium && vid.snippet.thumbnails.medium.url) || "";
             const isWatched = watchedVideos.includes(id) ? 'watched' : '';
 
-            // Діапазон тижня
             let wStart = new Date(date);
             const day = wStart.getDay() || 7; 
             if (day !== 1) wStart.setHours(-24 * (day - 1));
@@ -358,8 +361,11 @@
             container.innerHTML += `
                 <div class="film-row ${isWatched}" id="row-${id}">
                     <div class="film-info">
-                        <div class="week-range">${formatDisplayDate(wStart)} — ${formatDisplayDate(wEnd)}</div>
+                        <div class="episode-label">Епізод ${obj.episodeNumber}</div>
                         <h2 class="film-title">${vid.snippet.title}</h2>
+                        
+                        <div class="week-range">${formatDisplayDate(wStart)} — ${formatDisplayDate(wEnd)}</div>
+                        
                         <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="watch-btn" onclick="toggle('${id}')">
                             ${isWatched ? 'Переглянуто' : 'Дивитись фільм'}
                         </a>
@@ -387,3 +393,5 @@
 </script>
 </body>
 </html>
+
+```
