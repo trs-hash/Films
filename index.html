@@ -3,109 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Лови день</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;500;600&display=swap" rel="stylesheet">
-    
+    <title>Кіно архів</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦧</text></svg>">
 
     <style>
-        /* --- СТИЛЬ "ELEGANCE COMPACT" --- */
+        /* --- СТИЛЬ "КІНОБІБЛІОТЕКА" (Ваш улюблений варіант) --- */
         body {
-            font-family: 'Raleway', sans-serif;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             background-color: #ffffff;
-            color: #1a1a1a;
+            color: #111;
             margin: 0;
-            padding: 30px 20px; /* Менше відступів по краях */
+            padding: 40px;
             overflow-x: hidden;
         }
 
         .main-wrapper {
-            max-width: 900px; /* Трохи вужче для компактності */
+            max-width: 1100px;
             margin: 0 auto;
         }
 
-        /* ЗАГОЛОВОК */
+        /* ЗАГОЛОВОК САЙТУ */
         .site-header {
-            margin-bottom: 40px; /* Зменшено з 80 */
-            padding-bottom: 15px;
+            margin-bottom: 60px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: baseline;
-            border-bottom: 1px solid #f0f0f0;
         }
 
         .site-title {
-            font-size: 32px;
-            font-weight: 300;
+            font-size: 40px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 3px;
             margin: 0;
-            color: #000;
-        }
-
-        .site-subtitle {
-            font-size: 11px;
-            color: #999;
-            font-weight: 600;
-            text-transform: uppercase;
             letter-spacing: 1px;
         }
 
+        .site-subtitle {
+            font-size: 14px;
+            color: #888;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        /* КОНТЕЙНЕР СПИСКУ */
         .weeks-list {
             display: flex;
             flex-direction: column;
-            gap: 25px; /* Зменшено щілину між відео вдвічі */
-            padding-bottom: 50px;
+            gap: 60px;
+            padding-bottom: 100px;
         }
 
-        /* РОЗДІЛЬНИКИ */
+        /* --- РОЗДІЛЬНИКИ --- */
         .separator {
-            font-weight: 300;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 3px;
-            color: #000;
-            margin-top: 20px; /* Менше простору перед роком */
-            margin-bottom: 5px;
-            text-align: center; /* Центруємо рік для краси */
+            letter-spacing: 2px;
+            color: #222;
+            padding-top: 40px;
         }
         
         .year-separator {
-            font-size: 40px; /* Трохи менший рік */
-            border-bottom: 1px solid #eee;
-            padding-bottom: 5px;
+            font-size: 60px;
+            border-bottom: 2px solid #222;
+            margin-bottom: -20px;
         }
 
         .season-separator {
-            font-size: 14px;
+            font-size: 24px;
             color: #e62117;
-            margin-top: 15px;
-            text-align: center;
+            margin-bottom: 20px;
         }
 
         /* РЯДОК ФІЛЬМУ */
         .film-row {
             display: grid;
-            grid-template-columns: 1fr 1.5fr; /* Пропорції */
-            gap: 30px; /* Ближче текст до картинки */
+            grid-template-columns: 1fr 1.8fr;
+            gap: 60px;
             align-items: center;
-            opacity: 1;
-            transition: opacity 0.3s ease;
-            padding: 10px 0; /* Трохи повітря зверху/знизу самого рядка */
+            transition: all 0.3s ease;
         }
 
         /* СТИЛЬ ПЕРЕГЛЯНУТОГО */
-        .film-row.watched { opacity: 0.5; }
-        .film-row.watched img { filter: grayscale(100%); }
-        .film-row.watched .film-title {
-            text-decoration: line-through;
-            text-decoration-thickness: 1px;
-            color: #bbb;
+        .film-row.watched .film-cover-wrapper img {
+            filter: grayscale(100%);
+            opacity: 0.6;
         }
         .film-row.watched .watch-btn {
-            border-color: #ddd; color: #ddd; pointer-events: none;
+            background: transparent;
+            color: #999;
+            border-color: #ccc;
+        }
+        .film-row.watched .film-title {
+            text-decoration: line-through; /* Перекреслюємо назву */
+            color: #999;
         }
 
         /* ІНФО (ЛІВА ЧАСТИНА) */
@@ -117,98 +109,22 @@
         }
 
         .week-range {
-            font-size: 10px;
-            color: #aaa;
+            font-size: 14px;
+            color: #999;
             font-weight: 600;
             letter-spacing: 1px;
-            margin-bottom: 8px; /* Менший відступ */
+            margin-bottom: 15px;
             text-transform: uppercase;
         }
 
         .film-title {
-            font-size: 28px; /* Трохи менший заголовок для компактності */
-            font-weight: 300;
+            font-size: 42px;
+            font-weight: 300; 
             line-height: 1.1;
-            margin: 0 0 15px 0; /* Менший відступ до кнопки */
-            color: #000;
+            margin: 0 0 25px 0;
+            color: #111;
         }
 
         .watch-btn {
             display: inline-block;
-            font-size: 10px;
-            font-weight: 600;
-            text-decoration: none;
-            color: #000;
-            border: 1px solid #e0e0e0;
-            padding: 8px 20px; /* Компактніша кнопка */
-            border-radius: 0;
-            align-self: flex-end; 
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-        }
-
-        .watch-btn:hover {
-            border-color: #000; background: #000; color: #fff;
-        }
-
-        /* ОБКЛАДИНКА (ПРАВА ЧАСТИНА) */
-        .film-cover-link {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 16/9;
-            background: #f9f9f9;
-            display: block;
-            text-decoration: none;
-            overflow: hidden;
-            transition: transform 0.3s ease;
-        }
-        .film-cover-link:hover { transform: scale(1.01); }
-
-        .film-thumb {
-            width: 100%; height: 100%; object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-
-        /* СТИЛЬ "В МОНТАЖІ" */
-        .film-row.future .film-title { color: #ccc; font-style: italic; font-size: 24px; }
-        .film-row.future .film-cover-link {
-            background: #fafafa;
-            border: 1px dashed #eee;
-            cursor: default;
-        }
-        .film-row.future .film-cover-link:hover { transform: none; }
-        
-        .empty-placeholder {
-            width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-            color: #eee; font-size: 11px; font-weight: 600; letter-spacing: 3px;
-        }
-
-        @media (max-width: 900px) {
-            .film-row { grid-template-columns: 1fr; gap: 15px; margin-bottom: 30px; padding-bottom: 30px; border-bottom: 1px solid #fafafa; }
-            .film-info { text-align: left; order: 2; align-items: flex-start; }
-            .watch-btn { align-self: flex-start; }
-            .film-cover-link { order: 1; }
-            .site-title { font-size: 24px; }
-            .film-title { font-size: 22px; }
-        }
-    </style>
-</head>
-<body>
-
-<div class="main-wrapper">
-    <header class="site-header">
-        <h1 class="site-title">Лови день</h1>
-        <span class="site-subtitle">Щотижнева серія</span>
-    </header>
-
-    <div id="weeks-container" class="weeks-list">
-        </div>
-</div>
-
-<script>
-    // --- НАЛАШТУВАННЯ ---
-    const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
-    const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg';
+            font-size:
