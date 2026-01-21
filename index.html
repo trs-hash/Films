@@ -12,7 +12,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
 
     <style>
-        /* --- СТИЛЬ "RALEWAY HASHTAG CATALOG" --- */
+        /* --- СТИЛЬ "RALEWAY MINIMAL" --- */
         body {
             font-family: 'Raleway', sans-serif;
             background-color: #ffffff;
@@ -34,7 +34,7 @@
         .site-title { font-size: 32px; font-weight: 200; text-transform: uppercase; margin: 0; letter-spacing: 4px; color: #000; }
         .site-subtitle { font-size: 11px; color: #999; font-weight: 500; text-transform: uppercase; letter-spacing: 2px; }
 
-        /* CONTROLS (CATEGORY & SORT) */
+        /* CONTROLS (CLEAN) */
         .controls-wrapper {
             margin-bottom: 50px;
             display: flex;
@@ -47,10 +47,6 @@
             gap: 20px; 
             flex-wrap: wrap; 
             align-items: baseline;
-        }
-        
-        .group-label {
-            font-size: 9px; color: #ccc; text-transform: uppercase; letter-spacing: 1px; min-width: 60px;
         }
 
         .nav-btn {
@@ -129,12 +125,10 @@
 
     <div class="controls-wrapper">
         <div class="filter-group" id="category-filters">
-            <span class="group-label">Теми:</span>
             <button class="nav-btn active" onclick="filterByCategory('all')">Всі</button>
             </div>
 
         <div class="filter-group">
-            <span class="group-label">Сорт:</span>
             <button class="nav-btn active sort-btn" onclick="applySort('newest')">Новіші</button>
             <button class="nav-btn sort-btn" onclick="applySort('oldest')">Старіші</button>
             <button class="nav-btn sort-btn" onclick="applySort('unwatched')">Не переглянуті</button>
@@ -154,14 +148,13 @@
     let currentSortMode = 'newest';
     let watchedVideos = [];
 
-    // 1. Читаємо історію
     try {
         const stored = localStorage.getItem('my_watched_videos');
         if(stored) watchedVideos = JSON.parse(stored);
         if(!Array.isArray(watchedVideos)) watchedVideos = [];
     } catch(e) { watchedVideos = []; }
 
-    // --- ФУНКЦІЇ ДОПОМОГИ ---
+    // --- UTILS ---
     function formatDisplayDate(date) {
         if (!date) return "";
         const d = date.getDate().toString().padStart(2, '0');
@@ -184,24 +177,19 @@
         return (parseInt(match[1]||0) * 3600) + (parseInt(match[2]||0) * 60) + (parseInt(match[3]||0));
     }
 
-    // --- ФУНКЦІЇ ІНТЕРФЕЙСУ ---
-    
-    // Фільтр по темах
+    // --- INTERFACE ---
     window.filterByCategory = function(tag) {
         currentCategory = tag;
-        
         const container = document.getElementById('category-filters');
         const btns = container.getElementsByClassName('nav-btn');
         for(let btn of btns) {
             btn.classList.remove('active');
             if(tag === 'all' && btn.innerText === 'ВСІ') btn.classList.add('active');
-            // Перевірка, чи це та кнопка (порівнюємо текст без #)
             if(tag !== 'all' && btn.innerText === tag.replace('#', '').toUpperCase()) btn.classList.add('active');
         }
         refreshView();
     }
 
-    // Сортування
     window.applySort = function(mode) {
         currentSortMode = mode;
         const btns = document.querySelectorAll('.sort-btn');
@@ -212,16 +200,15 @@
         refreshView();
     }
 
-    // Оновлення списку (фільтрація + сортування)
     function refreshView() {
         let list = [...globalVideos];
 
-        // 1. Категорія
+        // 1. Тема
         if (currentCategory !== 'all') {
             list = list.filter(v => v.tags && v.tags.includes(currentCategory));
         }
 
-        // 2. Статус (якщо обрано "Не переглянуті")
+        // 2. Статус
         if (currentSortMode === 'unwatched') {
             list = list.filter(v => !watchedVideos.includes(v.id));
         }
@@ -236,7 +223,6 @@
         render(list);
     }
 
-    // Малювання
     function render(videos) {
         const container = document.getElementById('weeks-container');
         container.innerHTML = '';
@@ -295,30 +281,25 @@
         }
     }
 
-    // --- ЗАВАНТАЖЕННЯ ДАНИХ ---
     async function loadData() {
         try {
-            // 1. ID плейлиста
             const chRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`);
             if(!chRes.ok) throw new Error("API Error");
             const chData = await chRes.json();
             const plId = chData.items[0].contentDetails.relatedPlaylists.uploads;
 
-            // 2. Список відео
             const plRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${plId}&maxResults=50&key=${API_KEY}`);
             const plData = await plRes.json();
             
             if(!plData.items) throw new Error("No items");
             let rawList = plData.items;
 
-            // 3. Деталі (фільтр + теги)
             const ids = rawList.map(i => i.snippet.resourceId.videoId).join(',');
             const detRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,liveStreamingDetails&id=${ids}&key=${API_KEY}`);
             const detData = await detRes.json();
             const detMap = {};
             if(detData.items) detData.items.forEach(v => detMap[v.id] = v);
 
-            // 4. Обробка
             globalVideos = [];
             const allTagsSet = new Set();
 
@@ -326,14 +307,12 @@
                 const vidId = item.snippet.resourceId.videoId;
                 const details = detMap[vidId];
 
-                // Фільтр технічний
                 if(details) {
                     if(details.liveStreamingDetails) return; 
                     const dur = parseDuration(details.contentDetails.duration);
                     if(dur > 0 && dur <= 60) return; 
                 }
 
-                // Пошук хештегів в описі (#tag)
                 const desc = item.snippet.description || "";
                 const tagsMatch = desc.match(/#[a-zA-Zа-яА-ЯіІїЇєЄґҐ0-9_]+/g);
                 let tags = [];
@@ -357,7 +336,6 @@
                 });
             });
 
-            // 5. Розрахунок часу (по хронології)
             globalVideos.sort((a,b) => a.date - b.date);
             globalVideos.forEach((video, index) => {
                 if (index === 0) {
@@ -370,20 +348,17 @@
                 }
             });
 
-            // 6. Створення меню категорій
             const catContainer = document.getElementById('category-filters');
             const sortedTags = Array.from(allTagsSet).sort();
             
             sortedTags.forEach(tag => {
                 const btn = document.createElement('button');
                 btn.className = 'nav-btn';
-                // Видаляємо # для краси в меню
                 btn.innerText = tag.replace('#', '');
                 btn.onclick = () => filterByCategory(tag);
                 catContainer.appendChild(btn);
             });
 
-            // 7. Старт
             applySort('newest');
 
         } catch (err) {
