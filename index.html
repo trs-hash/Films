@@ -12,7 +12,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
 
     <style>
-        /* --- СТИЛЬ "RALEWAY PERSONAL ARCHIVE" --- */
+        /* --- СТИЛЬ "RALEWAY CLEAN DATE" --- */
         body {
             font-family: 'Raleway', sans-serif;
             background-color: #ffffff;
@@ -34,7 +34,7 @@
         .site-title { font-size: 32px; font-weight: 200; text-transform: uppercase; margin: 0; letter-spacing: 4px; color: #000; }
         .site-subtitle { font-size: 11px; color: #999; font-weight: 500; text-transform: uppercase; letter-spacing: 2px; }
 
-        /* CONTROLS (CLEAN) */
+        /* CONTROLS */
         .controls-wrapper {
             margin-bottom: 50px;
             display: flex;
@@ -72,19 +72,19 @@
         .film-row.watched { opacity: 0.5; }
         .film-row.watched img { filter: grayscale(100%); transition: filter 0.5s ease; }
         .film-row.watched .film-title { color: #bbb; }
-        .film-row.watched .production-info { color: #ccc; }
+        .film-row.watched .date-info { color: #ccc; }
         .film-row.watched .watch-btn { border-color: #eee; color: #ccc; pointer-events: none; }
 
         /* INFO BLOCKS */
         .film-info { text-align: left; display: flex; flex-direction: column; align-items: flex-start; }
         
-        .production-info { 
+        /* Стиль для простої дати */
+        .date-info { 
             font-size: 10px; color: #bbb; font-weight: 600; 
-            letter-spacing: 1px; margin-bottom: 20px; text-transform: uppercase; 
-            line-height: 1.6;
+            letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; 
         }
         
-        .film-title { font-size: 32px; font-weight: 200; line-height: 1.2; margin: 0 0 15px 0; color: #000; }
+        .film-title { font-size: 32px; font-weight: 200; line-height: 1.2; margin: 0 0 10px 0; color: #000; }
         
         .watch-btn {
             display: inline-block; font-size: 11px; font-weight: 600; text-decoration: none;
@@ -126,7 +126,7 @@
     <div class="controls-wrapper">
         <div class="filter-group" id="category-filters">
             <button class="nav-btn active" onclick="filterByCategory('all')">Всі</button>
-            </div>
+        </div>
 
         <div class="filter-group">
             <button class="nav-btn active sort-btn" onclick="applySort('newest')">Новіші</button>
@@ -203,17 +203,14 @@
     function refreshView() {
         let list = [...globalVideos];
 
-        // 1. Тема
         if (currentCategory !== 'all') {
             list = list.filter(v => v.tags && v.tags.includes(currentCategory));
         }
 
-        // 2. Статус
         if (currentSortMode === 'unwatched') {
             list = list.filter(v => !watchedVideos.includes(v.id));
         }
 
-        // 3. Сортування
         if (currentSortMode === 'oldest') {
             list.sort((a,b) => a.date - b.date);
         } else {
@@ -242,6 +239,7 @@
             const year = date.getFullYear();
             const season = getSeasonName(date.getMonth());
 
+            // Роздільники (Рік і Сезон)
             if (year !== lastYear || season !== lastSeason) {
                 html += '<div class="separator-container">';
                 if (year !== lastYear) { html += `<span class="year-separator">${year}</span>`; lastYear = year; }
@@ -255,7 +253,7 @@
                 <div class="film-row ${isWatched}" id="row-${obj.id}">
                     <div class="film-info">
                         <h2 class="film-title">${obj.title}</h2>
-                        <div class="production-info">${obj.productionString}</div>
+                        <div class="date-info">${formatDisplayDate(date)}</div>
                         <a href="https://www.youtube.com/watch?v=${obj.id}" target="_blank" class="watch-btn" onclick="toggle('${obj.id}')">
                             ${isWatched ? 'Переглянуто' : 'Дивитись фільм'}
                         </a>
@@ -336,18 +334,7 @@
                 });
             });
 
-            globalVideos.sort((a,b) => a.date - b.date);
-            globalVideos.forEach((video, index) => {
-                if (index === 0) {
-                    video.productionString = `Початок: ${formatDisplayDate(video.date)}`;
-                } else {
-                    const prevVideo = globalVideos[index - 1];
-                    const diffTime = Math.abs(video.date - prevVideo.date);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                    video.productionString = `${formatDisplayDate(prevVideo.date)} — ${formatDisplayDate(video.date)} • ${diffDays} днів у роботі`;
-                }
-            });
-
+            // Тепер просто сортуємо для створення кнопок, але без розрахунку "днів у роботі"
             const catContainer = document.getElementById('category-filters');
             const sortedTags = Array.from(allTagsSet).sort();
             
