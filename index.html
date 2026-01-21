@@ -12,40 +12,24 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
 
     <style>
-        /* --- СТИЛЬ "RALEWAY CLEAN DATE" --- */
+        /* --- СТИЛЬ "ULTRA CLEAN" --- */
         body {
             font-family: 'Raleway', sans-serif;
             background-color: #ffffff;
             color: #111;
             margin: 0;
-            padding: 40px;
+            padding: 80px 40px 40px 40px; /* Більше відступу зверху замість заголовка */
             overflow-x: hidden;
             font-weight: 300;
         }
         .main-wrapper { max-width: 900px; margin: 0 auto; }
 
-        /* HEADER */
-        .site-header {
-            margin-bottom: 30px;
-            border-bottom: 1px solid #f0f0f0;
-            padding-bottom: 20px;
-            display: flex; justify-content: space-between; align-items: baseline;
-        }
-        .site-title { font-size: 32px; font-weight: 200; text-transform: uppercase; margin: 0; letter-spacing: 4px; color: #000; }
-        .site-subtitle { font-size: 11px; color: #999; font-weight: 500; text-transform: uppercase; letter-spacing: 2px; }
-
         /* CONTROLS */
         .controls-wrapper {
-            margin-bottom: 50px;
+            margin-bottom: 60px;
             display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .filter-group { 
-            display: flex; 
-            gap: 20px; 
-            flex-wrap: wrap; 
+            gap: 30px;
+            flex-wrap: wrap;
             align-items: baseline;
         }
 
@@ -78,7 +62,6 @@
         /* INFO BLOCKS */
         .film-info { text-align: left; display: flex; flex-direction: column; align-items: flex-start; }
         
-        /* Стиль для простої дати */
         .date-info { 
             font-size: 10px; color: #bbb; font-weight: 600; 
             letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; 
@@ -107,32 +90,21 @@
         #loader { text-align: center; color: #ddd; font-size: 10px; margin-top: 50px; letter-spacing: 2px; }
 
         @media (max-width: 900px) {
-            body { padding: 30px 20px; }
+            body { padding: 40px 20px; }
             .film-row { grid-template-columns: 1fr; gap: 20px; margin-bottom: 50px; padding-bottom: 50px; border-bottom: 1px solid #fafafa; }
-            .site-title { font-size: 24px; }
             .year-separator { font-size: 40px; }
-            .controls-wrapper { gap: 20px; }
+            .controls-wrapper { gap: 20px; margin-bottom: 40px; }
         }
     </style>
 </head>
 <body>
 
 <div class="main-wrapper">
-    <header class="site-header">
-        <h1 class="site-title">Лови День</h1>
-        <span class="site-subtitle">Щотижнева серія</span>
-    </header>
-
     <div class="controls-wrapper">
-        <div class="filter-group" id="category-filters">
-            <button class="nav-btn active" onclick="filterByCategory('all')">Всі</button>
-        </div>
-
-        <div class="filter-group">
-            <button class="nav-btn active sort-btn" onclick="applySort('newest')">Новіші</button>
-            <button class="nav-btn sort-btn" onclick="applySort('oldest')">Старіші</button>
-            <button class="nav-btn sort-btn" onclick="applySort('unwatched')">Не переглянуті</button>
-        </div>
+        <button class="nav-btn active sort-btn" onclick="applySort('newest')">Новіші</button>
+        <button class="nav-btn sort-btn" onclick="applySort('oldest')">Старіші</button>
+        <button class="nav-btn sort-btn" onclick="applySort('unwatched')">Не переглянуті</button>
+        <button class="nav-btn sort-btn" onclick="applySort('watched')">Переглянуті</button>
     </div>
 
     <div id="loader">ЗАВАНТАЖЕННЯ...</div>
@@ -144,7 +116,6 @@
     const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
 
     let globalVideos = [];
-    let currentCategory = 'all';
     let currentSortMode = 'newest';
     let watchedVideos = [];
 
@@ -178,42 +149,34 @@
     }
 
     // --- INTERFACE ---
-    window.filterByCategory = function(tag) {
-        currentCategory = tag;
-        const container = document.getElementById('category-filters');
-        const btns = container.getElementsByClassName('nav-btn');
-        for(let btn of btns) {
-            btn.classList.remove('active');
-            if(tag === 'all' && btn.innerText === 'ВСІ') btn.classList.add('active');
-            if(tag !== 'all' && btn.innerText === tag.replace('#', '').toUpperCase()) btn.classList.add('active');
-        }
-        refreshView();
-    }
-
     window.applySort = function(mode) {
         currentSortMode = mode;
         const btns = document.querySelectorAll('.sort-btn');
         btns.forEach(b => b.classList.remove('active'));
+        
         if(mode === 'newest') btns[0].classList.add('active');
         if(mode === 'oldest') btns[1].classList.add('active');
         if(mode === 'unwatched') btns[2].classList.add('active');
+        if(mode === 'watched') btns[3].classList.add('active');
+
         refreshView();
     }
 
     function refreshView() {
         let list = [...globalVideos];
 
-        if (currentCategory !== 'all') {
-            list = list.filter(v => v.tags && v.tags.includes(currentCategory));
-        }
-
         if (currentSortMode === 'unwatched') {
             list = list.filter(v => !watchedVideos.includes(v.id));
+        }
+
+        if (currentSortMode === 'watched') {
+            list = list.filter(v => watchedVideos.includes(v.id));
         }
 
         if (currentSortMode === 'oldest') {
             list.sort((a,b) => a.date - b.date);
         } else {
+            // Newest, Unwatched, Watched - зазвичай зручніше бачити нові зверху
             list.sort((a,b) => b.date - a.date);
         }
 
@@ -239,7 +202,7 @@
             const year = date.getFullYear();
             const season = getSeasonName(date.getMonth());
 
-            // Роздільники (Рік і Сезон)
+            // Роздільники
             if (year !== lastYear || season !== lastSeason) {
                 html += '<div class="separator-container">';
                 if (year !== lastYear) { html += `<span class="year-separator">${year}</span>`; lastYear = year; }
@@ -299,24 +262,16 @@
             if(detData.items) detData.items.forEach(v => detMap[v.id] = v);
 
             globalVideos = [];
-            const allTagsSet = new Set();
 
             rawList.forEach(item => {
                 const vidId = item.snippet.resourceId.videoId;
                 const details = detMap[vidId];
 
+                // Фільтр шортсів
                 if(details) {
                     if(details.liveStreamingDetails) return; 
                     const dur = parseDuration(details.contentDetails.duration);
                     if(dur > 0 && dur <= 60) return; 
-                }
-
-                const desc = item.snippet.description || "";
-                const tagsMatch = desc.match(/#[a-zA-Zа-яА-ЯіІїЇєЄґҐ0-9_]+/g);
-                let tags = [];
-                if (tagsMatch) {
-                    tags = tagsMatch.map(t => t.toLowerCase());
-                    tags.forEach(t => allTagsSet.add(t));
                 }
 
                 let thumb = "https://via.placeholder.com/640x360";
@@ -329,23 +284,11 @@
                     id: vidId,
                     title: item.snippet.title,
                     date: new Date(item.snippet.publishedAt),
-                    thumb: thumb,
-                    tags: tags
+                    thumb: thumb
                 });
             });
 
-            // Тепер просто сортуємо для створення кнопок, але без розрахунку "днів у роботі"
-            const catContainer = document.getElementById('category-filters');
-            const sortedTags = Array.from(allTagsSet).sort();
-            
-            sortedTags.forEach(tag => {
-                const btn = document.createElement('button');
-                btn.className = 'nav-btn';
-                btn.innerText = tag.replace('#', '');
-                btn.onclick = () => filterByCategory(tag);
-                catContainer.appendChild(btn);
-            });
-
+            // Старт
             applySort('newest');
 
         } catch (err) {
