@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тарас Максим'як — кіноархів</title>
+    <title>Лови День — кіноархів</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -128,3 +128,271 @@
     </header>
 
     <div class="controls-wrapper">
+        <div class="filter-group" id="category-filters">
+            <span class="group-label">Теми:</span>
+            <button class="nav-btn active" onclick="filterByCategory('all')">Всі</button>
+            </div>
+
+        <div class="filter-group">
+            <span class="group-label">Сорт:</span>
+            <button class="nav-btn active sort-btn" onclick="applySort('newest')">Новіші</button>
+            <button class="nav-btn sort-btn" onclick="applySort('oldest')">Старіші</button>
+            <button class="nav-btn sort-btn" onclick="applySort('unwatched')">Не переглянуті</button>
+        </div>
+    </div>
+
+    <div id="loader">ЗАВАНТАЖЕННЯ...</div>
+    <div id="weeks-container" class="weeks-list"></div>
+</div>
+
+<script>
+    const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
+    const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
+
+    let globalVideos = [];
+    let currentCategory = 'all';
+    let currentSortMode = 'newest';
+    let watchedVideos = [];
+
+    // 1. Читаємо історію
+    try {
+        const stored = localStorage.getItem('my_watched_videos');
+        if(stored) watchedVideos = JSON.parse(stored);
+        if(!Array.isArray(watchedVideos)) watchedVideos = [];
+    } catch(e) { watchedVideos = []; }
+
+    // --- ФУНКЦІЇ ДОПОМОГИ ---
+    function formatDisplayDate(date) {
+        if (!date) return "";
+        const d = date.getDate().toString().padStart(2, '0');
+        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+        const y = date.getFullYear().toString().slice(-2);
+        return `${d}.${m}.${y}`;
+    }
+
+    function getSeasonName(monthIndex) {
+        if (monthIndex === 11 || monthIndex <= 1) return "ЗИМА";
+        if (monthIndex >= 2 && monthIndex <= 4) return "ВЕСНА";
+        if (monthIndex >= 5 && monthIndex <= 7) return "ЛІТО";
+        return "ОСІНЬ";
+    }
+
+    function parseDuration(duration) {
+        if (!duration) return 0;
+        const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+        if (!match) return 0;
+        return (parseInt(match[1]||0) * 3600) + (parseInt(match[2]||0) * 60) + (parseInt(match[3]||0));
+    }
+
+    // --- ФУНКЦІЇ ІНТЕРФЕЙСУ ---
+    
+    // Фільтр по темах
+    window.filterByCategory = function(tag) {
+        currentCategory = tag;
+        
+        const container = document.getElementById('category-filters');
+        const btns = container.getElementsByClassName('nav-btn');
+        for(let btn of btns) {
+            btn.classList.remove('active');
+            if(tag === 'all' && btn.innerText === 'ВСІ') btn.classList.add('active');
+            // Перевірка, чи це та кнопка (порівнюємо текст без #)
+            if(tag !== 'all' && btn.innerText === tag.replace('#', '').toUpperCase()) btn.classList.add('active');
+        }
+        refreshView();
+    }
+
+    // Сортування
+    window.applySort = function(mode) {
+        currentSortMode = mode;
+        const btns = document.querySelectorAll('.sort-btn');
+        btns.forEach(b => b.classList.remove('active'));
+        if(mode === 'newest') btns[0].classList.add('active');
+        if(mode === 'oldest') btns[1].classList.add('active');
+        if(mode === 'unwatched') btns[2].classList.add('active');
+        refreshView();
+    }
+
+    // Оновлення списку (фільтрація + сортування)
+    function refreshView() {
+        let list = [...globalVideos];
+
+        // 1. Категорія
+        if (currentCategory !== 'all') {
+            list = list.filter(v => v.tags && v.tags.includes(currentCategory));
+        }
+
+        // 2. Статус (якщо обрано "Не переглянуті")
+        if (currentSortMode === 'unwatched') {
+            list = list.filter(v => !watchedVideos.includes(v.id));
+        }
+
+        // 3. Сортування
+        if (currentSortMode === 'oldest') {
+            list.sort((a,b) => a.date - b.date);
+        } else {
+            list.sort((a,b) => b.date - a.date);
+        }
+
+        render(list);
+    }
+
+    // Малювання
+    function render(videos) {
+        const container = document.getElementById('weeks-container');
+        container.innerHTML = '';
+        document.getElementById('loader').style.display = 'none';
+
+        if (videos.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#999; font-size:12px; margin-top:30px;">Відео не знайдено.</div>';
+            return;
+        }
+
+        let lastYear = null;
+        let lastSeason = null;
+        let html = '';
+
+        videos.forEach(obj => {
+            const date = obj.date;
+            const year = date.getFullYear();
+            const season = getSeasonName(date.getMonth());
+
+            if (year !== lastYear || season !== lastSeason) {
+                html += '<div class="separator-container">';
+                if (year !== lastYear) { html += `<span class="year-separator">${year}</span>`; lastYear = year; }
+                if (season !== lastSeason) { html += `<span class="season-separator">${season}</span>`; lastSeason = season; }
+                html += '</div>';
+            }
+
+            const isWatched = watchedVideos.includes(obj.id) ? 'watched' : '';
+
+            html += `
+                <div class="film-row ${isWatched}" id="row-${obj.id}">
+                    <div class="film-info">
+                        <h2 class="film-title">${obj.title}</h2>
+                        <div class="production-info">${obj.productionString}</div>
+                        <a href="https://www.youtube.com/watch?v=${obj.id}" target="_blank" class="watch-btn" onclick="toggle('${obj.id}')">
+                            ${isWatched ? 'Переглянуто' : 'Дивитись фільм'}
+                        </a>
+                    </div>
+                    <a href="https://www.youtube.com/watch?v=${obj.id}" target="_blank" class="film-cover-link" onclick="toggle('${obj.id}')">
+                        <img src="${obj.thumb}" class="film-thumb" loading="lazy">
+                    </a>
+                </div>`;
+        });
+        
+        container.innerHTML = html;
+    }
+
+    window.toggle = function(id) {
+        if (!watchedVideos.includes(id)) {
+            watchedVideos.push(id);
+            localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos));
+            const row = document.getElementById(`row-${id}`);
+            if(row) {
+                row.classList.add('watched');
+                row.querySelector('.watch-btn').innerText = "Переглянуто";
+            }
+        }
+    }
+
+    // --- ЗАВАНТАЖЕННЯ ДАНИХ ---
+    async function loadData() {
+        try {
+            // 1. ID плейлиста
+            const chRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`);
+            if(!chRes.ok) throw new Error("API Error");
+            const chData = await chRes.json();
+            const plId = chData.items[0].contentDetails.relatedPlaylists.uploads;
+
+            // 2. Список відео
+            const plRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${plId}&maxResults=50&key=${API_KEY}`);
+            const plData = await plRes.json();
+            
+            if(!plData.items) throw new Error("No items");
+            let rawList = plData.items;
+
+            // 3. Деталі (фільтр + теги)
+            const ids = rawList.map(i => i.snippet.resourceId.videoId).join(',');
+            const detRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,liveStreamingDetails&id=${ids}&key=${API_KEY}`);
+            const detData = await detRes.json();
+            const detMap = {};
+            if(detData.items) detData.items.forEach(v => detMap[v.id] = v);
+
+            // 4. Обробка
+            globalVideos = [];
+            const allTagsSet = new Set();
+
+            rawList.forEach(item => {
+                const vidId = item.snippet.resourceId.videoId;
+                const details = detMap[vidId];
+
+                // Фільтр технічний
+                if(details) {
+                    if(details.liveStreamingDetails) return; 
+                    const dur = parseDuration(details.contentDetails.duration);
+                    if(dur > 0 && dur <= 60) return; 
+                }
+
+                // Пошук хештегів в описі (#tag)
+                const desc = item.snippet.description || "";
+                const tagsMatch = desc.match(/#[a-zA-Zа-яА-ЯіІїЇєЄґҐ0-9_]+/g);
+                let tags = [];
+                if (tagsMatch) {
+                    tags = tagsMatch.map(t => t.toLowerCase());
+                    tags.forEach(t => allTagsSet.add(t));
+                }
+
+                let thumb = "https://via.placeholder.com/640x360";
+                const t = item.snippet.thumbnails;
+                if(t.maxres) thumb = t.maxres.url;
+                else if(t.standard) thumb = t.standard.url;
+                else if(t.medium) thumb = t.medium.url;
+
+                globalVideos.push({
+                    id: vidId,
+                    title: item.snippet.title,
+                    date: new Date(item.snippet.publishedAt),
+                    thumb: thumb,
+                    tags: tags
+                });
+            });
+
+            // 5. Розрахунок часу (по хронології)
+            globalVideos.sort((a,b) => a.date - b.date);
+            globalVideos.forEach((video, index) => {
+                if (index === 0) {
+                    video.productionString = `Початок: ${formatDisplayDate(video.date)}`;
+                } else {
+                    const prevVideo = globalVideos[index - 1];
+                    const diffTime = Math.abs(video.date - prevVideo.date);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                    video.productionString = `${formatDisplayDate(prevVideo.date)} — ${formatDisplayDate(video.date)} • ${diffDays} днів у роботі`;
+                }
+            });
+
+            // 6. Створення меню категорій
+            const catContainer = document.getElementById('category-filters');
+            const sortedTags = Array.from(allTagsSet).sort();
+            
+            sortedTags.forEach(tag => {
+                const btn = document.createElement('button');
+                btn.className = 'nav-btn';
+                // Видаляємо # для краси в меню
+                btn.innerText = tag.replace('#', '');
+                btn.onclick = () => filterByCategory(tag);
+                catContainer.appendChild(btn);
+            });
+
+            // 7. Старт
+            applySort('newest');
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById('loader').innerText = "Помилка завантаження.";
+        }
+    }
+
+    loadData();
+</script>
+</body>
+</html>
