@@ -12,7 +12,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
 
     <style>
-        /* --- OPTIMIZED STYLES --- */
+        /* --- СТИЛЬ "RALEWAY FREEDOM" --- */
         body {
             font-family: 'Raleway', sans-serif;
             background-color: #ffffff;
@@ -46,7 +46,7 @@
         .sort-btn.active { color: #000; cursor: default; }
         .sort-btn.active::after { content: ''; position: absolute; bottom: -5px; left: 0; width: 100%; height: 1px; background: #e62117; }
 
-        /* LIST & GRID */
+        /* LIST */
         .weeks-list { display: flex; flex-direction: column; gap: 50px; padding-bottom: 80px; min-height: 200px; }
         .film-row { display: grid; grid-template-columns: 1fr 1.6fr; gap: 40px; align-items: center; }
 
@@ -58,14 +58,21 @@
         /* WATCHED STATE */
         .film-row.watched { opacity: 0.5; }
         .film-row.watched img { filter: grayscale(100%); transition: filter 0.5s ease; }
-        .film-row.watched .film-title, .film-row.watched .episode-label { color: #ccc; }
+        .film-row.watched .film-title { color: #bbb; }
+        .film-row.watched .production-info { color: #ccc; }
         .film-row.watched .watch-btn { border-color: #eee; color: #ccc; pointer-events: none; }
 
         /* INFO BLOCKS */
         .film-info { text-align: left; display: flex; flex-direction: column; align-items: flex-start; }
-        .episode-label { font-size: 11px; color: #e62117; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
-        .week-range { font-size: 10px; color: #bbb; font-weight: 600; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
-        .film-title { font-size: 32px; font-weight: 200; line-height: 1.2; margin: 0 0 10px 0; color: #000; }
+        
+        /* Новий стиль для інформації про час */
+        .production-info { 
+            font-size: 10px; color: #bbb; font-weight: 600; 
+            letter-spacing: 1px; margin-bottom: 20px; text-transform: uppercase; 
+            line-height: 1.6;
+        }
+        
+        .film-title { font-size: 32px; font-weight: 200; line-height: 1.2; margin: 0 0 15px 0; color: #000; }
         
         .watch-btn {
             display: inline-block; font-size: 11px; font-weight: 600; text-decoration: none;
@@ -84,9 +91,8 @@
         .film-cover-link:hover { transform: scale(1.02); }
         .film-thumb { width: 100%; height: 100%; object-fit: cover; }
 
-        /* LOADING & STATUS */
-        #loader { text-align: center; color: #ccc; font-size: 11px; margin-top: 50px; letter-spacing: 2px; font-weight: 500; }
-        #status-msg { text-align: center; color: #e62117; font-size: 10px; margin-top: 20px; display: none; }
+        /* LOADING */
+        #loader { text-align: center; color: #ddd; font-size: 10px; margin-top: 50px; letter-spacing: 2px; }
 
         @media (max-width: 900px) {
             body { padding: 30px 20px; }
@@ -114,29 +120,24 @@
 
     <div id="loader">ЗАВАНТАЖЕННЯ...</div>
     <div id="weeks-container" class="weeks-list"></div>
-    <div id="status-msg"></div>
 </div>
 
 <script>
-    // --- CONFIG ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
     const CHANNEL_ID = 'UCc774Bip-MWRuIH7-76YuPg'; 
 
-    // --- STATE ---
     let globalVideos = [];
     let currentSortMode = 'newest';
     let watchedVideos = [];
 
-    // --- INIT ---
-    // Безпечне читання історії
+    // Читання історії переглядів
     try {
         const stored = localStorage.getItem('my_watched_videos');
         if(stored) watchedVideos = JSON.parse(stored);
         if(!Array.isArray(watchedVideos)) watchedVideos = [];
     } catch(e) { watchedVideos = []; }
 
-    // --- FUNCTIONS ---
-    
+    // Форматування дати: 12.01.26
     function formatDisplayDate(date) {
         if (!date) return "";
         const d = date.getDate().toString().padStart(2, '0');
@@ -145,6 +146,7 @@
         return `${d}.${m}.${y}`;
     }
 
+    // Назви сезонів
     function getSeasonName(monthIndex) {
         if (monthIndex === 11 || monthIndex <= 1) return "ЗИМА";
         if (monthIndex >= 2 && monthIndex <= 4) return "ВЕСНА";
@@ -152,6 +154,7 @@
         return "ОСІНЬ";
     }
 
+    // Тривалість з ISO формату
     function parseDuration(duration) {
         if (!duration) return 0;
         const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
@@ -159,11 +162,10 @@
         return (parseInt(match[1]||0) * 3600) + (parseInt(match[2]||0) * 60) + (parseInt(match[3]||0));
     }
 
-    // Головна функція рендеру
+    // Відображення списку
     function applySort(mode) {
         currentSortMode = mode;
         
-        // UI кнопок
         document.querySelectorAll('.sort-btn').forEach(btn => btn.classList.remove('active'));
         const btns = document.querySelectorAll('.sort-btn');
         if(mode === 'newest') btns[0]?.classList.add('active');
@@ -173,7 +175,7 @@
 
         let list = [...globalVideos];
 
-        // Фільтр
+        // Фільтрація по переглядам
         if(mode === 'unwatched') list = list.filter(v => !watchedVideos.includes(v.id));
         if(mode === 'watched') list = list.filter(v => watchedVideos.includes(v.id));
 
@@ -187,7 +189,8 @@
     function render(videos) {
         const container = document.getElementById('weeks-container');
         container.innerHTML = '';
-        document.getElementById('loader').style.display = 'none'; // Ховаємо лоадер
+        const loader = document.getElementById('loader');
+        if(loader) loader.style.display = 'none';
 
         if (videos.length === 0) {
             container.innerHTML = '<div style="text-align:center; color:#999; font-size:12px;">Список порожній.</div>';
@@ -203,6 +206,7 @@
             const year = date.getFullYear();
             const season = getSeasonName(date.getMonth());
 
+            // Роздільники
             if (year !== lastYear || season !== lastSeason) {
                 html += '<div class="separator-container">';
                 if (year !== lastYear) { html += `<span class="year-separator">${year}</span>`; lastYear = year; }
@@ -211,19 +215,12 @@
             }
 
             const isWatched = watchedVideos.includes(obj.id) ? 'watched' : '';
-            
-            // Розрахунок тижня
-            let wStart = new Date(date);
-            const day = wStart.getDay() || 7; 
-            if (day !== 1) wStart.setHours(-24 * (day - 1));
-            let wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6);
 
             html += `
                 <div class="film-row ${isWatched}" id="row-${obj.id}">
                     <div class="film-info">
-                        <div class="episode-label">Епізод ${obj.episodeNumber}</div>
                         <h2 class="film-title">${obj.title}</h2>
-                        <div class="week-range">${formatDisplayDate(wStart)} — ${formatDisplayDate(wEnd)}</div>
+                        <div class="production-info">${obj.productionString}</div>
                         <a href="https://www.youtube.com/watch?v=${obj.id}" target="_blank" class="watch-btn" onclick="toggle('${obj.id}')">
                             ${isWatched ? 'Переглянуто' : 'Дивитись фільм'}
                         </a>
@@ -249,10 +246,9 @@
         }
     }
 
-    // --- DATA FETCHING ---
     async function loadData() {
         try {
-            // 1. Отримуємо ID плейлиста Uploads
+            // 1. Отримуємо плейлист Uploads
             const chRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`);
             if(!chRes.ok) throw new Error("API Error");
             const chData = await chRes.json();
@@ -266,27 +262,26 @@
 
             let rawList = plData.items;
             
-            // 3. Отримуємо деталі (для фільтрації Shorts/Live)
+            // 3. Отримуємо деталі для фільтрації
             const ids = rawList.map(i => i.snippet.resourceId.videoId).join(',');
             const detRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails,liveStreamingDetails&id=${ids}&key=${API_KEY}`);
             const detData = await detRes.json();
             const detMap = {};
             if(detData.items) detData.items.forEach(v => detMap[v.id] = v);
 
-            // 4. Обробка і фільтрація
+            // 4. Обробка списку
             globalVideos = [];
             rawList.forEach(item => {
                 const vidId = item.snippet.resourceId.videoId;
                 const details = detMap[vidId];
 
-                // Фільтри
+                // Фільтр Shorts і Live
                 if(details) {
-                    if(details.liveStreamingDetails) return; // Live
+                    if(details.liveStreamingDetails) return; 
                     const dur = parseDuration(details.contentDetails.duration);
-                    if(dur > 0 && dur <= 60) return; // Shorts
+                    if(dur > 0 && dur <= 60) return; 
                 }
 
-                // Картинка
                 let thumb = "https://via.placeholder.com/640x360";
                 const t = item.snippet.thumbnails;
                 if(t.maxres) thumb = t.maxres.url;
@@ -301,24 +296,33 @@
                 });
             });
 
-            // 5. Нумерація (Хронологічна)
+            // 5. РОЗРАХУНОК РЕАЛЬНОГО ЧАСУ ВИРОБНИЦТВА
+            // Сортуємо хронологічно (від старих до нових) для розрахунку
             globalVideos.sort((a,b) => a.date - b.date);
-            globalVideos.forEach((v, i) => v.episodeNumber = i + 1);
 
-            // 6. Показ (Нові зверху)
+            globalVideos.forEach((video, index) => {
+                if (index === 0) {
+                    // Перше відео
+                    video.productionString = `Початок: ${formatDisplayDate(video.date)}`;
+                } else {
+                    const prevVideo = globalVideos[index - 1];
+                    const diffTime = Math.abs(video.date - prevVideo.date);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                    
+                    video.productionString = `${formatDisplayDate(prevVideo.date)} — ${formatDisplayDate(video.date)} • ${diffDays} днів у роботі`;
+                }
+            });
+
+            // 6. Фінальний показ (Нові зверху)
             applySort('newest');
 
         } catch (err) {
             console.error(err);
-            document.getElementById('loader').innerText = "Помилка завантаження архіву.";
-            document.getElementById('status-msg').innerText = "Перевірте API ключ або ліміти.";
-            document.getElementById('status-msg').style.display = 'block';
+            document.getElementById('loader').innerText = "Помилка завантаження.";
         }
     }
 
-    // Старт
     loadData();
-
 </script>
 </body>
 </html>
