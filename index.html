@@ -8,7 +8,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
 
     <style>
-        /* --- CALENDAR GRID STYLE --- */
+        /* --- CALENDAR STYLE --- */
         body {
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             background-color: #ffffff;
@@ -25,11 +25,9 @@
         .main-wrapper {
             max-width: 1200px;
             margin: 0 auto;
-            display: none; /* Покажемо, коли завантажиться */
+            display: none; 
         }
 
-        /* ЗАГОЛОВОК СТОРІНКИ ПРИБРАНО */
-        
         /* РІК */
         .year-header {
             font-size: 100px; 
@@ -93,7 +91,7 @@
             pointer-events: none;
         }
 
-        /* ТЕКСТИ НА ОБКЛАДИНЦІ */
+        /* ТЕКСТИ */
         .overlay-number {
             position: absolute; top: 8px; left: 10px;
             color: white; font-size: 16px; font-weight: 500;
@@ -114,7 +112,6 @@
             filter: grayscale(100%) contrast(0.9); opacity: 0.7;
         }
 
-        /* АДАПТИВНІСТЬ */
         @media (max-width: 900px) { 
             .calendar-grid { grid-template-columns: repeat(4, 1fr); } 
             .year-header { font-size: 80px; } 
@@ -122,7 +119,7 @@
         }
 
         @media (max-width: 600px) { 
-            .calendar-grid { grid-template-columns: repeat(3, 1fr); } /* 3 в ряд для кращої сітки */
+            .calendar-grid { grid-template-columns: repeat(3, 1fr); } 
             .year-header { font-size: 60px; } 
             body { padding: 15px; }
         }
@@ -139,8 +136,8 @@
 <script>
     // --- КОНФІГУРАЦІЯ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
-    const CHANNEL_ID = 'UCn2Sn6RCn7n1ECIQJ7UrsHw'; // Ваш новий канал
-    const START_DATE = new Date(2026, 0, 11); 
+    const CHANNEL_ID = 'UCn2Sn6RCn7n1ECIQJ7UrsHw'; 
+    const START_DATE = new Date(2026, 0, 27); // 27 СІЧНЯ 2026
     // -----------------
 
     const app = document.getElementById('app');
@@ -154,35 +151,32 @@
 
     async function init() {
         let success = false;
+        const cacheBuster = new Date().getTime(); // Щоб не брало старий кеш
         
         try {
-            // 1. Отримуємо плейлист Uploads
-            const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`);
+            // 1. Отримуємо ID плейлиста "Uploads"
+            const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}&_=${cacheBuster}`);
             const channelData = await channelRes.json();
             
             if (channelData.items) {
                 const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
                 
-                // 2. Отримуємо відео (до 50 штук)
-                const videosRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}`);
+                // 2. Отримуємо останні 50 відео
+                const videosRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}&_=${cacheBuster}`);
                 const videosData = await videosRes.json();
                 
                 if (videosData.items) {
                     videosData.items.forEach(item => {
-                        // Ключ = Дата публікації (YYYY-MM-DD)
-                        const d = new Date(item.snippet.publishedAt);
-                        const key = d.toISOString().split('T')[0];
+                        // БЕРЕМО ДАТУ ПРЯМО З API (YYYY-MM-DD)
+                        // Це найнадійніший спосіб уникнути проблем з часовими поясами
+                        const rawDate = item.snippet.publishedAt; // наприклад: "2026-01-27T10:00:00Z"
+                        const key = rawDate.split('T')[0]; // беремо тільки "2026-01-27"
                         videosMap[key] = item;
                     });
                     success = true;
                 }
             }
         } catch (err) { console.warn("API Error:", err); }
-
-        // Якщо API не спрацювало або немає відео - покажемо демо (щоб не було порожньо)
-        if (!success || Object.keys(videosMap).length === 0) {
-            // generateDemoData(); // Розкоментуйте, якщо треба демо
-        }
 
         render();
         loadingIndicator.style.display = 'none';
@@ -191,16 +185,16 @@
 
     function render() {
         const today = new Date();
-        // Починаємо з 1 числа місяця старту
+        // Починаємо цикл з 1-го числа місяця, в якому START_DATE (тобто з 1 січня 2026)
+        // Це потрібно, щоб коректно намалювати сітку місяця, навіть якщо старт з 27-го
         let loop = new Date(START_DATE.getFullYear(), START_DATE.getMonth(), 1);
         let currentYear = 0;
 
-        // Генеруємо місяці до сьогодні
         while (loop <= today) {
             const y = loop.getFullYear();
             const m = loop.getMonth();
 
-            // Заголовок Року
+            // Малюємо рік, якщо змінився
             if (y !== currentYear) {
                 const yearEl = document.createElement('div'); 
                 yearEl.className = 'year-header'; 
@@ -211,7 +205,7 @@
             
             createMonth(y, m);
             
-            // Наступний місяць
+            // Перехід до наступного місяця
             loop.setMonth(loop.getMonth() + 1);
         }
     }
@@ -229,36 +223,41 @@
         
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         let startDay = new Date(year, month, 1).getDay(); 
-        startDay = (startDay === 0) ? 6 : startDay - 1; // Корекція для Понеділка
+        startDay = (startDay === 0) ? 6 : startDay - 1; // Корекція: Понеділок - перший
 
-        // Пусті клітинки на початку місяця
+        // Пусті клітинки для вирівнювання днів тижня
         for(let i=0; i<startDay; i++) grid.appendChild(document.createElement('div'));
 
-        // Дні
+        // Дні місяця
         for(let d=1; d<=daysInMonth; d++) {
             const cell = document.createElement('div');
             
-            // Якщо дата до старту проекту - просто пуста клітинка
+            // Створюємо об'єкт дати для перевірки на "майбутнє" або "до старту"
+            // Важливо: тут використовуємо локальний час 00:00 для коректного порівняння днів
             const checkDate = new Date(year, month, d);
-            if (checkDate < START_DATE) { 
-                grid.appendChild(document.createElement('div')); 
+            
+            // Якщо день раніше за дату старту (27 січня) - малюємо пусту клітинку
+            if (checkDate < new Date(START_DATE.getFullYear(), START_DATE.getMonth(), START_DATE.getDate())) { 
+                cell.className = 'day-cell empty-day';
+                // Можна залишити пустим або додати цифру (опціонально)
+                // cell.innerHTML = `<span class="day-plain-number" style="opacity:0.3">${d}</span>`; 
+                grid.appendChild(cell); 
                 continue; 
             }
 
-            // Формуємо ключ дати YYYY-MM-DD
+            // Формуємо ключ дати YYYY-MM-DD для пошуку в мапі відео
             const mStr = (month + 1).toString().padStart(2, '0');
             const dStr = d.toString().padStart(2, '0');
             const key = `${year}-${mStr}-${dStr}`;
 
             if (videosMap[key]) {
+                // ВІДЕО Є
                 const vid = videosMap[key];
                 cell.className = 'day-cell has-video';
                 
                 const vidId = vid.snippet.resourceId.videoId;
-                
                 if (watchedVideos.includes(vidId)) cell.classList.add('watched');
                 
-                // Картинка (найкраща доступна)
                 let thumb = "https://via.placeholder.com/400x225";
                 if (vid.snippet.thumbnails) {
                     if (vid.snippet.thumbnails.maxres) thumb = vid.snippet.thumbnails.maxres.url;
@@ -273,7 +272,7 @@
                     </a>
                 `;
             } else {
-                // Пустий день (без відео)
+                // ВІДЕО НЕМАЄ (але дата дозволена)
                 cell.className = 'day-cell empty-day';
                 cell.innerHTML = `<span class="day-plain-number">${d}</span>`;
             }
