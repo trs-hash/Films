@@ -11,13 +11,13 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
 
     <style>
-        /* --- STYLE: MINIMAL CALENDAR ARCHIVE --- */
+        /* --- STYLE: ZEN MODE --- */
         body {
             font-family: 'Raleway', sans-serif;
             background-color: #ffffff;
             color: #111;
             margin: 0;
-            padding: 60px 40px;
+            padding: 80px 40px;
             overflow-x: hidden;
             font-weight: 300;
         }
@@ -26,26 +26,26 @@
         /* HEADER */
         .site-header {
             margin-bottom: 80px;
-            text-align: left; 
+            text-align: left;
         }
         .site-title {
             font-size: 32px; 
             font-weight: 200; 
             text-transform: uppercase; 
             margin: 0; 
-            letter-spacing: 8px; 
+            letter-spacing: 10px; /* Ще більше повітря в буквах */
             color: #000;
         }
 
         /* LIST */
-        .weeks-list { display: flex; flex-direction: column; gap: 50px; padding-bottom: 80px; }
+        .weeks-list { display: flex; flex-direction: column; gap: 60px; padding-bottom: 100px; }
         
         .film-row { 
             display: grid; 
             grid-template-columns: 1fr 1.6fr; 
             gap: 40px; 
             align-items: center; 
-            transition: opacity 0.3s;
+            transition: opacity 0.5s ease;
         }
 
         /* SEPARATORS */
@@ -53,8 +53,8 @@
         .year-separator { font-size: 60px; font-weight: 100; letter-spacing: 6px; line-height: 1; color: #000; display: block; }
         .season-separator { font-size: 14px; font-weight: 500; letter-spacing: 4px; color: #e62117; text-transform: uppercase; display: block; margin-top: 10px; }
 
-        /* WATCHED STATE (BLACK & WHITE) */
-        .film-row.watched { opacity: 0.4; }
+        /* WATCHED STATE */
+        .film-row.watched { opacity: 0.3; } /* Дуже бліде, щоб не відволікало */
         .film-row.watched img { filter: grayscale(100%); transition: filter 0.5s ease; }
         .film-row.watched .film-title { color: #aaa; text-decoration: none; }
         .film-row.watched .episode-label, 
@@ -78,14 +78,15 @@
             margin: 0 0 10px 0; color: #000; 
             text-decoration: none;
             display: inline-block;
+            transition: color 0.3s;
         }
-        .film-title:hover { opacity: 0.7; transition: opacity 0.2s; }
+        .film-title:hover { color: #555; }
 
         /* THUMBNAILS */
         .film-cover-link {
             position: relative; width: 100%; aspect-ratio: 16/9; background: #f9f9f9;
             overflow: hidden; border-radius: 2px; display: block;
-            transition: transform 0.3s ease;
+            transition: transform 0.4s ease;
             cursor: pointer;
         }
         .film-cover-link:hover { transform: scale(1.02); }
@@ -114,22 +115,20 @@
 </div>
 
 <script>
-    // --- НАЛАШТУВАННЯ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
-    const CHANNEL_ID = 'UCn2Sn6RCn7n1ECIQJ7UrsHw'; // Новий канал
+    const CHANNEL_ID = 'UCn2Sn6RCn7n1ECIQJ7UrsHw'; // @taras.masymiak
 
     let globalVideos = [];
     let watchedVideos = [];
 
-    // Читаємо історію
+    // Історія переглядів
     try {
         const stored = localStorage.getItem('my_watched_videos');
         if(stored) watchedVideos = JSON.parse(stored);
         if(!Array.isArray(watchedVideos)) watchedVideos = [];
     } catch(e) { watchedVideos = []; }
 
-    // --- ФУНКЦІЇ ---
-
+    // --- UTILS ---
     function formatDisplayDate(date) {
         if (!date) return "";
         const d = date.getDate().toString().padStart(2, '0');
@@ -152,7 +151,7 @@
         return (parseInt(match[1]||0) * 3600) + (parseInt(match[2]||0) * 60) + (parseInt(match[3]||0));
     }
 
-    // --- РЕНДЕР ---
+    // --- RENDER ---
     function render(videos) {
         const container = document.getElementById('weeks-container');
         container.innerHTML = '';
@@ -189,13 +188,13 @@
             const isWatched = watchedVideos.includes(obj.id) ? 'watched' : '';
 
             html += `
-                <div class="film-row ${isWatched}" id="row-${obj.id}">
+                <div class="film-row ${isWatched}" id="row-${obj.id}" onclick="markWatched('${obj.id}')">
                     <div class="film-info">
                         <div class="episode-label">Епізод ${obj.episodeNumber}</div>
-                        <a href="https://www.youtube.com/watch?v=${obj.id}" target="_blank" class="film-title" onclick="markWatched('${obj.id}')">${obj.title}</a>
+                        <a href="https://www.youtube.com/watch?v=${obj.id}" target="_blank" class="film-title">${obj.title}</a>
                         <div class="week-range">${formatDisplayDate(wStart)} — ${formatDisplayDate(wEnd)}</div>
                     </div>
-                    <a href="https://www.youtube.com/watch?v=${obj.id}" target="_blank" class="film-cover-link" onclick="markWatched('${obj.id}')">
+                    <a href="https://www.youtube.com/watch?v=${obj.id}" target="_blank" class="film-cover-link">
                         <img src="${obj.thumb}" class="film-thumb" loading="lazy">
                     </a>
                 </div>`;
@@ -214,29 +213,25 @@
         }
     }
 
-    // --- ЗАВАНТАЖЕННЯ ---
+    // --- DATA ---
     async function loadData() {
         try {
-            // 1. Отримуємо плейлист
             const chRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`);
             if(!chRes.ok) throw new Error("API Error");
             const chData = await chRes.json();
             const plId = chData.items[0].contentDetails.relatedPlaylists.uploads;
 
-            // 2. Отримуємо відео
             const plRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${plId}&maxResults=50&key=${API_KEY}`);
             const plData = await plRes.json();
             if(!plData.items) throw new Error("No items");
             let rawList = plData.items;
 
-            // 3. Деталі (фільтр)
             const ids = rawList.map(i => i.snippet.resourceId.videoId).join(',');
             const detRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails,liveStreamingDetails&id=${ids}&key=${API_KEY}`);
             const detData = await detRes.json();
             const detMap = {};
             if(detData.items) detData.items.forEach(v => detMap[v.id] = v);
 
-            // 4. Обробка
             globalVideos = [];
             rawList.forEach(item => {
                 const vidId = item.snippet.resourceId.videoId;
@@ -262,11 +257,11 @@
                 });
             });
 
-            // 5. Нумерація (Хронологічно: 1...N)
+            // Нумерація 1..N
             globalVideos.sort((a,b) => a.date - b.date);
             globalVideos.forEach((v, i) => v.episodeNumber = i + 1);
 
-            // 6. Сортування для показу (Нові зверху)
+            // Сортування Нові..Старі для відображення
             globalVideos.sort((a,b) => b.date - a.date);
 
             render(globalVideos);
