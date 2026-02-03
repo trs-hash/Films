@@ -42,11 +42,11 @@
         }
         .year-header:first-child { margin-top: 0; }
 
-        /* СЕЗОН (Нове) */
+        /* СЕЗОН */
         .season-header {
             font-size: 14px;
             font-weight: 700;
-            color: #e62117; /* Червоний акцент */
+            color: #e62117; 
             text-transform: uppercase;
             letter-spacing: 2px;
             margin-top: 30px;
@@ -76,18 +76,19 @@
         .day-cell {
             aspect-ratio: 16/9; 
             position: relative;
-            background: #f4f4f4;
+            background: #f9f9f9; /* Трішки темніший фон для пустих днів, щоб було видно сітку */
             border-radius: 4px;
             overflow: hidden;
         }
 
         .day-cell.empty-day {
-            background: transparent; 
+            background: #fafafa; /* Світло-сірий для пустих */
+            border: 1px solid #f0f0f0; /* Легка рамка */
         }
 
         .day-plain-number {
             position: absolute; top: 5px; left: 8px;
-            font-size: 14px; color: #ddd; font-weight: bold;
+            font-size: 14px; color: #ccc; font-weight: bold;
         }
 
         /* ВІДЕО */
@@ -146,13 +147,13 @@
 
         @media (max-width: 1024px) {
             .calendar-grid { grid-template-columns: repeat(4, 1fr); } 
-            .day-cell.empty-day { display: none; } 
+            /* ВИДАЛЕНО display: none для empty-day */
         }
 
         @media (max-width: 600px) { 
             body { padding: 10px; }
             .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
-            .day-cell.empty-day { display: none; }
+            /* ВИДАЛЕНО display: none для empty-day */
             .year-header { font-size: 32px; }
             .month-header { font-size: 16px; margin-top: 20px; }
         }
@@ -169,8 +170,9 @@
 <script>
     // --- КОНФІГУРАЦІЯ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
-    const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA'; // Автоматичний ID
+    const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA'; 
     
+    // СТАРТ: 27 СІЧНЯ 2026
     const START_YEAR = 2026;
     const START_MONTH = 0; // 0 = Січень
     const START_DAY = 27;  
@@ -213,7 +215,6 @@
         mainContent.style.display = 'block';
     }
 
-    // Хелпер для визначення сезону
     function getSeasonName(monthIndex) {
         if (monthIndex === 11 || monthIndex === 0 || monthIndex === 1) return "ЗИМА";
         if (monthIndex >= 2 && monthIndex <= 4) return "ВЕСНА";
@@ -225,26 +226,22 @@
         const today = new Date();
         let loop = new Date(START_YEAR, START_MONTH, 1);
         let currentYear = 0;
-        let lastSeason = ""; // Для відстеження зміни сезону
+        let lastSeason = ""; 
 
         while (loop <= today) {
             const y = loop.getFullYear();
             const m = loop.getMonth();
             const currentSeason = getSeasonName(m);
 
-            // 1. Якщо змінився рік
             if (y !== currentYear) {
                 const yearEl = document.createElement('div'); 
                 yearEl.className = 'year-header'; 
                 yearEl.innerText = y;
                 app.appendChild(yearEl); 
                 currentYear = y;
-                
-                // Скидаємо сезон, щоб він надрукувався знову під новим роком (наприклад ЗИМА 2027)
                 lastSeason = ""; 
             }
 
-            // 2. Якщо змінився сезон
             if (currentSeason !== lastSeason) {
                 const seasonEl = document.createElement('div');
                 seasonEl.className = 'season-header';
@@ -280,7 +277,6 @@
         let startWeekDay = startDayDate.getDay(); 
         startWeekDay = (startWeekDay === 0) ? 6 : startWeekDay - 1; 
 
-        // Пусті клітинки
         for(let i=0; i<startWeekDay; i++) {
             const empty = document.createElement('div');
             empty.className = 'day-cell empty-day';
