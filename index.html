@@ -66,7 +66,7 @@
             position: relative;
             background: #f4f4f4;
             border-radius: 4px;
-            overflow: hidden;
+            overflow: hidden; /* Важливо для обрізки ліній хрестика */
         }
 
         .day-cell.empty-day {
@@ -112,15 +112,40 @@
             text-align: left;
         }
 
-        /* ПЕРЕГЛЯНУТО */
+        /* --- СТИЛЬ ПЕРЕГЛЯНУТОГО (ЧЕРВОНИЙ ХРЕСТ) --- */
+        
+        /* 1. Обкладинка лишається кольоровою (прибираємо grayscale) */
         .day-cell.watched .video-thumb {
-            filter: grayscale(100%); opacity: 0.6;
+            filter: none; 
+            opacity: 0.8; /* Трішки приглушуємо, але колір лишається */
         }
+
+        /* 2. Лінія 1 (нахил вправо) */
         .day-cell.watched::before {
-            content: '✓'; position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            color: rgba(255,255,255,0.8); font-size: 24px; z-index: 20;
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 150%; /* Довжина із запасом */
+            height: 3px; /* Товщина лінії */
+            background-color: #e62117; /* Червоний YouTube */
+            transform: translate(-50%, -50%) rotate(45deg);
+            z-index: 20;
             pointer-events: none;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3); /* Тінь для контрасту */
+        }
+
+        /* 3. Лінія 2 (нахил вліво) */
+        .day-cell.watched::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 150%;
+            height: 3px;
+            background-color: #e62117;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            z-index: 20;
+            pointer-events: none;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
         }
 
         @media (max-width: 1024px) {
@@ -148,7 +173,7 @@
 <script>
     // --- КОНФІГУРАЦІЯ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
-    // ВАШ НОВИЙ ПРАВИЛЬНИЙ ID КАНАЛУ
+    // ВАШ ПРАВИЛЬНИЙ ID КАНАЛУ
     const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA'; 
     
     // СТАРТ: 27 СІЧНЯ 2026
@@ -170,14 +195,14 @@
         const cacheBuster = Math.random(); 
         
         try {
-            // 1. Отримуємо ID Uploads з правильного каналу
+            // 1. Отримуємо ID плейлиста "Uploads"
             const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}&cb=${cacheBuster}`);
             const channelData = await channelRes.json();
             
             if (channelData.items) {
                 const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
                 
-                // 2. Отримуємо відео (автоматично)
+                // 2. Отримуємо відео (50 останніх)
                 const videosRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}&cb=${cacheBuster}`);
                 const videosData = await videosRes.json();
                 
@@ -292,6 +317,7 @@
             watchedVideos.push(id); 
             localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos));
         }
+        // Додаємо клас, який активує CSS хрестик
         cell.classList.add('watched');
     }
 
