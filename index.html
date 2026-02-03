@@ -82,8 +82,7 @@
         }
 
         .day-cell.empty-day {
-            background: transparent;
-            /* На мобільному пусті дні приховуємо */
+            background: transparent; 
         }
 
         .day-plain-number {
@@ -170,10 +169,10 @@
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
     const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA'; 
     
-    // СТАРТ: 27 СІЧНЯ 2026
+    // СТАРТ: 3 ЛЮТОГО 2026
     const START_YEAR = 2026;
-    const START_MONTH = 0; // 0 = Січень
-    const START_DAY = 27;  
+    const START_MONTH = 1; // 0 = Січень, 1 = Лютий
+    const START_DAY = 3;   // 3 число
     // -----------------
 
     const app = document.getElementById('app');
@@ -271,9 +270,16 @@
         
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         
-        // --- ЗМІНА: ПРИБРАНО ПУСТІ КЛІТИНКИ НА ПОЧАТКУ ---
-        // Ми більше не розраховуємо startWeekDay і не додаємо empty-day
-        // Дні просто йдуть підряд
+        let startDayDate = new Date(year, month, firstRenderDay);
+        let startWeekDay = startDayDate.getDay(); 
+        startWeekDay = (startWeekDay === 0) ? 6 : startWeekDay - 1; 
+
+        // Пусті клітинки
+        for(let i=0; i<startWeekDay; i++) {
+            const empty = document.createElement('div');
+            empty.className = 'day-cell empty-day';
+            grid.appendChild(empty);
+        }
 
         for(let d=firstRenderDay; d<=daysInMonth; d++) {
             const cell = document.createElement('div');
