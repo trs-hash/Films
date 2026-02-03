@@ -33,8 +33,8 @@
             font-size: 40px; 
             font-weight: 700; 
             color: #111;
-            margin-bottom: 20px; 
-            margin-top: 40px;
+            margin-bottom: 10px; 
+            margin-top: 50px;
             letter-spacing: -1px;
             border-bottom: 2px solid #111;
             padding-bottom: 5px;
@@ -42,13 +42,25 @@
         }
         .year-header:first-child { margin-top: 0; }
 
+        /* СЕЗОН (Нове) */
+        .season-header {
+            font-size: 14px;
+            font-weight: 700;
+            color: #e62117; /* Червоний акцент */
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 30px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
         /* МІСЯЦЬ */
         .month-header {
             color: #555; 
             font-size: 18px; 
             font-weight: 600;
             text-transform: uppercase; 
-            margin-top: 30px; 
+            margin-top: 15px; 
             margin-bottom: 15px;
             letter-spacing: 1px;
         }
@@ -66,7 +78,7 @@
             position: relative;
             background: #f4f4f4;
             border-radius: 4px;
-            overflow: hidden; /* Важливо для обрізки ліній хрестика */
+            overflow: hidden;
         }
 
         .day-cell.empty-day {
@@ -112,39 +124,23 @@
             text-align: left;
         }
 
-        /* --- СТИЛЬ ПЕРЕГЛЯНУТОГО (ЧЕРВОНИЙ ХРЕСТ) --- */
-        
-        /* 1. Обкладинка лишається кольоровою (прибираємо grayscale) */
+        /* ПЕРЕГЛЯНУТО (ХРЕСТИК) */
         .day-cell.watched .video-thumb {
             filter: none; 
-            opacity: 0.8; /* Трішки приглушуємо, але колір лишається */
+            opacity: 0.8;
         }
-
-        /* 2. Лінія 1 (нахил вправо) */
         .day-cell.watched::before {
-            content: '';
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 150%; /* Довжина із запасом */
-            height: 3px; /* Товщина лінії */
-            background-color: #e62117; /* Червоний YouTube */
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 150%; height: 3px; background-color: #e62117;
             transform: translate(-50%, -50%) rotate(45deg);
-            z-index: 20;
-            pointer-events: none;
-            box-shadow: 0 0 5px rgba(0,0,0,0.3); /* Тінь для контрасту */
+            z-index: 20; pointer-events: none;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
         }
-
-        /* 3. Лінія 2 (нахил вліво) */
         .day-cell.watched::after {
-            content: '';
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 150%;
-            height: 3px;
-            background-color: #e62117;
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 150%; height: 3px; background-color: #e62117;
             transform: translate(-50%, -50%) rotate(-45deg);
-            z-index: 20;
-            pointer-events: none;
+            z-index: 20; pointer-events: none;
             box-shadow: 0 0 5px rgba(0,0,0,0.3);
         }
 
@@ -173,10 +169,8 @@
 <script>
     // --- КОНФІГУРАЦІЯ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
-    // ВАШ ПРАВИЛЬНИЙ ID КАНАЛУ
-    const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA'; 
+    const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA'; // Автоматичний ID
     
-    // СТАРТ: 27 СІЧНЯ 2026
     const START_YEAR = 2026;
     const START_MONTH = 0; // 0 = Січень
     const START_DAY = 27;  
@@ -195,14 +189,12 @@
         const cacheBuster = Math.random(); 
         
         try {
-            // 1. Отримуємо ID плейлиста "Uploads"
             const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}&cb=${cacheBuster}`);
             const channelData = await channelRes.json();
             
             if (channelData.items) {
                 const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
                 
-                // 2. Отримуємо відео (50 останніх)
                 const videosRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}&cb=${cacheBuster}`);
                 const videosData = await videosRes.json();
                 
@@ -213,32 +205,52 @@
                         videosMap[key] = item;
                     });
                 }
-            } else {
-                console.error("Канал не знайдено. Перевірте ID.");
             }
-        } catch (err) { console.error("Помилка API:", err); }
+        } catch (err) { console.error("API error:", err); }
 
         render();
         loadingIndicator.style.display = 'none';
         mainContent.style.display = 'block';
     }
 
+    // Хелпер для визначення сезону
+    function getSeasonName(monthIndex) {
+        if (monthIndex === 11 || monthIndex === 0 || monthIndex === 1) return "ЗИМА";
+        if (monthIndex >= 2 && monthIndex <= 4) return "ВЕСНА";
+        if (monthIndex >= 5 && monthIndex <= 7) return "ЛІТО";
+        return "ОСІНЬ";
+    }
+
     function render() {
         const today = new Date();
-        // Починаємо цикл з місяця старту
         let loop = new Date(START_YEAR, START_MONTH, 1);
         let currentYear = 0;
+        let lastSeason = ""; // Для відстеження зміни сезону
 
         while (loop <= today) {
             const y = loop.getFullYear();
             const m = loop.getMonth();
+            const currentSeason = getSeasonName(m);
 
+            // 1. Якщо змінився рік
             if (y !== currentYear) {
                 const yearEl = document.createElement('div'); 
                 yearEl.className = 'year-header'; 
                 yearEl.innerText = y;
                 app.appendChild(yearEl); 
                 currentYear = y;
+                
+                // Скидаємо сезон, щоб він надрукувався знову під новим роком (наприклад ЗИМА 2027)
+                lastSeason = ""; 
+            }
+
+            // 2. Якщо змінився сезон
+            if (currentSeason !== lastSeason) {
+                const seasonEl = document.createElement('div');
+                seasonEl.className = 'season-header';
+                seasonEl.innerText = currentSeason;
+                app.appendChild(seasonEl);
+                lastSeason = currentSeason;
             }
             
             createMonth(y, m);
@@ -317,7 +329,6 @@
             watchedVideos.push(id); 
             localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos));
         }
-        // Додаємо клас, який активує CSS хрестик
         cell.classList.add('watched');
     }
 
