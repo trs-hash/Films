@@ -76,19 +76,19 @@
         .day-cell {
             aspect-ratio: 16/9; 
             position: relative;
-            background: #f9f9f9; /* Трішки темніший фон для пустих днів, щоб було видно сітку */
+            background: #f4f4f4;
             border-radius: 4px;
             overflow: hidden;
         }
 
         .day-cell.empty-day {
-            background: #fafafa; /* Світло-сірий для пустих */
-            border: 1px solid #f0f0f0; /* Легка рамка */
+            background: transparent;
+            /* На мобільному пусті дні приховуємо */
         }
 
         .day-plain-number {
             position: absolute; top: 5px; left: 8px;
-            font-size: 14px; color: #ccc; font-weight: bold;
+            font-size: 14px; color: #ddd; font-weight: bold;
         }
 
         /* ВІДЕО */
@@ -147,13 +147,11 @@
 
         @media (max-width: 1024px) {
             .calendar-grid { grid-template-columns: repeat(4, 1fr); } 
-            /* ВИДАЛЕНО display: none для empty-day */
         }
 
         @media (max-width: 600px) { 
             body { padding: 10px; }
             .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
-            /* ВИДАЛЕНО display: none для empty-day */
             .year-header { font-size: 32px; }
             .month-header { font-size: 16px; margin-top: 20px; }
         }
@@ -273,15 +271,9 @@
         
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         
-        let startDayDate = new Date(year, month, firstRenderDay);
-        let startWeekDay = startDayDate.getDay(); 
-        startWeekDay = (startWeekDay === 0) ? 6 : startWeekDay - 1; 
-
-        for(let i=0; i<startWeekDay; i++) {
-            const empty = document.createElement('div');
-            empty.className = 'day-cell empty-day';
-            grid.appendChild(empty);
-        }
+        // --- ЗМІНА: ПРИБРАНО ПУСТІ КЛІТИНКИ НА ПОЧАТКУ ---
+        // Ми більше не розраховуємо startWeekDay і не додаємо empty-day
+        // Дні просто йдуть підряд
 
         for(let d=firstRenderDay; d<=daysInMonth; d++) {
             const cell = document.createElement('div');
