@@ -8,13 +8,13 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
 
     <style>
-        /* --- ОПТИМІЗОВАНИЙ СТИЛЬ --- */
+        /* --- STYLE --- */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
             background-color: #ffffff;
             color: #222;
             margin: 0;
-            padding: 20px; /* Менше відступів */
+            padding: 20px;
             overflow-x: hidden;
         }
 
@@ -23,14 +23,14 @@
         }
 
         .main-wrapper {
-            max-width: 1400px; /* Розширив контейнер, щоб фото були більші */
+            max-width: 1400px;
             margin: 0 auto;
             display: none; 
         }
 
-        /* РІК (Зменшено) */
+        /* РІК */
         .year-header {
-            font-size: 40px; /* Було 100px */
+            font-size: 40px; 
             font-weight: 700; 
             color: #111;
             margin-bottom: 20px; 
@@ -42,10 +42,10 @@
         }
         .year-header:first-child { margin-top: 0; }
 
-        /* МІСЯЦЬ (Зменшено) */
+        /* МІСЯЦЬ */
         .month-header {
             color: #555; 
-            font-size: 18px; /* Було 32px */
+            font-size: 18px; 
             font-weight: 600;
             text-transform: uppercase; 
             margin-top: 30px; 
@@ -56,8 +56,8 @@
         /* СІТКА */
         .calendar-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr); /* 7 днів */
-            gap: 8px; /* Зменшено відступ, щоб картинки були більші */
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px; 
         }
 
         /* КЛІТИНКА */
@@ -70,7 +70,7 @@
         }
 
         .day-cell.empty-day {
-            background: transparent; /* Пусті дні прозорі */
+            background: transparent; 
         }
 
         .day-plain-number {
@@ -91,7 +91,6 @@
         
         .video-link:hover .video-thumb { transform: scale(1.03); }
 
-        /* Градієнт для читабельності тексту */
         .video-link::after {
             content: ''; position: absolute; inset: 0;
             background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%);
@@ -124,15 +123,14 @@
             pointer-events: none;
         }
 
-        /* АДАПТИВНІСТЬ */
         @media (max-width: 1024px) {
             .calendar-grid { grid-template-columns: repeat(4, 1fr); } 
-            .day-cell.empty-day { display: none; } /* На планшетах ховаємо пусті клітинки для компактності */
+            .day-cell.empty-day { display: none; } 
         }
 
         @media (max-width: 600px) { 
             body { padding: 10px; }
-            .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } /* Великі плитки на мобільному */
+            .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
             .day-cell.empty-day { display: none; }
             .year-header { font-size: 32px; }
             .month-header { font-size: 16px; margin-top: 20px; }
@@ -141,7 +139,7 @@
 </head>
 <body>
 
-<div id="loading-indicator">Завантаження архіву...</div>
+<div id="loading-indicator">Завантаження...</div>
 
 <div class="main-wrapper" id="main-content">
     <div id="app"></div>
@@ -150,7 +148,8 @@
 <script>
     // --- КОНФІГУРАЦІЯ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
-    const CHANNEL_ID = 'UCn2Sn6RCn7n1ECIQJ7UrsHw'; 
+    // ВАШ НОВИЙ ПРАВИЛЬНИЙ ID КАНАЛУ
+    const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA'; 
     
     // СТАРТ: 27 СІЧНЯ 2026
     const START_YEAR = 2026;
@@ -165,31 +164,20 @@
     const videosMap = {};
     let watchedVideos = [];
 
-    // Ручне додавання першого відео (fallback)
-    videosMap['2026-01-27'] = {
-        id: "manual-1",
-        snippet: {
-            title: "…в не стабільний час",
-            resourceId: { videoId: "9J_1aR1cfQw" },
-            thumbnails: { maxres: { url: "https://img.youtube.com/vi/9J_1aR1cfQw/maxresdefault.jpg" }, medium: { url: "https://img.youtube.com/vi/9J_1aR1cfQw/mqdefault.jpg" } }
-        }
-    };
-
     try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
 
     async function init() {
-        // Додаємо випадкове число, щоб браузер не кешував запит
         const cacheBuster = Math.random(); 
         
         try {
-            // 1. Отримуємо ID Uploads
+            // 1. Отримуємо ID Uploads з правильного каналу
             const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}&cb=${cacheBuster}`);
             const channelData = await channelRes.json();
             
             if (channelData.items) {
                 const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
                 
-                // 2. Отримуємо відео
+                // 2. Отримуємо відео (автоматично)
                 const videosRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}&cb=${cacheBuster}`);
                 const videosData = await videosRes.json();
                 
@@ -200,8 +188,10 @@
                         videosMap[key] = item;
                     });
                 }
+            } else {
+                console.error("Канал не знайдено. Перевірте ID.");
             }
-        } catch (err) { console.error("API error, using manual data"); }
+        } catch (err) { console.error("Помилка API:", err); }
 
         render();
         loadingIndicator.style.display = 'none';
@@ -210,7 +200,7 @@
 
     function render() {
         const today = new Date();
-        // Починаємо цикл чітко з місяця старту
+        // Починаємо цикл з місяця старту
         let loop = new Date(START_YEAR, START_MONTH, 1);
         let currentYear = 0;
 
@@ -234,10 +224,9 @@
     function createMonth(year, month) {
         const months = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
         
-        // Визначаємо стартовий день для відображення
         let firstRenderDay = 1;
         if (year === START_YEAR && month === START_MONTH) {
-            firstRenderDay = START_DAY; // Для січня 2026 починаємо з 27-го
+            firstRenderDay = START_DAY; 
         }
 
         const mTitle = document.createElement('div'); 
@@ -250,12 +239,11 @@
         
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         
-        // Вираховуємо день тижня для firstRenderDay
         let startDayDate = new Date(year, month, firstRenderDay);
         let startWeekDay = startDayDate.getDay(); 
-        startWeekDay = (startWeekDay === 0) ? 6 : startWeekDay - 1; // Корекція (Пн=0)
+        startWeekDay = (startWeekDay === 0) ? 6 : startWeekDay - 1; 
 
-        // Пусті клітинки (тільки для десктопу, CSS приховає їх на мобільному)
+        // Пусті клітинки
         for(let i=0; i<startWeekDay; i++) {
             const empty = document.createElement('div');
             empty.className = 'day-cell empty-day';
@@ -276,7 +264,6 @@
                 const vidId = vid.snippet.resourceId ? vid.snippet.resourceId.videoId : vid.id;
                 if (watchedVideos.includes(vidId)) cell.classList.add('watched');
                 
-                // Вибір кращої картинки
                 let thumb = "https://via.placeholder.com/400x225";
                 if (vid.snippet.thumbnails) {
                     if (vid.snippet.thumbnails.maxres) thumb = vid.snippet.thumbnails.maxres.url;
