@@ -4,326 +4,142 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарас Максимʼяк — кіноархів</title>
-    
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
-
     <style>
-        /* --- STYLE --- */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            background-color: #ffffff;
-            color: #222;
-            margin: 0;
-            padding: 20px;
-            overflow-x: hidden;
-        }
-
-        #loading-indicator {
-            font-size: 12px; color: #999; text-align: center; margin-top: 50px; font-weight: 400;
-        }
-
-        .main-wrapper {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: none; 
-        }
-
-        /* РІК */
-        .year-header {
-            font-size: 40px; 
-            font-weight: 700; 
-            color: #111;
-            margin-bottom: 10px; 
-            margin-top: 50px;
-            letter-spacing: -1px;
-            border-bottom: 2px solid #111;
-            padding-bottom: 5px;
-            display: inline-block;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #222; margin: 0; padding: 20px; overflow-x: hidden; }
+        .main-wrapper { max-width: 1400px; margin: 0 auto; display: none; }
+        .year-header { font-size: 40px; font-weight: 700; margin: 40px 0 10px; border-bottom: 2px solid #111; padding-bottom: 5px; display: inline-block; }
         .year-header:first-child { margin-top: 0; }
-
-        /* СЕЗОН */
-        .season-header {
-            font-size: 14px;
-            font-weight: 700;
-            color: #e62117; 
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-top: 30px;
-            margin-bottom: 10px;
-            display: block;
-        }
-
-        /* МІСЯЦЬ */
-        .month-header {
-            color: #555; 
-            font-size: 18px; 
-            font-weight: 600;
-            text-transform: uppercase; 
-            margin-top: 15px; 
-            margin-bottom: 15px;
-            letter-spacing: 1px;
-        }
-
-        /* СІТКА */
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 8px; 
-        }
-
-        /* КЛІТИНКА */
-        .day-cell {
-            aspect-ratio: 16/9; 
-            position: relative;
-            background: #f4f4f4;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .day-cell.empty-day {
-            background: transparent; 
-        }
-
-        .day-plain-number {
-            position: absolute; top: 5px; left: 8px;
-            font-size: 14px; color: #ddd; font-weight: bold;
-        }
-
-        /* ВІДЕО */
-        .video-link {
-            display: block; width: 100%; height: 100%;
-            position: relative; cursor: pointer;
-        }
-        
-        .video-thumb {
-            width: 100%; height: 100%; object-fit: cover;
-            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        
+        .season-header { font-size: 14px; font-weight: 700; color: #e62117; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 10px; }
+        .month-header { color: #555; font-size: 18px; font-weight: 600; text-transform: uppercase; margin: 15px 0; letter-spacing: 1px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+        .day-cell { aspect-ratio: 16/9; position: relative; background: #f4f4f4; border-radius: 4px; overflow: hidden; }
+        .day-cell.empty-day { background: transparent; }
+        .day-plain-number { position: absolute; top: 5px; left: 8px; font-size: 14px; color: #ddd; font-weight: bold; }
+        .video-link { display: block; width: 100%; height: 100%; position: relative; cursor: pointer; }
+        .video-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
         .video-link:hover .video-thumb { transform: scale(1.03); }
-
-        .video-link::after {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%);
-            pointer-events: none;
-        }
-
-        /* ТЕКСТИ */
-        .overlay-number {
-            position: absolute; top: 6px; left: 8px;
-            color: white; font-size: 14px; font-weight: 700;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.8); z-index: 10;
-        }
-
-        .overlay-title {
-            position: absolute; bottom: 8px; left: 8px; right: 8px;
-            color: white; font-size: 11px; font-weight: 500;
-            text-shadow: 0 1px 2px black; z-index: 10;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-            text-align: left;
-        }
-
-        /* ПЕРЕГЛЯНУТО (ХРЕСТИК) */
-        .day-cell.watched .video-thumb {
-            filter: none; 
-            opacity: 0.8;
-        }
-        .day-cell.watched::before {
-            content: ''; position: absolute; top: 50%; left: 50%;
-            width: 150%; height: 3px; background-color: #e62117;
-            transform: translate(-50%, -50%) rotate(45deg);
-            z-index: 20; pointer-events: none;
-            box-shadow: 0 0 5px rgba(0,0,0,0.3);
-        }
-        .day-cell.watched::after {
-            content: ''; position: absolute; top: 50%; left: 50%;
-            width: 150%; height: 3px; background-color: #e62117;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            z-index: 20; pointer-events: none;
-            box-shadow: 0 0 5px rgba(0,0,0,0.3);
-        }
-
-        @media (max-width: 1024px) {
-            .calendar-grid { grid-template-columns: repeat(4, 1fr); } 
-        }
-
-        @media (max-width: 600px) { 
-            body { padding: 10px; }
-            .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
-            .year-header { font-size: 32px; }
-            .month-header { font-size: 16px; margin-top: 20px; }
-        }
+        .video-link::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%); pointer-events: none; }
+        .overlay-number { position: absolute; top: 6px; left: 8px; color: #fff; font-size: 14px; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,0.8); z-index: 10; }
+        .overlay-title { position: absolute; bottom: 8px; left: 8px; right: 8px; color: #fff; font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px #000; z-index: 10; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .day-cell.watched .video-thumb { filter: none; opacity: 0.8; }
+        .day-cell.watched::before, .day-cell.watched::after { content: ''; position: absolute; top: 50%; left: 50%; width: 150%; height: 3px; background: #e62117; z-index: 20; pointer-events: none; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
+        .day-cell.watched::before { transform: translate(-50%, -50%) rotate(45deg); }
+        .day-cell.watched::after { transform: translate(-50%, -50%) rotate(-45deg); }
+        @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 600px) { body { padding: 10px; } .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } .year-header { font-size: 32px; } }
+        #loading { font-size: 12px; color: #999; text-align: center; margin-top: 50px; }
     </style>
 </head>
 <body>
-
-<div id="loading-indicator">Завантаження...</div>
-
-<div class="main-wrapper" id="main-content">
+<div id="loading">...</div>
+<div class="main-wrapper" id="main">
     <div id="app"></div>
 </div>
-
 <script>
-    // --- КОНФІГУРАЦІЯ ---
-    const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc'; 
-    const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA'; 
+    const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc';
+    const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; // Оптимізація: ID плейлиста завантажень напряму
     
-    // СТАРТ: 3 ЛЮТОГО 2026
+    // СТАРТ: 6 ЛЮТОГО 2026
     const START_YEAR = 2026;
-    const START_MONTH = 1; // 0 = Січень, 1 = Лютий
-    const START_DAY = 3;   // 3 число
-    // -----------------
-
-    const app = document.getElementById('app');
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const mainContent = document.getElementById('main-content');
+    const START_MONTH = 1; // 1 = Лютий
+    const START_DAY = 6;
     
+    const app = document.getElementById('app');
     const videosMap = {};
     let watchedVideos = [];
-
     try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
 
     async function init() {
-        const cacheBuster = Math.random(); 
-        
         try {
-            const channelRes = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}&cb=${cacheBuster}`);
-            const channelData = await channelRes.json();
-            
-            if (channelData.items) {
-                const uploadsId = channelData.items[0].contentDetails.relatedPlaylists.uploads;
-                
-                const videosRes = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsId}&maxResults=50&key=${API_KEY}&cb=${cacheBuster}`);
-                const videosData = await videosRes.json();
-                
-                if (videosData.items) {
-                    videosData.items.forEach(item => {
-                        const rawDate = item.snippet.publishedAt; 
-                        const key = rawDate.split('T')[0]; 
-                        videosMap[key] = item;
-                    });
-                }
+            // Лише ОДИН запит до API для максимальної швидкості
+            const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}&cb=${Math.random()}`);
+            const data = await res.json();
+            if (data.items) {
+                data.items.forEach(item => {
+                    videosMap[item.snippet.publishedAt.split('T')[0]] = item;
+                });
             }
-        } catch (err) { console.error("API error:", err); }
-
+        } catch (e) {}
         render();
-        loadingIndicator.style.display = 'none';
-        mainContent.style.display = 'block';
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('main').style.display = 'block';
     }
 
-    function getSeasonName(monthIndex) {
-        if (monthIndex === 11 || monthIndex === 0 || monthIndex === 1) return "ЗИМА";
-        if (monthIndex >= 2 && monthIndex <= 4) return "ВЕСНА";
-        if (monthIndex >= 5 && monthIndex <= 7) return "ЛІТО";
+    function getSeason(m) {
+        if (m === 11 || m <= 1) return "ЗИМА";
+        if (m >= 2 && m <= 4) return "ВЕСНА";
+        if (m >= 5 && m <= 7) return "ЛІТО";
         return "ОСІНЬ";
     }
 
     function render() {
         const today = new Date();
         let loop = new Date(START_YEAR, START_MONTH, 1);
-        let currentYear = 0;
-        let lastSeason = ""; 
+        let curYear = 0, lastSeason = "";
 
         while (loop <= today) {
             const y = loop.getFullYear();
             const m = loop.getMonth();
-            const currentSeason = getSeasonName(m);
+            const seas = getSeason(m);
 
-            if (y !== currentYear) {
-                const yearEl = document.createElement('div'); 
-                yearEl.className = 'year-header'; 
-                yearEl.innerText = y;
-                app.appendChild(yearEl); 
-                currentYear = y;
-                lastSeason = ""; 
+            if (y !== curYear) {
+                app.innerHTML += `<div class="year-header">${y}</div>`;
+                curYear = y;
+                lastSeason = "";
             }
-
-            if (currentSeason !== lastSeason) {
-                const seasonEl = document.createElement('div');
-                seasonEl.className = 'season-header';
-                seasonEl.innerText = currentSeason;
-                app.appendChild(seasonEl);
-                lastSeason = currentSeason;
+            if (seas !== lastSeason) {
+                app.innerHTML += `<div class="season-header">${seas}</div>`;
+                lastSeason = seas;
             }
-            
             createMonth(y, m);
-            loop.setMonth(loop.getMonth() + 1);
+            loop.setMonth(m + 1);
         }
     }
 
-    function createMonth(year, month) {
+    function createMonth(y, m) {
         const months = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+        app.innerHTML += `<div class="month-header">${months[m]}</div>`;
         
-        let firstRenderDay = 1;
-        if (year === START_YEAR && month === START_MONTH) {
-            firstRenderDay = START_DAY; 
-        }
-
-        const mTitle = document.createElement('div'); 
-        mTitle.className = 'month-header'; 
-        mTitle.innerText = months[month];
-        app.appendChild(mTitle);
-
-        const grid = document.createElement('div'); 
+        const grid = document.createElement('div');
         grid.className = 'calendar-grid';
         
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        let firstDay = (y === START_YEAR && m === START_MONTH) ? START_DAY : 1;
+        let daysInMonth = new Date(y, m + 1, 0).getDate();
         
-        let startDayDate = new Date(year, month, firstRenderDay);
-        let startWeekDay = startDayDate.getDay(); 
-        startWeekDay = (startWeekDay === 0) ? 6 : startWeekDay - 1; 
+        // Вирівнювання (Пн=0)
+        let emptyCount = (new Date(y, m, firstDay).getDay() + 6) % 7;
+        for(let i=0; i<emptyCount; i++) grid.innerHTML += `<div class="day-cell empty-day"></div>`;
 
-        // Пусті клітинки
-        for(let i=0; i<startWeekDay; i++) {
-            const empty = document.createElement('div');
-            empty.className = 'day-cell empty-day';
-            grid.appendChild(empty);
-        }
-
-        for(let d=firstRenderDay; d<=daysInMonth; d++) {
-            const cell = document.createElement('div');
+        for (let d = firstDay; d <= daysInMonth; d++) {
+            const key = `${y}-${(m+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+            const vid = videosMap[key];
             
-            const mStr = (month + 1).toString().padStart(2, '0');
-            const dStr = d.toString().padStart(2, '0');
-            const key = `${year}-${mStr}-${dStr}`;
-
-            if (videosMap[key]) {
-                const vid = videosMap[key];
-                cell.className = 'day-cell has-video';
-                
-                const vidId = vid.snippet.resourceId ? vid.snippet.resourceId.videoId : vid.id;
-                if (watchedVideos.includes(vidId)) cell.classList.add('watched');
-                
-                let thumb = "https://via.placeholder.com/400x225";
-                if (vid.snippet.thumbnails) {
-                    if (vid.snippet.thumbnails.maxres) thumb = vid.snippet.thumbnails.maxres.url;
-                    else if (vid.snippet.thumbnails.medium) thumb = vid.snippet.thumbnails.medium.url;
-                    else if (vid.snippet.thumbnails.high) thumb = vid.snippet.thumbnails.high.url;
-                }
-
-                cell.innerHTML = `
-                    <a href="https://www.youtube.com/watch?v=${vidId}" target="_blank" class="video-link" onclick="markWatched('${vidId}', this.parentElement)">
-                        <span class="overlay-number">${d}</span>
-                        <img src="${thumb}" class="video-thumb" loading="lazy">
-                        <div class="overlay-title">${vid.snippet.title}</div>
-                    </a>
-                `;
+            if (vid) {
+                const id = vid.snippet.resourceId.videoId;
+                const thumb = vid.snippet.thumbnails.maxres?.url || vid.snippet.thumbnails.medium.url;
+                const watchedClass = watchedVideos.includes(id) ? ' watched' : '';
+                grid.innerHTML += `
+                    <div class="day-cell has-video${watchedClass}">
+                        <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="video-link" onclick="mark('${id}', this.parentElement)">
+                            <span class="overlay-number">${d}</span>
+                            <img src="${thumb}" class="video-thumb" loading="lazy">
+                            <div class="overlay-title">${vid.snippet.title}</div>
+                        </a>
+                    </div>`;
             } else {
-                cell.className = 'day-cell empty-day';
-                cell.innerHTML = `<span class="day-plain-number">${d}</span>`;
+                grid.innerHTML += `<div class="day-cell empty-day"><span class="day-plain-number">${d}</span></div>`;
             }
-            grid.appendChild(cell);
         }
         app.appendChild(grid);
     }
 
-    window.markWatched = function(id, cell) {
-        if(!watchedVideos.includes(id)) {
-            watchedVideos.push(id); 
+    window.mark = function(id, el) {
+        if (!watchedVideos.includes(id)) {
+            watchedVideos.push(id);
             localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos));
         }
-        cell.classList.add('watched');
+        el.classList.add('watched');
     }
 
     init();
