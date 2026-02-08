@@ -22,10 +22,13 @@
         .video-link::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%); pointer-events: none; }
         .overlay-number { position: absolute; top: 6px; left: 8px; color: #fff; font-size: 14px; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,0.8); z-index: 10; }
         .overlay-title { position: absolute; bottom: 8px; left: 8px; right: 8px; color: #fff; font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px #000; z-index: 10; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        /* Стиль переглянутого (Червоний хрест) */
         .day-cell.watched .video-thumb { filter: none; opacity: 0.8; }
         .day-cell.watched::before, .day-cell.watched::after { content: ''; position: absolute; top: 50%; left: 50%; width: 150%; height: 3px; background: #e62117; z-index: 20; pointer-events: none; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
         .day-cell.watched::before { transform: translate(-50%, -50%) rotate(45deg); }
         .day-cell.watched::after { transform: translate(-50%, -50%) rotate(-45deg); }
+
         @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } }
         @media (max-width: 600px) { body { padding: 10px; } .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } .year-header { font-size: 32px; } }
         #loading { font-size: 12px; color: #999; text-align: center; margin-top: 50px; }
@@ -38,12 +41,12 @@
 </div>
 <script>
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc';
-    const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; // Оптимізація: ID плейлиста завантажень напряму
+    const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
     
-    // СТАРТ: 6 ЛЮТОГО 2026
+    // СТАРТ: 8 ЛЮТОГО 2026
     const START_YEAR = 2026;
     const START_MONTH = 1; // 1 = Лютий
-    const START_DAY = 6;
+    const START_DAY = 8;
     
     const app = document.getElementById('app');
     const videosMap = {};
@@ -52,7 +55,6 @@
 
     async function init() {
         try {
-            // Лише ОДИН запит до API для максимальної швидкості
             const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}&cb=${Math.random()}`);
             const data = await res.json();
             if (data.items) {
