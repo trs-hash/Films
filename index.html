@@ -19,34 +19,67 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
         .day-cell { 
             aspect-ratio: 16/9; position: relative; background: #f8f8f8; border-radius: 6px; 
-            display: flex; flex-direction: column;
+            display: flex; flex-direction: column; overflow: hidden; /* Обрізаємо все, крім стікера */
         }
-        .day-cell.empty-day { background: transparent; }
+        .day-cell.empty-day { background: transparent; overflow: visible; } 
+        /* Для стікера "Сезон 1" дозволяємо вилазити, якщо це пуста клітинка */
+        .day-cell:has(.marker-sticker) { overflow: visible; background: transparent; }
+
         
-        /* Date & Day styling (Less cluttered) */
+        /* --- НОВИЙ СТИЛЬ ДАТИ І ДНЯ --- */
         .date-container {
-            position: absolute; top: 6px; left: 8px; right: 8px;
-            display: flex; justify-content: space-between; align-items: baseline;
+            position: absolute; top: 8px; left: 10px; right: 10px;
+            display: flex; flex-direction: row; align-items: baseline; gap: 6px;
             z-index: 10; pointer-events: none;
         }
+        
+        /* Дата - ГРОМКА */
         .date-num { 
-            font-size: 14px; font-weight: 700; color: #ccc; /* Default grey for empty days */
+            font-size: 18px; 
+            font-weight: 800; 
+            line-height: 1;
+            color: #ccc; /* Сірий для пустих днів */
         }
+        
+        /* День тижня - ТИХИЙ */
         .day-name {
-            font-size: 10px; font-weight: 500; color: #e0e0e0; text-transform: uppercase; letter-spacing: 0.5px;
+            font-size: 10px; 
+            font-weight: 500; 
+            text-transform: uppercase; 
+            color: #ccc; 
+            opacity: 0.6; /* Напівпрозорість прибирає шум */
         }
 
-        /* Video specific overrides for text */
-        .has-video .date-num { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
-        .has-video .day-name { color: rgba(255,255,255,0.8); text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+        /* Стилі тексту на відео (білий колір) */
+        .has-video .date-num { 
+            color: #fff; 
+            text-shadow: 0 1px 3px rgba(0,0,0,0.9); 
+        }
+        .has-video .day-name { 
+            color: #fff; 
+            opacity: 0.7; /* Трохи прозорий білий */
+            text-shadow: 0 1px 2px rgba(0,0,0,0.9); 
+        }
 
         /* Video Link */
-        .video-link { display: block; width: 100%; height: 100%; position: relative; cursor: pointer; border-radius: 6px; overflow: hidden; z-index: 5; }
+        .video-link { display: block; width: 100%; height: 100%; position: relative; cursor: pointer; z-index: 5; }
         .video-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
         .video-link:hover .video-thumb { transform: scale(1.03); }
-        .video-link::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%); pointer-events: none; }
         
-        .overlay-title { position: absolute; bottom: 8px; left: 8px; right: 8px; color: #fff; font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px #000; z-index: 10; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Градієнт тепер трохи сильніший зверху, щоб читалась дата */
+        .video-link::after { 
+            content: ''; position: absolute; inset: 0; 
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.9) 100%); 
+            pointer-events: none; 
+        }
+        
+        .overlay-title { 
+            position: absolute; bottom: 10px; left: 10px; right: 10px; 
+            color: #fff; font-size: 11px; font-weight: 500; 
+            text-shadow: 0 1px 2px #000; z-index: 10; 
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+            opacity: 0.9;
+        }
         
         /* Watched State (Red Cross) */
         .day-cell.watched .video-thumb { filter: none; opacity: 0.8; }
@@ -54,24 +87,23 @@
         .day-cell.watched .video-link::before { transform: translate(-50%, -50%) rotate(45deg); }
         .day-cell.watched .video-link::after { transform: translate(-50%, -50%) rotate(-45deg); }
 
-        /* --- SEASON 1 MARKER (Pastel Sticker Style) --- */
+        /* --- SEASON 1 MARKER (Pastel Sticker) --- */
         .marker-sticker {
             position: absolute; inset: 0;
-            background-color: #FF6B6B; /* Pastel Red / Coral */
+            background-color: #FF6B6B; /* Pastel Red */
             display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
-            transform: rotate(-2deg) scale(1.02); /* Slight rotation like a sticker */
+            transform: rotate(-2deg) scale(1.05); 
             border-radius: 6px;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.15);
             z-index: 20;
-            overflow: hidden;
         }
         .marker-text {
             font-family: 'Courier New', Courier, monospace;
-            font-weight: 900; font-size: 18px; color: white;
+            font-weight: 900; font-size: 20px; color: white;
             text-transform: uppercase; letter-spacing: -1px;
         }
         .marker-arrow {
-            width: 18px; height: 18px; stroke: white; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round;
+            width: 20px; height: 20px; stroke: white; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round;
         }
 
         @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } }
@@ -80,6 +112,8 @@
             .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
             .year-header { font-size: 32px; } 
             .marker-text { font-size: 16px; }
+            .date-num { font-size: 16px; }
+            .day-name { font-size: 9px; }
         }
         #loading { font-size: 12px; color: #999; text-align: center; margin-top: 50px; }
     </style>
@@ -170,6 +204,14 @@
             let cellContent = '';
             let cellClass = 'day-cell empty-day';
             
+            // Загальний блок для дати (використовується всюди)
+            const dateBlock = `
+                <div class="date-container">
+                    <span class="date-num">${d}</span>
+                    <span class="day-name">${dayName}</span>
+                </div>
+            `;
+
             if (vid) {
                 cellClass = 'day-cell has-video';
                 const id = vid.snippet.resourceId.videoId;
@@ -177,26 +219,18 @@
                 if (watchedVideos.includes(id)) cellClass += ' watched';
                 
                 cellContent = `
-                    <div class="date-container">
-                        <span class="date-num">${d}</span>
-                        <span class="day-name">${dayName}</span>
-                    </div>
+                    ${dateBlock}
                     <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="video-link" onclick="mark('${id}', this.parentElement)">
                         <img src="${thumb}" class="video-thumb" loading="lazy">
                         <div class="overlay-title">${vid.snippet.title}</div>
                     </a>`;
             } else {
-                cellContent = `
-                    <div class="date-container">
-                        <span class="date-num">${d}</span>
-                        <span class="day-name">${dayName}</span>
-                    </div>`;
+                cellContent = dateBlock;
             }
 
-            // --- SEASON 1 STICKER (Feb 11, 2026) ---
+            // --- STICKER SEASON 1 ---
             if (y === 2026 && m === 1 && d === 11) {
                 if (!vid) {
-                    cellClass = 'day-cell'; // Solid background implies logic if needed, but sticker covers it
                     cellContent += `
                     <div class="marker-sticker">
                         <div class="marker-text">СЕЗОН 1</div>
