@@ -19,45 +19,43 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
         .day-cell { 
             aspect-ratio: 16/9; position: relative; background: #f8f8f8; border-radius: 6px; 
-            display: flex; flex-direction: column; overflow: hidden; /* Обрізаємо все, крім стікера */
+            display: flex; flex-direction: column; overflow: hidden; 
         }
         .day-cell.empty-day { background: transparent; overflow: visible; } 
-        /* Для стікера "Сезон 1" дозволяємо вилазити, якщо це пуста клітинка */
+        /* Дозволяємо стікеру виходити за межі */
         .day-cell:has(.marker-sticker) { overflow: visible; background: transparent; }
 
         
-        /* --- НОВИЙ СТИЛЬ ДАТИ І ДНЯ --- */
+        /* --- ДАТА І ДЕНЬ --- */
         .date-container {
             position: absolute; top: 8px; left: 10px; right: 10px;
             display: flex; flex-direction: row; align-items: baseline; gap: 6px;
             z-index: 10; pointer-events: none;
         }
         
-        /* Дата - ГРОМКА */
         .date-num { 
             font-size: 18px; 
             font-weight: 800; 
             line-height: 1;
-            color: #ccc; /* Сірий для пустих днів */
+            color: #ccc; 
         }
         
-        /* День тижня - ТИХИЙ */
         .day-name {
             font-size: 10px; 
             font-weight: 500; 
             text-transform: uppercase; 
             color: #ccc; 
-            opacity: 0.6; /* Напівпрозорість прибирає шум */
+            opacity: 0.6; 
         }
 
-        /* Стилі тексту на відео (білий колір) */
+        /* Стилі тексту на відео */
         .has-video .date-num { 
             color: #fff; 
             text-shadow: 0 1px 3px rgba(0,0,0,0.9); 
         }
         .has-video .day-name { 
             color: #fff; 
-            opacity: 0.7; /* Трохи прозорий білий */
+            opacity: 0.7; 
             text-shadow: 0 1px 2px rgba(0,0,0,0.9); 
         }
 
@@ -66,7 +64,6 @@
         .video-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
         .video-link:hover .video-thumb { transform: scale(1.03); }
         
-        /* Градієнт тепер трохи сильніший зверху, щоб читалась дата */
         .video-link::after { 
             content: ''; position: absolute; inset: 0; 
             background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.9) 100%); 
@@ -81,16 +78,16 @@
             opacity: 0.9;
         }
         
-        /* Watched State (Red Cross) */
+        /* Watched State */
         .day-cell.watched .video-thumb { filter: none; opacity: 0.8; }
         .day-cell.watched .video-link::before, .day-cell.watched .video-link::after { content: ''; position: absolute; top: 50%; left: 50%; width: 150%; height: 3px; background: #e62117; z-index: 20; pointer-events: none; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
         .day-cell.watched .video-link::before { transform: translate(-50%, -50%) rotate(45deg); }
         .day-cell.watched .video-link::after { transform: translate(-50%, -50%) rotate(-45deg); }
 
-        /* --- SEASON 1 MARKER (Pastel Sticker) --- */
+        /* --- STICKER (Pastel Red) --- */
         .marker-sticker {
             position: absolute; inset: 0;
-            background-color: #FF6B6B; /* Pastel Red */
+            background-color: #FF6B6B; 
             display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
             transform: rotate(-2deg) scale(1.05); 
             border-radius: 6px;
@@ -204,7 +201,6 @@
             let cellContent = '';
             let cellClass = 'day-cell empty-day';
             
-            // Загальний блок для дати (використовується всюди)
             const dateBlock = `
                 <div class="date-container">
                     <span class="date-num">${d}</span>
@@ -228,8 +224,8 @@
                 cellContent = dateBlock;
             }
 
-            // --- STICKER SEASON 1 ---
-            if (y === 2026 && m === 1 && d === 11) {
+            // --- STICKER SEASON 1 (Changed to 12 Feb) ---
+            if (y === 2026 && m === 1 && d === 12) {
                 if (!vid) {
                     cellContent += `
                     <div class="marker-sticker">
