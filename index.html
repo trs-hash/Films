@@ -14,7 +14,7 @@
         .month-header { color: #555; font-size: 18px; font-weight: 600; text-transform: uppercase; margin: 15px 0; letter-spacing: 1px; }
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
         .day-cell { aspect-ratio: 16/9; position: relative; background: #f4f4f4; border-radius: 4px; overflow: hidden; }
-        .day-cell.empty-day { background: transparent; } /* Стиль залишив про всяк випадок, але він не використовується */
+        .day-cell.empty-day { background: transparent; }
         .day-plain-number { position: absolute; top: 5px; left: 8px; font-size: 14px; color: #ddd; font-weight: bold; }
         .video-link { display: block; width: 100%; height: 100%; position: relative; cursor: pointer; }
         .video-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
@@ -28,6 +28,25 @@
         .day-cell.watched::before, .day-cell.watched::after { content: ''; position: absolute; top: 50%; left: 50%; width: 150%; height: 3px; background: #e62117; z-index: 20; pointer-events: none; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
         .day-cell.watched::before { transform: translate(-50%, -50%) rotate(45deg); }
         .day-cell.watched::after { transform: translate(-50%, -50%) rotate(-45deg); }
+
+        /* Стиль для рукописного тексту (клітинка 11 лютого) */
+        .handwritten-container {
+            position: absolute; inset: 0; 
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none; /* Щоб не заважало клікам, якщо раптом там буде щось */
+        }
+        .handwritten-svg {
+            width: 80%; height: 80%;
+            transform: rotate(-5deg); /* Легкий нахил для реалізму */
+            opacity: 0.9;
+        }
+        /* Анімація малювання (опціонально, але красиво) */
+        .path-draw {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw 2s ease-out forwards;
+        }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
 
         @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } }
         @media (max-width: 600px) { body { padding: 10px; } .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } .year-header { font-size: 32px; } }
@@ -108,29 +127,46 @@
         
         let firstDay = (y === START_YEAR && m === START_MONTH) ? START_DAY : 1;
         let daysInMonth = new Date(y, m + 1, 0).getDate();
-        
-        // --- ВИДАЛЕНО ЦИКЛ З emptyCount (пустими клітинками) ---
-        // Тепер календар завжди починається з першої позиції сітки
 
         for (let d = firstDay; d <= daysInMonth; d++) {
             const key = `${y}-${(m+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
             const vid = videosMap[key];
             
+            let cellContent = '';
+            let cellClass = 'day-cell empty-day';
+            
+            // Якщо є відео
             if (vid) {
+                cellClass = 'day-cell has-video';
                 const id = vid.snippet.resourceId.videoId;
                 const thumb = vid.snippet.thumbnails.maxres?.url || vid.snippet.thumbnails.medium.url;
-                const watchedClass = watchedVideos.includes(id) ? ' watched' : '';
-                grid.innerHTML += `
-                    <div class="day-cell has-video${watchedClass}">
-                        <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="video-link" onclick="mark('${id}', this.parentElement)">
-                            <span class="overlay-number">${d}</span>
-                            <img src="${thumb}" class="video-thumb" loading="lazy">
-                            <div class="overlay-title">${vid.snippet.title}</div>
-                        </a>
-                    </div>`;
+                if (watchedVideos.includes(id)) cellClass += ' watched';
+                
+                cellContent = `
+                    <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="video-link" onclick="mark('${id}', this.parentElement)">
+                        <span class="overlay-number">${d}</span>
+                        <img src="${thumb}" class="video-thumb" loading="lazy">
+                        <div class="overlay-title">${vid.snippet.title}</div>
+                    </a>`;
             } else {
-                grid.innerHTML += `<div class="day-cell empty-day"><span class="day-plain-number">${d}</span></div>`;
+                // Пуста клітинка (просто цифра)
+                cellContent = `<span class="day-plain-number">${d}</span>`;
             }
+
+            // --- ДОДАЄМО РУКОПИСНИЙ ТЕКСТ ДЛЯ 11 ЛЮТОГО 2026 ---
+            if (y === 2026 && m === 1 && d === 11) {
+                // SVG: Текст "Сезон 1" + Стрілка вправо-вниз
+                cellContent += `
+                <div class="handwritten-container">
+                    <svg viewBox="0 0 200 120" class="handwritten-svg" style="overflow:visible;">
+                        <path d="M20,40 Q15,60 40,55 Q50,50 45,65 Q35,80 15,75" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" /> <path d="M55,60 Q55,65 65,65 Q70,60 60,60 Q50,60 55,70 Q60,75 70,70" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:0.2s" /> <path d="M80,60 Q75,70 80,75 Q85,75 85,65 Q85,60 80,60 M85,60 Q90,60 90,75 M90,65 Q85,70 80,70" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:0.4s" /> <path d="M100,65 Q95,70 100,75 Q105,75 105,65 Q105,60 100,60 Q95,60 95,70" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:0.6s" /> <path d="M115,60 L115,75 M115,68 Q120,60 125,75" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:0.8s" /> <path d="M145,55 L145,75" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:1s" /> <path d="M100,90 Q140,100 180,80" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:1.2s" />
+                        <path d="M170,75 L180,80 L165,88" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:1.3s" />
+                    </svg>
+                </div>`;
+            }
+            // ----------------------------------------------------
+
+            grid.innerHTML += `<div class="${cellClass}">${cellContent}</div>`;
         }
         app.appendChild(grid);
     }
