@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарас Максимʼяк — кіноархів</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
-    
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #222; margin: 0; padding: 20px; overflow-x: hidden; }
         .main-wrapper { max-width: 1400px; margin: 0 auto; display: none; }
@@ -16,8 +15,8 @@
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
         .day-cell { aspect-ratio: 16/9; position: relative; background: #f4f4f4; border-radius: 4px; overflow: hidden; }
         .day-cell.empty-day { background: transparent; }
-        .day-plain-number { position: absolute; top: 5px; left: 8px; font-size: 14px; color: #ddd; font-weight: bold; }
-        .video-link { display: block; width: 100%; height: 100%; position: relative; cursor: pointer; }
+        .day-plain-number { position: absolute; top: 5px; left: 8px; font-size: 14px; color: #ddd; font-weight: bold; z-index: 2; }
+        .video-link { display: block; width: 100%; height: 100%; position: relative; cursor: pointer; z-index: 5; }
         .video-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
         .video-link:hover .video-thumb { transform: scale(1.03); }
         .video-link::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%); pointer-events: none; }
@@ -30,23 +29,27 @@
         .day-cell.watched::before { transform: translate(-50%, -50%) rotate(45deg); }
         .day-cell.watched::after { transform: translate(-50%, -50%) rotate(-45deg); }
 
-        /* Стиль для рукописного тексту (клітинка 11 лютого) */
-        .handwritten-container {
-            position: absolute; inset: 0; 
-            display: flex; align-items: center; justify-content: center;
-            pointer-events: none; 
+        /* Стиль "Маркер + Технічний шрифт" */
+        .marker-scribble {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            z-index: 1;
         }
-        .handwritten-svg {
-            width: 90%; height: 90%; /* Займає майже всю площу */
-            transform: rotate(-3deg); /* Легкий нахил */
-            opacity: 0.9;
+        .marker-content {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: row; align-items: center; justify-content: center;
+            z-index: 3; gap: 8px;
         }
-        .marker-line {
-            fill: none;
-            stroke: #e62117;
-            stroke-width: 2.5; /* Товсті лінії для розбірливості */
-            stroke-linecap: round;
-            stroke-linejoin: round;
+        .tech-text {
+            font-family: 'Courier New', Courier, monospace; /* Технічний шрифт */
+            font-weight: 900;
+            font-size: 20px;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+        }
+        .tech-arrow {
+            width: 24px; height: 24px;
+            stroke: #ffffff; stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round;
         }
 
         @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } }
@@ -54,6 +57,7 @@
             body { padding: 10px; } 
             .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
             .year-header { font-size: 32px; } 
+            .tech-text { font-size: 16px; }
         }
         #loading { font-size: 12px; color: #999; text-align: center; margin-top: 50px; }
     </style>
@@ -140,6 +144,7 @@
             let cellContent = '';
             let cellClass = 'day-cell empty-day';
             
+            // Якщо є відео
             if (vid) {
                 cellClass = 'day-cell has-video';
                 const id = vid.snippet.resourceId.videoId;
@@ -156,22 +161,25 @@
                 cellContent = `<span class="day-plain-number">${d}</span>`;
             }
 
-            // --- РУКОПИСНИЙ ТЕКСТ (11 ЛЮТОГО 2026) ---
+            // --- МАРКЕРНИЙ ЗАПИС (11 ЛЮТОГО 2026) ---
             if (y === 2026 && m === 1 && d === 11) {
-                cellContent += `
-                <div class="handwritten-container">
-                    <svg viewBox="0 0 120 70" class="handwritten-svg">
-                        <path d="M10,25 Q5,35 20,35 Q25,25 20,20 Q15,15 10,25" class="marker-line" />
-                        <path d="M25,28 Q35,20 35,30 Q30,40 25,35" class="marker-line" />
-                        <path d="M40,25 Q45,20 50,25 Q45,30 40,30 Q45,35 50,35" class="marker-line" />
-                        <path d="M55,30 Q55,20 62,20 Q69,20 69,30 Q69,40 62,40 Q55,40 55,30" class="marker-line" />
-                        <path d="M75,20 L75,40 M75,30 Q80,25 85,30 L85,40" class="marker-line" />
-                        <path d="M95,20 L95,40 M90,25 L95,20" class="marker-line" />
-                        
-                        <path d="M60,50 Q80,55 105,55" class="marker-line" />
-                        <path d="M95,48 L105,55 L95,62" class="marker-line" />
+                // Якщо відео немає, показуємо заглушку. 
+                // Якщо відео з'явиться в API, воно перекриє це (логіка вище `if(vid)` спрацює першою, якщо ми не додамо else)
+                // АЛЕ зараз ми хочемо саме цей дизайн для цієї дати, якщо вона пуста.
+                if (!vid) {
+                    cellClass = 'day-cell'; // Прибираємо transparent background
+                    cellContent += `
+                    <svg class="marker-scribble" viewBox="0 0 100 60" preserveAspectRatio="none">
+                        <path d="M-10,10 L110,5 L-10,25 L110,20 L-10,40 L110,35 L-10,55 L110,50 L-10,70" 
+                              stroke="#e62117" stroke-width="18" stroke-linecap="round" fill="none" />
                     </svg>
-                </div>`;
+                    <div class="marker-content">
+                        <div class="tech-text">СЕЗОН 1</div>
+                        <svg class="tech-arrow" viewBox="0 0 24 24">
+                            <path d="M4,12 L20,12 M14,6 L20,12 L14,18" />
+                        </svg>
+                    </div>`;
+                }
             }
 
             grid.innerHTML += `<div class="${cellClass}">${cellContent}</div>`;
