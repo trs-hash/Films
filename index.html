@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарас Максимʼяк — кіноархів</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&display=swap" rel="stylesheet">
+
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #222; margin: 0; padding: 20px; overflow-x: hidden; }
         .main-wrapper { max-width: 1400px; margin: 0 auto; display: none; }
@@ -29,27 +34,34 @@
         .day-cell.watched::before { transform: translate(-50%, -50%) rotate(45deg); }
         .day-cell.watched::after { transform: translate(-50%, -50%) rotate(-45deg); }
 
-        /* Стиль для рукописного тексту (клітинка 11 лютого) */
+        /* Стиль для рукописного тексту */
         .handwritten-container {
             position: absolute; inset: 0; 
-            display: flex; align-items: center; justify-content: center;
-            pointer-events: none; /* Щоб не заважало клікам, якщо раптом там буде щось */
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            pointer-events: none; 
+            transform: rotate(-5deg); /* Нахил всього блоку */
         }
-        .handwritten-svg {
-            width: 80%; height: 80%;
-            transform: rotate(-5deg); /* Легкий нахил для реалізму */
-            opacity: 0.9;
+        .hw-text {
+            font-family: 'Gochi Hand', cursive;
+            color: #e62117;
+            font-size: 22px; /* Великий розмір */
+            line-height: 1;
+            margin-bottom: -5px; /* Притиснути до стрілки */
         }
-        /* Анімація малювання (опціонально, але красиво) */
-        .path-draw {
-            stroke-dasharray: 1000;
-            stroke-dashoffset: 1000;
-            animation: draw 2s ease-out forwards;
+        .hw-arrow-svg {
+            width: 50px; height: 30px;
+            fill: none; stroke: #e62117; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
+            margin-left: 30px; /* Зсув стрілки вправо */
         }
-        @keyframes draw { to { stroke-dashoffset: 0; } }
 
         @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } }
-        @media (max-width: 600px) { body { padding: 10px; } .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } .year-header { font-size: 32px; } }
+        @media (max-width: 600px) { 
+            body { padding: 10px; } 
+            .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
+            .year-header { font-size: 32px; } 
+            .hw-text { font-size: 18px; } /* Трохи менше на мобільному */
+            .hw-arrow-svg { width: 40px; }
+        }
         #loading { font-size: 12px; color: #999; text-align: center; margin-top: 50px; }
     </style>
 </head>
@@ -135,7 +147,6 @@
             let cellContent = '';
             let cellClass = 'day-cell empty-day';
             
-            // Якщо є відео
             if (vid) {
                 cellClass = 'day-cell has-video';
                 const id = vid.snippet.resourceId.videoId;
@@ -149,22 +160,19 @@
                         <div class="overlay-title">${vid.snippet.title}</div>
                     </a>`;
             } else {
-                // Пуста клітинка (просто цифра)
                 cellContent = `<span class="day-plain-number">${d}</span>`;
             }
 
-            // --- ДОДАЄМО РУКОПИСНИЙ ТЕКСТ ДЛЯ 11 ЛЮТОГО 2026 ---
+            // --- РУКОПИСНИЙ ТЕКСТ (11 ЛЮТОГО 2026) ---
             if (y === 2026 && m === 1 && d === 11) {
-                // SVG: Текст "Сезон 1" + Стрілка вправо-вниз
                 cellContent += `
                 <div class="handwritten-container">
-                    <svg viewBox="0 0 200 120" class="handwritten-svg" style="overflow:visible;">
-                        <path d="M20,40 Q15,60 40,55 Q50,50 45,65 Q35,80 15,75" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" /> <path d="M55,60 Q55,65 65,65 Q70,60 60,60 Q50,60 55,70 Q60,75 70,70" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:0.2s" /> <path d="M80,60 Q75,70 80,75 Q85,75 85,65 Q85,60 80,60 M85,60 Q90,60 90,75 M90,65 Q85,70 80,70" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:0.4s" /> <path d="M100,65 Q95,70 100,75 Q105,75 105,65 Q105,60 100,60 Q95,60 95,70" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:0.6s" /> <path d="M115,60 L115,75 M115,68 Q120,60 125,75" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:0.8s" /> <path d="M145,55 L145,75" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:1s" /> <path d="M100,90 Q140,100 180,80" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:1.2s" />
-                        <path d="M170,75 L180,80 L165,88" fill="none" stroke="#e62117" stroke-width="3" stroke-linecap="round" class="path-draw" style="animation-delay:1.3s" />
+                    <div class="hw-text">Сезон 1</div>
+                    <svg viewBox="0 0 50 30" class="hw-arrow-svg">
+                        <path d="M5,15 Q25,5 45,15 L35,22 M45,15 L38,8" />
                     </svg>
                 </div>`;
             }
-            // ----------------------------------------------------
 
             grid.innerHTML += `<div class="${cellClass}">${cellContent}</div>`;
         }
