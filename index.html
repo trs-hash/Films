@@ -8,72 +8,70 @@
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #222; margin: 0; padding: 20px; overflow-x: hidden; }
         .main-wrapper { max-width: 1400px; margin: 0 auto; display: none; }
+        
+        /* Headers */
         .year-header { font-size: 40px; font-weight: 700; margin: 40px 0 10px; border-bottom: 2px solid #111; padding-bottom: 5px; display: inline-block; }
         .year-header:first-child { margin-top: 0; }
         .season-header { font-size: 14px; font-weight: 700; color: #e62117; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 10px; }
         .month-header { color: #555; font-size: 18px; font-weight: 600; text-transform: uppercase; margin: 15px 0; letter-spacing: 1px; }
+        
+        /* Grid */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-        
         .day-cell { 
-            aspect-ratio: 16/9; 
-            position: relative; 
-            background: #f4f4f4; 
-            border-radius: 4px; 
-            /* overflow: hidden;  <-- ПРИБРАЛИ, ЩОБ МАРКЕР МІГ ВИЛАЗИТИ */
+            aspect-ratio: 16/9; position: relative; background: #f8f8f8; border-radius: 6px; 
+            display: flex; flex-direction: column;
         }
+        .day-cell.empty-day { background: transparent; }
         
-        /* Для відео потрібен overflow hidden, тому робимо внутрішній контейнер */
-        .video-container {
-            width: 100%; height: 100%;
-            position: relative;
-            border-radius: 4px;
-            overflow: hidden;
+        /* Date & Day styling (Less cluttered) */
+        .date-container {
+            position: absolute; top: 6px; left: 8px; right: 8px;
+            display: flex; justify-content: space-between; align-items: baseline;
+            z-index: 10; pointer-events: none;
+        }
+        .date-num { 
+            font-size: 14px; font-weight: 700; color: #ccc; /* Default grey for empty days */
+        }
+        .day-name {
+            font-size: 10px; font-weight: 500; color: #e0e0e0; text-transform: uppercase; letter-spacing: 0.5px;
         }
 
-        .day-cell.empty-day { background: transparent; }
-        .day-plain-number { position: absolute; top: 5px; left: 8px; font-size: 14px; color: #ddd; font-weight: bold; z-index: 2; }
-        
-        .video-link { display: block; width: 100%; height: 100%; position: relative; cursor: pointer; z-index: 5; }
+        /* Video specific overrides for text */
+        .has-video .date-num { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.8); }
+        .has-video .day-name { color: rgba(255,255,255,0.8); text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+        /* Video Link */
+        .video-link { display: block; width: 100%; height: 100%; position: relative; cursor: pointer; border-radius: 6px; overflow: hidden; z-index: 5; }
         .video-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
         .video-link:hover .video-thumb { transform: scale(1.03); }
         .video-link::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%); pointer-events: none; }
         
-        .overlay-number { position: absolute; top: 6px; left: 8px; color: #fff; font-size: 12px; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,0.8); z-index: 10; }
         .overlay-title { position: absolute; bottom: 8px; left: 8px; right: 8px; color: #fff; font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px #000; z-index: 10; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
-        /* Стиль переглянутого */
+        /* Watched State (Red Cross) */
         .day-cell.watched .video-thumb { filter: none; opacity: 0.8; }
-        .day-cell.watched .video-container::before, .day-cell.watched .video-container::after { content: ''; position: absolute; top: 50%; left: 50%; width: 150%; height: 3px; background: #e62117; z-index: 20; pointer-events: none; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
-        .day-cell.watched .video-container::before { transform: translate(-50%, -50%) rotate(45deg); }
-        .day-cell.watched .video-container::after { transform: translate(-50%, -50%) rotate(-45deg); }
+        .day-cell.watched .video-link::before, .day-cell.watched .video-link::after { content: ''; position: absolute; top: 50%; left: 50%; width: 150%; height: 3px; background: #e62117; z-index: 20; pointer-events: none; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
+        .day-cell.watched .video-link::before { transform: translate(-50%, -50%) rotate(45deg); }
+        .day-cell.watched .video-link::after { transform: translate(-50%, -50%) rotate(-45deg); }
 
-        /* --- СТИЛЬ "СЕЗОН 1" (МАРКЕР) --- */
-        .marker-scribble-container {
-            position: absolute; 
-            top: -10%; left: -5%; width: 110%; height: 120%; /* Трохи вилазить */
-            z-index: 10;
-            pointer-events: none;
-            transform: rotate(-2deg); /* Легкий нахил всього малюнка */
-        }
-        .marker-bg {
-            fill: #e62117;
-            stroke: none;
-            opacity: 0.9;
-        }
-        .marker-content {
+        /* --- SEASON 1 MARKER (Pastel Sticker Style) --- */
+        .marker-sticker {
             position: absolute; inset: 0;
-            display: flex; flex-direction: row; align-items: center; justify-content: center;
-            z-index: 12; gap: 5px;
-            color: white;
+            background-color: #FF6B6B; /* Pastel Red / Coral */
+            display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
+            transform: rotate(-2deg) scale(1.02); /* Slight rotation like a sticker */
+            border-radius: 6px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            z-index: 20;
+            overflow: hidden;
         }
-        .tech-text {
+        .marker-text {
             font-family: 'Courier New', Courier, monospace;
-            font-weight: 900; font-size: 18px; 
+            font-weight: 900; font-size: 18px; color: white;
             text-transform: uppercase; letter-spacing: -1px;
         }
-        .tech-arrow {
-            width: 20px; height: 20px;
-            stroke: white; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round;
+        .marker-arrow {
+            width: 18px; height: 18px; stroke: white; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round;
         }
 
         @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } }
@@ -81,7 +79,7 @@
             body { padding: 10px; } 
             .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
             .year-header { font-size: 32px; } 
-            .tech-text { font-size: 14px; }
+            .marker-text { font-size: 16px; }
         }
         #loading { font-size: 12px; color: #999; text-align: center; margin-top: 50px; }
     </style>
@@ -91,20 +89,13 @@
 <div class="main-wrapper" id="main">
     <div id="app"></div>
 </div>
-
-<svg style="display: none;">
-    <filter id="scribble-filter">
-        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise" />
-        <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" />
-    </filter>
-</svg>
-
 <script>
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc';
     const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
     
+    // START: Feb 8, 2026
     const START_YEAR = 2026;
-    const START_MONTH = 1; // Лютий
+    const START_MONTH = 1; 
     const START_DAY = 8;
     
     const app = document.getElementById('app');
@@ -172,16 +163,13 @@
 
         for (let d = firstDay; d <= daysInMonth; d++) {
             const dateObj = new Date(y, m, d);
-            const dayOfWeek = weekDays[dateObj.getDay()];
-            const dateString = `${d} ${dayOfWeek}`; // Наприклад: 8 НД
-
+            const dayName = weekDays[dateObj.getDay()];
             const key = `${y}-${(m+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
             const vid = videosMap[key];
             
             let cellContent = '';
             let cellClass = 'day-cell empty-day';
             
-            // Якщо є відео
             if (vid) {
                 cellClass = 'day-cell has-video';
                 const id = vid.snippet.resourceId.videoId;
@@ -189,37 +177,32 @@
                 if (watchedVideos.includes(id)) cellClass += ' watched';
                 
                 cellContent = `
-                    <div class="video-container">
-                        <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="video-link" onclick="mark('${id}', this.parentElement.parentElement)">
-                            <span class="overlay-number">${dateString}</span>
-                            <img src="${thumb}" class="video-thumb" loading="lazy">
-                            <div class="overlay-title">${vid.snippet.title}</div>
-                        </a>
-                    </div>`;
+                    <div class="date-container">
+                        <span class="date-num">${d}</span>
+                        <span class="day-name">${dayName}</span>
+                    </div>
+                    <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="video-link" onclick="mark('${id}', this.parentElement)">
+                        <img src="${thumb}" class="video-thumb" loading="lazy">
+                        <div class="overlay-title">${vid.snippet.title}</div>
+                    </a>`;
             } else {
-                cellContent = `<span class="day-plain-number">${dateString}</span>`;
+                cellContent = `
+                    <div class="date-container">
+                        <span class="date-num">${d}</span>
+                        <span class="day-name">${dayName}</span>
+                    </div>`;
             }
 
-            // --- МАРКЕРНИЙ ЗАПИС (11 ЛЮТОГО 2026) ---
+            // --- SEASON 1 STICKER (Feb 11, 2026) ---
             if (y === 2026 && m === 1 && d === 11) {
-                // Якщо відео немає, малюємо маркер
                 if (!vid) {
-                    cellClass = 'day-cell'; // Прибираємо прозорість, бо у нас свій фон
+                    cellClass = 'day-cell'; // Solid background implies logic if needed, but sticker covers it
                     cellContent += `
-                    <div class="marker-scribble-container">
-                        <svg viewBox="0 0 100 60" style="width:100%; height:100%; filter: url(#scribble-filter);">
-                            <path d="M5,10 Q20,5 50,8 Q80,5 95,15 Q98,30 90,45 Q70,55 50,52 Q20,55 5,40 Q0,25 5,10 Z" 
-                                  class="marker-bg" />
-                            <path d="M10,15 L90,12 M15,25 L85,28 M10,35 L90,38 M20,45 L80,42" 
-                                  stroke="white" stroke-width="2" stroke-opacity="0.1" fill="none" />
+                    <div class="marker-sticker">
+                        <div class="marker-text">СЕЗОН 1</div>
+                        <svg class="marker-arrow" viewBox="0 0 24 24">
+                            <path d="M4,12 L20,12 M14,6 L20,12 L14,18" />
                         </svg>
-                        
-                        <div class="marker-content">
-                            <div class="tech-text">СЕЗОН 1</div>
-                            <svg class="tech-arrow" viewBox="0 0 24 24">
-                                <path d="M4,12 L20,12 M14,6 L20,12 L14,18" />
-                            </svg>
-                        </div>
                     </div>`;
                 }
             }
