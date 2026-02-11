@@ -22,9 +22,6 @@
             display: flex; flex-direction: column; overflow: hidden; 
         }
         .day-cell.empty-day { background: transparent; overflow: visible; } 
-        /* Дозволяємо стікеру виходити за межі */
-        .day-cell:has(.marker-sticker) { overflow: visible; background: transparent; }
-
         
         /* --- ДАТА І ДЕНЬ --- */
         .date-container {
@@ -84,31 +81,11 @@
         .day-cell.watched .video-link::before { transform: translate(-50%, -50%) rotate(45deg); }
         .day-cell.watched .video-link::after { transform: translate(-50%, -50%) rotate(-45deg); }
 
-        /* --- STICKER (Pastel Red) --- */
-        .marker-sticker {
-            position: absolute; inset: 0;
-            background-color: #FF6B6B; 
-            display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
-            transform: rotate(-2deg) scale(1.05); 
-            border-radius: 6px;
-            box-shadow: 3px 3px 8px rgba(0,0,0,0.15);
-            z-index: 20;
-        }
-        .marker-text {
-            font-family: 'Courier New', Courier, monospace;
-            font-weight: 900; font-size: 20px; color: white;
-            text-transform: uppercase; letter-spacing: -1px;
-        }
-        .marker-arrow {
-            width: 20px; height: 20px; stroke: white; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round;
-        }
-
         @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } }
         @media (max-width: 600px) { 
             body { padding: 10px; } 
             .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
             .year-header { font-size: 32px; } 
-            .marker-text { font-size: 16px; }
             .date-num { font-size: 16px; }
             .day-name { font-size: 9px; }
         }
@@ -124,10 +101,10 @@
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc';
     const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
     
-    // START: Feb 8, 2026
+    // START: Feb 13, 2026
     const START_YEAR = 2026;
     const START_MONTH = 1; 
-    const START_DAY = 8;
+    const START_DAY = 13;
     
     const app = document.getElementById('app');
     const videosMap = {};
@@ -222,19 +199,6 @@
                     </a>`;
             } else {
                 cellContent = dateBlock;
-            }
-
-            // --- STICKER SEASON 1 (Changed to 12 Feb) ---
-            if (y === 2026 && m === 1 && d === 12) {
-                if (!vid) {
-                    cellContent += `
-                    <div class="marker-sticker">
-                        <div class="marker-text">СЕЗОН 1</div>
-                        <svg class="marker-arrow" viewBox="0 0 24 24">
-                            <path d="M4,12 L20,12 M14,6 L20,12 L14,18" />
-                        </svg>
-                    </div>`;
-                }
             }
 
             grid.innerHTML += `<div class="${cellClass}">${cellContent}</div>`;
