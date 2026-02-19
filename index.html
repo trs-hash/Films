@@ -9,115 +9,41 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #222; margin: 0; padding: 20px; overflow-x: hidden; }
         .main-wrapper { max-width: 1400px; margin: 0 auto; display: none; }
         
-        /* Вступний текст */
-        .intro-text {
+        /* Вступний текст (Системний моноширинний шрифт для швидкості) */
+        .intro-text { 
             max-width: 700px; 
-            margin: 20px 0 40px 0;
-            font-size: 18px;
-            line-height: 1.6;
-            color: #333;
+            margin: 20px 0 40px 0; 
+            font-size: 18px; 
+            line-height: 1.6; 
+            color: #333; 
+            font-family: 'Courier New', Courier, ui-monospace, Menlo, Monaco, monospace; 
         }
-        .intro-text p {
-            margin-bottom: 15px;
-        }
-        .intro-text p:last-child {
-            margin-bottom: 0;
-        }
+        .intro-text p { margin-bottom: 0; }
 
-        /* --- ЗАГОЛОВКИ (РІК + СЕЗОН) --- */
-        .header-container {
-            display: flex;
-            align-items: baseline;
-            gap: 15px;
-            margin: 10px 0 20px 0;
-            border-bottom: 2px solid #111;
-            padding-bottom: 10px;
-        }
-
-        .year-header { 
-            font-size: 40px; 
-            font-weight: 700; 
-            margin: 0; 
-            line-height: 1;
-        }
-
-        .season-badge {
-            background-color: #e62117; /* Червоний акцент */
-            color: white;
-            font-size: 14px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            padding: 4px 10px;
-            border-radius: 4px;
-            display: inline-block;
-            transform: translateY(-4px); /* Легке вирівнювання відносно великих цифр */
-        }
-
+        .header-container { display: flex; align-items: baseline; gap: 15px; margin: 10px 0 20px 0; border-bottom: 2px solid #111; padding-bottom: 10px; }
+        .year-header { font-size: 40px; font-weight: 700; margin: 0; line-height: 1; }
+        .season-badge { background-color: #e62117; color: white; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; padding: 4px 10px; border-radius: 4px; display: inline-block; transform: translateY(-4px); }
         .season-header { font-size: 14px; font-weight: 700; color: #e62117; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 10px; }
         .month-header { color: #555; font-size: 18px; font-weight: 600; text-transform: uppercase; margin: 15px 0; letter-spacing: 1px; }
         
-        /* Grid */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-        .day-cell { 
-            aspect-ratio: 16/9; position: relative; background: #f8f8f8; border-radius: 6px; 
-            display: flex; flex-direction: column; overflow: hidden; 
-        }
+        .day-cell { aspect-ratio: 16/9; position: relative; background: #f8f8f8; border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; }
         .day-cell.empty-day { background: transparent; overflow: visible; } 
 
-        /* --- ДАТА І ДЕНЬ --- */
-        .date-container {
-            position: absolute; top: 8px; left: 10px; right: 10px;
-            display: flex; flex-direction: row; align-items: baseline; gap: 6px;
-            z-index: 10; pointer-events: none;
-        }
-        
-        .date-num { 
-            font-size: 18px; 
-            font-weight: 800; 
-            line-height: 1;
-            color: #ccc; 
-        }
-        
-        .day-name {
-            font-size: 10px; 
-            font-weight: 500; 
-            text-transform: uppercase; 
-            color: #ccc; 
-            opacity: 0.6; 
-        }
+        .date-container { position: absolute; top: 8px; left: 10px; right: 10px; display: flex; flex-direction: row; align-items: baseline; gap: 6px; z-index: 10; pointer-events: none; }
+        .date-num { font-size: 18px; font-weight: 800; line-height: 1; color: #ccc; }
+        .day-name { font-size: 10px; font-weight: 500; text-transform: uppercase; color: #ccc; opacity: 0.6; }
 
-        /* Стилі тексту на відео */
-        .has-video .date-num { 
-            color: #fff; 
-            text-shadow: 0 1px 3px rgba(0,0,0,0.9); 
-        }
-        .has-video .day-name { 
-            color: #fff; 
-            opacity: 0.7; 
-            text-shadow: 0 1px 2px rgba(0,0,0,0.9); 
-        }
+        .has-video .date-num { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+        .has-video .day-name { color: #fff; opacity: 0.7; text-shadow: 0 1px 2px rgba(0,0,0,0.9); }
 
-        /* Video Link */
         .video-link { display: block; width: 100%; height: 100%; position: relative; cursor: pointer; z-index: 5; }
         .video-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
         .video-link:hover .video-thumb { transform: scale(1.03); }
+        .video-link::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.9) 100%); pointer-events: none; }
         
-        .video-link::after { 
-            content: ''; position: absolute; inset: 0; 
-            background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.9) 100%); 
-            pointer-events: none; 
-        }
+        .overlay-title { position: absolute; bottom: 10px; left: 10px; right: 10px; color: #fff; font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px #000; z-index: 10; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; }
         
-        .overlay-title { 
-            position: absolute; bottom: 10px; left: 10px; right: 10px; 
-            color: #fff; font-size: 11px; font-weight: 500; 
-            text-shadow: 0 1px 2px #000; z-index: 10; 
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
-            opacity: 0.9;
-        }
-        
-        /* Watched State */
         .day-cell.watched .video-thumb { filter: none; opacity: 0.8; }
         .day-cell.watched .video-link::before, .day-cell.watched .video-link::after { content: ''; position: absolute; top: 50%; left: 50%; width: 150%; height: 3px; background: #e62117; z-index: 20; pointer-events: none; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
         .day-cell.watched .video-link::before { transform: translate(-50%, -50%) rotate(45deg); }
@@ -128,12 +54,9 @@
             body { padding: 15px; } 
             .intro-text { font-size: 16px; margin: 10px 0 30px 0; }
             .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
-            
-            /* Адаптація заголовка для мобільних */
             .header-container { flex-direction: row; align-items: center; border-bottom: 2px solid #111; padding-bottom: 10px; }
             .year-header { font-size: 32px; border-bottom: none; padding-bottom: 0; }
             .season-badge { font-size: 12px; transform: none; }
-            
             .date-num { font-size: 16px; }
             .day-name { font-size: 9px; }
         }
@@ -145,10 +68,7 @@
 <div class="main-wrapper" id="main">
     
     <div class="intro-text">
-        <p>Привіт! 👋 Радий бачити.</p>
-        <p>Коротко про те, що це за місце. Це не просто сторінка чи відеоархів, це мій особистий річний перформанс. Я кинув собі досить конкретний виклик — знімати і публікувати по одному відео щодня. Без відмазок. Цілий рік: 365 днів — 365 відео.</p>
-        <p>Сайт працює як живий візуальний щоденник. День за днем ми будемо заповнювати ці порожні клітинки. До речі, щоб ви не плутались, відео, які ви вже подивилися, автоматично перекреслюються червоним маркером.</p>
-        <p>Беріть каву чи що ви там любите, і погнали зі мною в цей рік. Буде цікаво!</p>
+        <p>Я кинув собі досить конкретний виклик — знімати і публікувати по одному відео щодня. Без відмазок. Цілий рік: 365 днів — 365 відео.</p>
     </div>
 
     <div id="app"></div>
@@ -157,10 +77,8 @@
 <script>
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc';
     const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
-    
-    // START: Feb 18, 2026
     const START_YEAR = 2026;
-    const START_MONTH = 1; 
+    const START_MONTH = 1; // 1 = Лютий
     const START_DAY = 18;
     
     const app = document.getElementById('app');
@@ -169,10 +87,11 @@
     try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
 
     const weekDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
+    const monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
     async function init() {
         try {
-            const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}&cb=${Math.random()}`);
+            const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}`);
             const data = await res.json();
             if (data.items) {
                 data.items.forEach(item => {
@@ -196,6 +115,7 @@
         const today = new Date();
         let loop = new Date(START_YEAR, START_MONTH, 1);
         let curYear = 0, lastSeason = "";
+        let finalHTML = ""; 
 
         while (loop <= today) {
             const y = loop.getFullYear();
@@ -203,8 +123,7 @@
             const seas = getSeason(m);
 
             if (y !== curYear) {
-                // НОВА СТРУКТУРА ЗАГОЛОВКУ (Рік + Сезон 1)
-                app.innerHTML += `
+                finalHTML += `
                 <div class="header-container">
                     <h2 class="year-header">${y}</h2>
                     <span class="season-badge">Сезон 1</span>
@@ -213,21 +132,18 @@
                 lastSeason = "";
             }
             if (seas !== lastSeason) {
-                app.innerHTML += `<div class="season-header">${seas}</div>`;
+                finalHTML += `<div class="season-header">${seas}</div>`;
                 lastSeason = seas;
             }
-            createMonth(y, m);
+            
+            finalHTML += createMonthHTML(y, m);
             loop.setMonth(m + 1);
         }
+        app.innerHTML = finalHTML; 
     }
 
-    function createMonth(y, m) {
-        const months = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
-        app.innerHTML += `<div class="month-header">${months[m]}</div>`;
-        
-        const grid = document.createElement('div');
-        grid.className = 'calendar-grid';
-        
+    function createMonthHTML(y, m) {
+        let monthHTML = `<div class="month-header">${monthsNames[m]}</div><div class="calendar-grid">`;
         let firstDay = (y === START_YEAR && m === START_MONTH) ? START_DAY : 1;
         let daysInMonth = new Date(y, m + 1, 0).getDate();
 
@@ -237,35 +153,30 @@
             const key = `${y}-${(m+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
             const vid = videosMap[key];
             
-            let cellContent = '';
             let cellClass = 'day-cell empty-day';
-            
-            const dateBlock = `
-                <div class="date-container">
-                    <span class="date-num">${d}</span>
-                    <span class="day-name">${dayName}</span>
-                </div>
-            `;
+            const dateBlock = `<div class="date-container"><span class="date-num">${d}</span><span class="day-name">${dayName}</span></div>`;
 
             if (vid) {
-                cellClass = 'day-cell has-video';
                 const id = vid.snippet.resourceId.videoId;
                 const thumb = vid.snippet.thumbnails.maxres?.url || vid.snippet.thumbnails.medium.url;
                 if (watchedVideos.includes(id)) cellClass += ' watched';
                 
-                cellContent = `
+                cellClass = cellClass.replace('empty-day', 'has-video');
+                
+                monthHTML += `
+                <div class="${cellClass}">
                     ${dateBlock}
                     <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="video-link" onclick="mark('${id}', this.parentElement)">
                         <img src="${thumb}" class="video-thumb" loading="lazy">
                         <div class="overlay-title">${vid.snippet.title}</div>
-                    </a>`;
+                    </a>
+                </div>`;
             } else {
-                cellContent = dateBlock;
+                monthHTML += `<div class="${cellClass}">${dateBlock}</div>`;
             }
-
-            grid.innerHTML += `<div class="${cellClass}">${cellContent}</div>`;
         }
-        app.appendChild(grid);
+        monthHTML += `</div>`;
+        return monthHTML;
     }
 
     window.mark = function(id, el) {
