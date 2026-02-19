@@ -3,15 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тарас Максимʼяк — кіноархів</title>
+    <title>Тарас Максимʼяк — 365</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #222; margin: 0; padding: 20px; overflow-x: hidden; }
         .main-wrapper { max-width: 1400px; margin: 0 auto; display: none; }
         
+        /* Вступний текст */
+        .intro-text {
+            max-width: 700px; /* Щоб текст не розтягувався на весь широкий екран і легко читався */
+            margin: 20px 0 40px 0;
+            font-size: 18px;
+            line-height: 1.6;
+            color: #333;
+        }
+        .intro-text p {
+            margin-bottom: 15px;
+        }
+        .intro-text p:last-child {
+            margin-bottom: 0;
+        }
+
         /* Headers */
-        .year-header { font-size: 40px; font-weight: 700; margin: 40px 0 10px; border-bottom: 2px solid #111; padding-bottom: 5px; display: inline-block; }
-        .year-header:first-child { margin-top: 0; }
+        .year-header { font-size: 40px; font-weight: 700; margin: 10px 0 10px; border-bottom: 2px solid #111; padding-bottom: 5px; display: inline-block; }
         .season-header { font-size: 14px; font-weight: 700; color: #e62117; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 10px; }
         .month-header { color: #555; font-size: 18px; font-weight: 600; text-transform: uppercase; margin: 15px 0; letter-spacing: 1px; }
         
@@ -22,8 +36,6 @@
             display: flex; flex-direction: column; overflow: hidden; 
         }
         .day-cell.empty-day { background: transparent; overflow: visible; } 
-        /* Дозволяємо стікеру виходити за межі клітинки */
-        .day-cell:has(.marker-sticker) { overflow: visible; background: transparent; }
 
         /* --- ДАТА І ДЕНЬ --- */
         .date-container {
@@ -83,31 +95,12 @@
         .day-cell.watched .video-link::before { transform: translate(-50%, -50%) rotate(45deg); }
         .day-cell.watched .video-link::after { transform: translate(-50%, -50%) rotate(-45deg); }
 
-        /* --- STICKER (Pastel Red) --- */
-        .marker-sticker {
-            position: absolute; inset: 0;
-            background-color: #FF6B6B; 
-            display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px;
-            transform: rotate(-2deg) scale(1.05); 
-            border-radius: 6px;
-            box-shadow: 3px 3px 8px rgba(0,0,0,0.15);
-            z-index: 20;
-        }
-        .marker-text {
-            font-family: 'Courier New', Courier, monospace;
-            font-weight: 900; font-size: 20px; color: white;
-            text-transform: uppercase; letter-spacing: -1px;
-        }
-        .marker-arrow {
-            width: 20px; height: 20px; stroke: white; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round;
-        }
-
         @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } }
         @media (max-width: 600px) { 
-            body { padding: 10px; } 
+            body { padding: 15px; } 
+            .intro-text { font-size: 16px; margin: 10px 0 30px 0; }
             .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
             .year-header { font-size: 32px; } 
-            .marker-text { font-size: 16px; }
             .date-num { font-size: 16px; }
             .day-name { font-size: 9px; }
         }
@@ -115,10 +108,16 @@
     </style>
 </head>
 <body>
-<div id="loading">...</div>
+<div id="loading">Завантаження...</div>
 <div class="main-wrapper" id="main">
+    
+    <div class="intro-text">
+        <p>Це не просто архів відео. Це мій особистий річний перформанс. Я кинув собі виклик — знімати і публікувати по одному відео щодня протягом цілого року. 365 днів — 365 відео.</p>
+    </div>
+
     <div id="app"></div>
 </div>
+
 <script>
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc';
     const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
@@ -221,19 +220,6 @@
                     </a>`;
             } else {
                 cellContent = dateBlock;
-            }
-
-            // --- STICKER SEASON 1 (на 18 лютого) ---
-            if (y === 2026 && m === 1 && d === 18) {
-                if (!vid) {
-                    cellContent += `
-                    <div class="marker-sticker">
-                        <div class="marker-text">СЕЗОН 1</div>
-                        <svg class="marker-arrow" viewBox="0 0 24 24">
-                            <path d="M4,12 L20,12 M14,6 L20,12 L14,18" />
-                        </svg>
-                    </div>`;
-                }
             }
 
             grid.innerHTML += `<div class="${cellClass}">${cellContent}</div>`;
