@@ -9,7 +9,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #222; margin: 0; padding: 20px; overflow-x: hidden; }
         .main-wrapper { max-width: 1400px; margin: 0 auto; display: none; }
         
-        /* Вступний текст (Системний моноширинний шрифт для швидкості) */
+        /* Вступний текст */
         .intro-text { 
             max-width: 700px; 
             margin: 20px 0 40px 0; 
@@ -20,16 +20,42 @@
         }
         .intro-text p { margin-bottom: 0; }
 
-        .header-container { display: flex; align-items: baseline; gap: 15px; margin: 10px 0 20px 0; border-bottom: 2px solid #111; padding-bottom: 10px; }
+        /* --- ЗАГОЛОВОК СЕЗОНУ --- */
+        .project-header { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            margin: 0 0 30px 0; 
+        }
+        .season-badge { 
+            background-color: #e62117; 
+            color: white; 
+            font-size: 14px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            padding: 4px 10px; 
+            border-radius: 4px; 
+        }
+        .project-dates { 
+            font-family: 'Courier New', Courier, monospace; 
+            font-size: 16px; 
+            color: #555; 
+            font-weight: 600; 
+        }
+
+        /* Headers Календаря */
+        .header-container { margin: 10px 0 20px 0; border-bottom: 2px solid #111; padding-bottom: 10px; }
         .year-header { font-size: 40px; font-weight: 700; margin: 0; line-height: 1; }
-        .season-badge { background-color: #e62117; color: white; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; padding: 4px 10px; border-radius: 4px; display: inline-block; transform: translateY(-4px); }
         .season-header { font-size: 14px; font-weight: 700; color: #e62117; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 10px; }
         .month-header { color: #555; font-size: 18px; font-weight: 600; text-transform: uppercase; margin: 15px 0; letter-spacing: 1px; }
         
+        /* Grid */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
         .day-cell { aspect-ratio: 16/9; position: relative; background: #f8f8f8; border-radius: 6px; display: flex; flex-direction: column; overflow: hidden; }
         .day-cell.empty-day { background: transparent; overflow: visible; } 
 
+        /* Дата і день */
         .date-container { position: absolute; top: 8px; left: 10px; right: 10px; display: flex; flex-direction: row; align-items: baseline; gap: 6px; z-index: 10; pointer-events: none; }
         .date-num { font-size: 18px; font-weight: 800; line-height: 1; color: #ccc; }
         .day-name { font-size: 10px; font-weight: 500; text-transform: uppercase; color: #ccc; opacity: 0.6; }
@@ -37,6 +63,7 @@
         .has-video .date-num { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
         .has-video .day-name { color: #fff; opacity: 0.7; text-shadow: 0 1px 2px rgba(0,0,0,0.9); }
 
+        /* Video Link */
         .video-link { display: block; width: 100%; height: 100%; position: relative; cursor: pointer; z-index: 5; }
         .video-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
         .video-link:hover .video-thumb { transform: scale(1.03); }
@@ -44,6 +71,7 @@
         
         .overlay-title { position: absolute; bottom: 10px; left: 10px; right: 10px; color: #fff; font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px #000; z-index: 10; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; }
         
+        /* Watched State */
         .day-cell.watched .video-thumb { filter: none; opacity: 0.8; }
         .day-cell.watched .video-link::before, .day-cell.watched .video-link::after { content: ''; position: absolute; top: 50%; left: 50%; width: 150%; height: 3px; background: #e62117; z-index: 20; pointer-events: none; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
         .day-cell.watched .video-link::before { transform: translate(-50%, -50%) rotate(45deg); }
@@ -53,10 +81,14 @@
         @media (max-width: 600px) { 
             body { padding: 15px; } 
             .intro-text { font-size: 16px; margin: 10px 0 30px 0; }
+            
+            /* Адаптація заголовка сезону */
+            .project-header { flex-direction: column; align-items: flex-start; gap: 8px; margin: 0 0 25px 0; }
+            .project-dates { font-size: 14px; }
+            
             .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
-            .header-container { flex-direction: row; align-items: center; border-bottom: 2px solid #111; padding-bottom: 10px; }
-            .year-header { font-size: 32px; border-bottom: none; padding-bottom: 0; }
-            .season-badge { font-size: 12px; transform: none; }
+            .header-container { padding-bottom: 5px; }
+            .year-header { font-size: 32px; }
             .date-num { font-size: 16px; }
             .day-name { font-size: 9px; }
         }
@@ -69,6 +101,11 @@
     
     <div class="intro-text">
         <p>Я кинув собі досить конкретний виклик — знімати і публікувати по одному відео щодня. Без відмазок. Цілий рік: 365 днів — 365 відео.</p>
+    </div>
+
+    <div class="project-header">
+        <span class="season-badge">Сезон 1</span>
+        <span class="project-dates">18 лютого 2026 — 18 лютого 2027</span>
     </div>
 
     <div id="app"></div>
@@ -123,10 +160,10 @@
             const seas = getSeason(m);
 
             if (y !== curYear) {
+                // Тепер тут просто рендериться рік, без Сезону 1
                 finalHTML += `
                 <div class="header-container">
                     <h2 class="year-header">${y}</h2>
-                    <span class="season-badge">Сезон 1</span>
                 </div>`;
                 curYear = y;
                 lastSeason = "";
