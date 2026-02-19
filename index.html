@@ -11,7 +11,7 @@
         
         /* Вступний текст */
         .intro-text {
-            max-width: 700px; /* Щоб текст не розтягувався на весь широкий екран і легко читався */
+            max-width: 700px; 
             margin: 20px 0 40px 0;
             font-size: 18px;
             line-height: 1.6;
@@ -24,8 +24,36 @@
             margin-bottom: 0;
         }
 
-        /* Headers */
-        .year-header { font-size: 40px; font-weight: 700; margin: 10px 0 10px; border-bottom: 2px solid #111; padding-bottom: 5px; display: inline-block; }
+        /* --- ЗАГОЛОВКИ (РІК + СЕЗОН) --- */
+        .header-container {
+            display: flex;
+            align-items: baseline;
+            gap: 15px;
+            margin: 10px 0 20px 0;
+            border-bottom: 2px solid #111;
+            padding-bottom: 10px;
+        }
+
+        .year-header { 
+            font-size: 40px; 
+            font-weight: 700; 
+            margin: 0; 
+            line-height: 1;
+        }
+
+        .season-badge {
+            background-color: #e62117; /* Червоний акцент */
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            transform: translateY(-4px); /* Легке вирівнювання відносно великих цифр */
+        }
+
         .season-header { font-size: 14px; font-weight: 700; color: #e62117; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 10px; }
         .month-header { color: #555; font-size: 18px; font-weight: 600; text-transform: uppercase; margin: 15px 0; letter-spacing: 1px; }
         
@@ -100,7 +128,12 @@
             body { padding: 15px; } 
             .intro-text { font-size: 16px; margin: 10px 0 30px 0; }
             .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
-            .year-header { font-size: 32px; } 
+            
+            /* Адаптація заголовка для мобільних */
+            .header-container { flex-direction: row; align-items: center; border-bottom: 2px solid #111; padding-bottom: 10px; }
+            .year-header { font-size: 32px; border-bottom: none; padding-bottom: 0; }
+            .season-badge { font-size: 12px; transform: none; }
+            
             .date-num { font-size: 16px; }
             .day-name { font-size: 9px; }
         }
@@ -112,7 +145,10 @@
 <div class="main-wrapper" id="main">
     
     <div class="intro-text">
-        <p>Це не просто архів відео. Це мій особистий річний перформанс. Я кинув собі виклик — знімати і публікувати по одному відео щодня протягом цілого року. 365 днів — 365 відео.</p>
+        <p>Привіт! 👋 Радий бачити.</p>
+        <p>Коротко про те, що це за місце. Це не просто сторінка чи відеоархів, це мій особистий річний перформанс. Я кинув собі досить конкретний виклик — знімати і публікувати по одному відео щодня. Без відмазок. Цілий рік: 365 днів — 365 відео.</p>
+        <p>Сайт працює як живий візуальний щоденник. День за днем ми будемо заповнювати ці порожні клітинки. До речі, щоб ви не плутались, відео, які ви вже подивилися, автоматично перекреслюються червоним маркером.</p>
+        <p>Беріть каву чи що ви там любите, і погнали зі мною в цей рік. Буде цікаво!</p>
     </div>
 
     <div id="app"></div>
@@ -167,7 +203,12 @@
             const seas = getSeason(m);
 
             if (y !== curYear) {
-                app.innerHTML += `<div class="year-header">${y}</div>`;
+                // НОВА СТРУКТУРА ЗАГОЛОВКУ (Рік + Сезон 1)
+                app.innerHTML += `
+                <div class="header-container">
+                    <h2 class="year-header">${y}</h2>
+                    <span class="season-badge">Сезон 1</span>
+                </div>`;
                 curYear = y;
                 lastSeason = "";
             }
