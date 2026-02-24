@@ -3,186 +3,319 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тарас Максимʼяк — 365</title>
+    <title>Тарас Максимʼяк — кіноархів</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #222; margin: 0; padding: 20px; overflow-x: hidden; }
-        .main-wrapper { max-width: 1400px; margin: 0 auto; display: none; }
-        
-        .intro-text { max-width: 700px; margin: 10px 0 30px 0; font-size: 16px; line-height: 1.6; color: #333; font-family: 'Courier New', Courier, ui-monospace, monospace; }
-        .intro-text p { margin-bottom: 0; }
-
-        .year-header { font-size: 40px; font-weight: 700; margin: 0 0 10px 0; line-height: 1; }
-        .season-header { font-size: 14px; font-weight: 700; color: #e62117; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 10px; }
-        .month-header { color: #555; font-size: 18px; font-weight: 600; text-transform: uppercase; margin: 15px 0; letter-spacing: 1px; }
-        
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-        .day-cell { aspect-ratio: 16/9; position: relative; background: #f8f8f8; border-radius: 6px; }
-        .day-cell.empty-day { background: transparent; } 
-
-        .start-badge { position: absolute; top: -10px; right: 10px; background-color: #e62117; color: white; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 3px 6px; border-radius: 4px; z-index: 30; box-shadow: 0 2px 5px rgba(0,0,0,0.2); pointer-events: none; }
-
-        .date-container { position: absolute; top: 8px; left: 10px; right: 10px; display: flex; align-items: baseline; gap: 6px; z-index: 10; pointer-events: none; }
-        .date-num { font-size: 18px; font-weight: 800; line-height: 1; color: #ccc; }
-        .day-name { font-size: 10px; font-weight: 500; text-transform: uppercase; color: #ccc; opacity: 0.6; }
-
-        .has-video .date-num { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
-        .has-video .day-name { color: #fff; opacity: 0.7; text-shadow: 0 1px 2px rgba(0,0,0,0.9); }
-
-        .video-link { display: block; width: 100%; height: 100%; position: absolute; inset: 0; cursor: pointer; z-index: 5; border-radius: 6px; overflow: hidden; }
-        .video-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
-        .video-link:hover .video-thumb { transform: scale(1.03); }
-        .video-link::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.9) 100%); pointer-events: none; }
-        
-        .overlay-title { position: absolute; bottom: 10px; left: 10px; right: 10px; color: #fff; font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px #000; z-index: 10; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; }
-        
-        .day-cell.watched .video-thumb { filter: none; opacity: 0.8; }
-        .day-cell.watched .video-link::before, .day-cell.watched .video-link::after { content: ''; position: absolute; top: 50%; left: 50%; width: 150%; height: 3px; background: #e62117; z-index: 20; pointer-events: none; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
-        .day-cell.watched .video-link::before { transform: translate(-50%, -50%) rotate(45deg); }
-        .day-cell.watched .video-link::after { transform: translate(-50%, -50%) rotate(-45deg); }
-
-        @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } }
-        @media (max-width: 600px) { 
-            body { padding: 15px; } 
-            .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
-            .year-header { font-size: 32px; }
-            .date-num { font-size: 16px; }
-            .day-name { font-size: 9px; }
+        /* --- СТИЛЬ "СТРІЧКА ПРЕМ'ЄР" --- */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: #ffffff; 
+            color: #111; 
+            margin: 0; 
+            padding: 40px 20px; 
+            overflow-x: hidden; 
         }
-        #loading { font-size: 12px; color: #999; text-align: center; margin-top: 50px; }
+        
+       .main-wrapper { 
+            max-width: 800px; /* Вузька колонка для зручного читання і перегляду */
+            margin: 0 auto; 
+            display: none; 
+        }
+
+        /* Шапка сайту */
+       .site-header {
+            text-align: center;
+            margin-bottom: 60px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 30px;
+        }
+       .site-title {
+            font-size: 24px;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 6px;
+            margin: 0 0 15px 0;
+            color: #000;
+        }
+       .intro-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto;
+            font-weight: 300;
+        }
+
+        /* Список відео */
+       .catalog-list {
+            display: flex;
+            flex-direction: column;
+            gap: 60px;
+            padding-bottom: 80px;
+        }
+
+        /* Картка одного тижня */
+       .movie-card {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            opacity: 0;
+            animation: fadeIn 0.8s ease forwards;
+        }
+        @keyframes fadeIn { to { opacity: 1; } }
+
+        /* Обкладинка */
+       .cover-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #f4f4f4;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s;
+            display: block;
+        }
+       .cover-wrapper:hover {
+            transform: scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+       .cover-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: filter 0.4s ease;
+        }
+
+        /* Інформація під відео */
+       .meta-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 0 5px;
+        }
+       .title-block {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+       .week-badge {
+            font-size: 11px;
+            font-weight: 700;
+            color: #e62117;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+       .movie-title {
+            font-size: 28px;
+            font-weight: 300;
+            margin: 0;
+            color: #111;
+            line-height: 1.2;
+            text-decoration: none;
+        }
+       .movie-date {
+            font-size: 12px;
+            color: #999;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        /* Стан: Переглянуто */
+       .movie-card.watched.cover-image { filter: grayscale(100%); opacity: 0.7; }
+       .movie-card.watched.movie-title { color: #999; }
+       .movie-card.watched.week-badge { color: #bbb; }
+        
+       .watched-label {
+            position: absolute;
+            top: 20px; right: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+       .movie-card.watched.watched-label { opacity: 1; }
+
+        /* Стан: В процесі зйомки (Наступний тиждень) */
+       .movie-card.future.cover-wrapper {
+            background: #fafafa;
+            border: 2px dashed #ddd;
+            box-shadow: none;
+            cursor: default;
+        }
+       .movie-card.future.cover-wrapper:hover { transform: none; }
+       .placeholder-text {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            color: #ccc; font-size: 14px; font-weight: 600; letter-spacing: 4px; text-transform: uppercase;
+        }
+       .movie-card.future.movie-title { color: #ccc; font-style: italic; }
+
+        #loading { text-align: center; color: #999; font-size: 12px; margin-top: 100px; letter-spacing: 2px; text-transform: uppercase; }
+
+        @media (max-width: 600px) { 
+            body { padding: 20px 15px; }
+           .movie-title { font-size: 22px; }
+           .site-title { font-size: 20px; }
+           .intro-text { font-size: 14px; }
+           .meta-container { flex-direction: column; gap: 10px; }
+           .movie-date { text-align: left; }
+        }
     </style>
 </head>
 <body>
-<div id="loading">Завантаження...</div>
-<div class="main-wrapper" id="main">
-    
-    <div class="intro-text">
-        <p>365 днів — 365 відео.</p>
-    </div>
 
-    <div id="app"></div>
+<div id="loading">Завантаження архіву...</div>
+
+<div class="main-wrapper" id="main">
+    <header class="site-header">
+        <h1 class="site-title">Тарас Максимʼяк</h1>
+        <div class="intro-text">
+            <p>Це мій особистий відеоархів. Я змінив правила гри: замість щоденного конвеєра я випускаю одне відео на тиждень. Більше часу на життя, більше сенсу в кадрах. Слідкуйте за новими епізодами.</p>
+        </div>
+    </header>
+
+    <div id="catalog-container" class="catalog-list"></div>
 </div>
 
 <script>
+    // --- КОНФІГУРАЦІЯ ---
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc';
     const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
-    const START_YEAR = 2026;
-    const START_MONTH = 1; // 1 = Лютий
-    const START_DAY = 25; // Оновлено
-    
-    const app = document.getElementById('app');
-    const videosMap = {};
-    let watchedVideos = [];
-    try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
+    const START_DATE = new Date(2026, 1, 18); // 18 лютого 2026
 
-    const weekDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
-    const monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+    const container = document.getElementById('catalog-container');
+    let watchedVideos =;
+    try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') |
 
+| ''); } catch (e) {}
+
+    // --- ФОРМАТУВАННЯ ---
+    function formatDate(dateString) {
+        const d = new Date(dateString);
+        const day = d.getDate().toString().padStart(2, '0');
+        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}.${month}.${year}`;
+    }
+
+    // --- ЗАВАНТАЖЕННЯ ДАНИХ ---
     async function init() {
+        let globalVideos =;
+
         try {
-            let pageToken = '';
-            do {
-                const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}${pageToken ? `&pageToken=${pageToken}` : ''}`;
-                const res = await fetch(url);
-                const data = await res.json();
-                if (data.items) {
-                    data.items.forEach(item => {
-                        videosMap[item.snippet.publishedAt.split('T')[0]] = item;
+            // Отримуємо всі відео плейлиста (один швидкий запит)
+            const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}`);
+            const data = await res.json();
+            
+            if (data.items && data.items.length > 0) {
+                data.items.forEach(item => {
+                    globalVideos.push({
+                        id: item.snippet.resourceId.videoId,
+                        title: item.snippet.title,
+                        dateObj: new Date(item.snippet.publishedAt),
+                        dateStr: item.snippet.publishedAt,
+                        thumb: item.snippet.thumbnails.maxres?.url |
+
+| item.snippet.thumbnails.medium?.url |
+| ''
                     });
-                }
-                pageToken = data.nextPageToken;
-            } while (pageToken);
-        } catch (e) {}
+                });
+            }
+        } catch (e) {
+            console.error("API Error", e);
+        }
+
+        // Рятувальний круг (якщо API пусте)
+        if (globalVideos.length === 0) {
+            globalVideos.push({
+                id: "dQw4w9WgXcQ",
+                title: "Початок",
+                dateObj: START_DATE,
+                dateStr: START_DATE.toISOString(),
+                thumb: "https://picsum.photos/id/180/1280/720"
+            });
+        }
+
+        processAndRender(globalVideos);
+    }
+
+    function processAndRender(videos) {
+        // 1. Сортуємо від найстарішого до найновішого для нумерації тижнів
+        videos.sort((a, b) => a.dateObj - b.dateObj);
         
-        render();
+        videos.forEach((video, index) => {
+            video.weekNumber = index + 1;
+        });
+
+        // 2. Сортуємо назад (найновіші зверху)
+        videos.sort((a, b) => b.dateObj - a.dateObj);
+
+        let html = '';
+
+        // 3. Блок "Наступний тиждень" (В процесі)
+        const nextWeekNum = videos.length > 0? videos.weekNumber + 1 : 1;
+        
+        html += `
+            <article class="movie-card future">
+                <div class="cover-wrapper">
+                    <div class="placeholder-text">У процесі зйомки</div>
+                </div>
+                <div class="meta-container">
+                    <div class="title-block">
+                        <span class="week-badge">Тиждень ${nextWeekNum}</span>
+                        <h2 class="movie-title">Новий епізод...</h2>
+                    </div>
+                    <div class="movie-date">Скоро</div>
+                </div>
+            </article>
+        `;
+
+        // 4. Виводимо реальні відео
+        videos.forEach(vid => {
+            const isWatched = watchedVideos.includes(vid.id)? 'watched' : '';
+
+            html += `
+                <article class="movie-card ${isWatched}" id="card-${vid.id}">
+                    <a href="https://www.youtube.com/watch?v=${vid.id}" target="_blank" class="cover-wrapper" onclick="markWatched('${vid.id}', event)">
+                        <img src="${vid.thumb}" class="cover-image" loading="lazy" alt="${vid.title}">
+                        <div class="watched-label">Переглянуто</div>
+                    </a>
+                    <div class="meta-container">
+                        <div class="title-block">
+                            <span class="week-badge">Тиждень ${vid.weekNumber}</span>
+                            <a href="https://www.youtube.com/watch?v=${vid.id}" target="_blank" class="movie-title" onclick="markWatched('${vid.id}', event)">${vid.title}</a>
+                        </div>
+                        <div class="movie-date">${formatDate(vid.dateStr)}</div>
+                    </div>
+                </article>
+            `;
+        });
+
+        container.innerHTML = html;
         document.getElementById('loading').style.display = 'none';
         document.getElementById('main').style.display = 'block';
     }
 
-    function getSeason(m) {
-        if (m === 11 || m <= 1) return "ЗИМА";
-        if (m >= 2 && m <= 4) return "ВЕСНА";
-        if (m >= 5 && m <= 7) return "ЛІТО";
-        return "ОСІНЬ";
-    }
-
-    function render() {
-        const today = new Date();
-        let loop = new Date(START_YEAR, START_MONTH, 1);
-        let curYear = 0, lastSeason = "";
-        let finalHTML = ""; 
-
-        while (loop <= today) {
-            const y = loop.getFullYear();
-            const m = loop.getMonth();
-            const seas = getSeason(m);
-
-            if (y !== curYear) {
-                finalHTML += `<h2 class="year-header">${y}</h2>`;
-                curYear = y;
-                lastSeason = "";
-            }
-            if (seas !== lastSeason) {
-                finalHTML += `<div class="season-header">${seas}</div>`;
-                lastSeason = seas;
-            }
-            
-            finalHTML += createMonthHTML(y, m);
-            loop.setMonth(m + 1);
-        }
-        app.innerHTML = finalHTML; 
-    }
-
-    function createMonthHTML(y, m) {
-        let monthHTML = `<div class="month-header">${monthsNames[m]}</div><div class="calendar-grid">`;
-        let firstDay = (y === START_YEAR && m === START_MONTH) ? START_DAY : 1;
-        let daysInMonth = new Date(y, m + 1, 0).getDate();
-        
-        let currentDow = new Date(y, m, firstDay).getDay();
-
-        for (let d = firstDay; d <= daysInMonth; d++) {
-            const dayName = weekDays[currentDow];
-            currentDow = (currentDow + 1) % 7; 
-            
-            const key = `${y}-${(m+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
-            const vid = videosMap[key];
-            
-            let cellClass = 'day-cell empty-day';
-            const dateBlock = `<div class="date-container"><span class="date-num">${d}</span><span class="day-name">${dayName}</span></div>`;
-            
-            // Плашка Сезон 1 (тільки для 25 лютого 2026)
-            let badgeHTML = (y === 2026 && m === 1 && d === 25) ? `<div class="start-badge">Сезон 1</div>` : '';
-
-            if (vid) {
-                const id = vid.snippet.resourceId.videoId;
-                const thumb = vid.snippet.thumbnails.maxres?.url || vid.snippet.thumbnails.medium.url;
-                if (watchedVideos.includes(id)) cellClass += ' watched';
-                
-                cellClass = cellClass.replace('empty-day', 'has-video');
-                
-                monthHTML += `
-                <div class="${cellClass}">
-                    ${badgeHTML}
-                    <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="video-link" onclick="mark('${id}', this.parentElement)">
-                        <img src="${thumb}" class="video-thumb" loading="lazy">
-                        <div class="overlay-title">${vid.snippet.title}</div>
-                    </a>
-                    ${dateBlock}
-                </div>`;
-            } else {
-                monthHTML += `<div class="${cellClass}">${badgeHTML}${dateBlock}</div>`;
-            }
-        }
-        monthHTML += `</div>`;
-        return monthHTML;
-    }
-
-    window.mark = function(id, el) {
+    // Збереження статусу перегляду
+    window.markWatched = function(id, event) {
         if (!watchedVideos.includes(id)) {
             watchedVideos.push(id);
             localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos));
+            const card = document.getElementById(`card-${id}`);
+            if(card) card.classList.add('watched');
         }
-        el.classList.add('watched');
     }
 
     init();
