@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тарас Максимʼяк — Кіноархів</title>
+    <title>Тарас Максимʼяк — кіноархів</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
     
     <style>
@@ -16,13 +16,13 @@
             font-weight: 300;
         }
 
-      .container { 
+       .container { 
             max-width: 1000px; 
             margin: 0 auto; 
         }
 
         /* Головний заголовок сайту */
-      .site-title { 
+       .site-title { 
             font-size: 14px; 
             font-weight: 600; 
             letter-spacing: 2px; 
@@ -34,7 +34,7 @@
         }
 
         /* Роздільники років і сезонів */
-      .year-header { 
+       .year-header { 
             font-size: 48px; 
             font-weight: 700; 
             margin: 60px 0 10px 0; 
@@ -43,7 +43,7 @@
             display: inline-block;
         }
 
-      .season-header { 
+       .season-header { 
             font-size: 16px; 
             font-weight: 600; 
             color: #e62117; 
@@ -53,27 +53,27 @@
         }
 
         /* Список відео */
-      .video-list { 
+       .video-list { 
             display: flex; 
             flex-direction: column; 
             gap: 70px; 
         }
 
         /* Картка одного відео */
-      .video-card { 
+       .video-card { 
             display: grid; 
-            grid-template-columns: 1fr 1.6fr; /* Текст ліворуч, обкладинка праворуч */
+            grid-template-columns: 1fr 1.6fr; 
             gap: 40px; 
             align-items: center; 
             transition: opacity 0.3s;
         }
         
         /* Блок з текстом */
-      .video-info { 
+       .video-info { 
             text-align: left; 
         }
 
-      .video-period { 
+       .video-period { 
             font-size: 12px; 
             color: #888; 
             font-weight: 600; 
@@ -81,7 +81,7 @@
             margin-bottom: 10px; 
         }
 
-      .video-title { 
+       .video-title { 
             font-size: 32px; 
             font-weight: 300; 
             line-height: 1.2; 
@@ -93,12 +93,12 @@
             transition: color 0.2s;
         }
 
-      .video-title:hover { 
+       .video-title:hover { 
             color: #e62117; 
         }
         
         /* Блок з обкладинкою */
-      .video-thumb-wrapper { 
+       .video-thumb-wrapper { 
             position: relative; 
             aspect-ratio: 16/9; 
             background: #f4f4f4; 
@@ -108,12 +108,12 @@
             transition: transform 0.3s; 
         }
 
-      .video-thumb-wrapper:hover { 
+       .video-thumb-wrapper:hover { 
             transform: scale(1.02); 
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
-      .video-thumb { 
+       .video-thumb { 
             width: 100%; 
             height: 100%; 
             object-fit: cover; 
@@ -121,18 +121,18 @@
         }
         
         /* --- СТАН: ПЕРЕГЛЯНУТО (ЧЕРВОНИЙ ХРЕСТ) --- */
-      .watched.video-thumb { 
+       .watched.video-thumb { 
             filter: grayscale(100%); 
             opacity: 0.6; 
         }
 
-      .watched.video-title { 
+       .watched.video-title { 
             color: #aaa; 
             text-decoration: line-through;
         }
 
-      .watched.video-thumb-wrapper::before, 
-      .watched.video-thumb-wrapper::after {
+       .watched.video-thumb-wrapper::before, 
+       .watched.video-thumb-wrapper::after {
             content: ''; 
             position: absolute; 
             top: 50%; 
@@ -145,11 +145,11 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
 
-      .watched.video-thumb-wrapper::before { 
+       .watched.video-thumb-wrapper::before { 
             transform: translate(-50%, -50%) rotate(29deg); 
         }
 
-      .watched.video-thumb-wrapper::after { 
+       .watched.video-thumb-wrapper::after { 
             transform: translate(-50%, -50%) rotate(-29deg); 
         }
 
@@ -157,17 +157,17 @@
 
         /* Адаптивність для мобільних */
         @media (max-width: 768px) {
-          .video-card { 
+           .video-card { 
                 grid-template-columns: 1fr; 
                 gap: 15px; 
                 margin-bottom: 20px;
                 border-bottom: 1px solid #f9f9f9;
                 padding-bottom: 40px;
             }
-          .video-info { order: 2; }
-          .video-thumb-wrapper { order: 1; }
-          .video-title { font-size: 26px; }
-          .year-header { font-size: 36px; }
+           .video-info { order: 2; }
+           .video-thumb-wrapper { order: 1; }
+           .video-title { font-size: 26px; }
+           .year-header { font-size: 36px; }
         }
     </style>
 </head>
@@ -182,16 +182,18 @@
     <script>
         // --- КОНФІГУРАЦІЯ ---
         const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc';
-        // Прямий ID списку завантажень вашого каналу (UUhN1... замість UChN1...)
-        // Це економить 1 зайвий запит до сервера
         const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
         
         // Зберігання історії переглядів
         let watched =;
         try { 
             const saved = localStorage.getItem('watched_videos');
-            if (saved) watched = JSON.parse(saved); 
-        } catch(e) {}
+            if (saved) {
+                watched = JSON.parse(saved); 
+            }
+        } catch(e) {
+            watched =;
+        }
 
         // --- ДОПОМІЖНІ ФУНКЦІЇ ---
         function formatDate(d) {
@@ -238,24 +240,32 @@
                     const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}${pageToken? '&pageToken='+pageToken : ''}`);
                     if (!res.ok) throw new Error("API Error");
                     const data = await res.json();
-                    if (data.items) items.push(...data.items);
+                    if (data.items) {
+                        items.push(...data.items);
+                    }
                     pageToken = data.nextPageToken;
                 } while (pageToken);
 
                 if (items.length === 0) throw new Error("No videos found");
 
                 // Перетворюємо дані у зручний формат
-                let videos = items.map(item => ({
-                    id: item.snippet.resourceId.videoId,
-                    title: item.snippet.title,
-                    date: new Date(item.snippet.publishedAt),
-                    dateStr: item.snippet.publishedAt,
-                    thumb: item.snippet.thumbnails?.maxres?.url |
+                let videos = items.map(item => {
+                    const thumbMax = item.snippet.thumbnails?.maxres?.url;
+                    const thumbHigh = item.snippet.thumbnails?.high?.url;
+                    const thumbMed = item.snippet.thumbnails?.medium?.url;
+                    
+                    return {
+                        id: item.snippet.resourceId.videoId,
+                        title: item.snippet.title,
+                        date: new Date(item.snippet.publishedAt),
+                        dateStr: item.snippet.publishedAt,
+                        thumb: thumbMax |
 
-| item.snippet.thumbnails?.high?.url |
-| item.snippet.thumbnails?.medium?.url |
+| thumbHigh |
+| thumbMed |
 | ''
-                }));
+                    };
+                });
 
                 // КРОК 1: Сортуємо від НАЙСТАРІШОГО до НАЙНОВІШОГО, щоб правильно вирахувати періоди роботи
                 videos.sort((a, b) => a.date - b.date);
