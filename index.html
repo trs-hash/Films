@@ -17,11 +17,13 @@
     h2 { font-size: 1.2rem; margin-top: 30px; }
     h3 { font-size: 1rem; color: #555; text-transform: uppercase; letter-spacing: 1px; }
     .video-item { margin-bottom: 15px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
-    .video-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .video-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .thumbnail { width: 120px; height: auto; border-radius: 4px; }
+    .title-date { display: flex; flex-direction: column; }
     .period { color: #888; font-size: 0.85rem; }
     .title { transition: color 0.2s; font-size: 1rem; }
     .watched .title { text-decoration: line-through; }
-    .watched .video-header::after { content: " ❌"; font-size: 0.9rem; }
+    .watched .title-date::after { content: " ❌"; font-size: 0.9rem; }
 </style>
 </head>
 <body>
@@ -37,6 +39,7 @@ let videos = [];
 
 async function fetchVideos() {
     try {
+        // Додаємо snippet.thumbnails до запиту
         const response = await fetch(`https://www.googleapis.com/youtube/v3/search?key=${API_KEY}&channelId=${CHANNEL_ID}&part=snippet,id&order=date&maxResults=50&type=video`);
         const data = await response.json();
         
@@ -45,6 +48,7 @@ async function fetchVideos() {
                 id: item.id.videoId,
                 title: item.snippet.title,
                 date: item.snippet.publishedAt.split('T')[0], 
+                thumbnail: item.snippet.thumbnails.medium.url, // Отримуємо URL обкладинки
                 watched: false
             }));
             render();
@@ -84,9 +88,8 @@ function render() {
         const year = d.getFullYear();
         const season = getSeason(d);
         
-        const prevVid = sorted[i + 1]; 
-        const startDate = prevVid ? new Date(prevVid.date) : d;
-        const period = `${formatDate(startDate)}-${formatDate(d)}`;
+        // Спрощена дата: тільки дата публікації
+        const dateStr = formatDate(d);
 
         if (year !== currentYear) {
             html += `<h2>${year}</h2>`;
@@ -102,8 +105,11 @@ function render() {
         html += `
             <div class="video-item ${watchedClass}" onclick="toggleWatched('${vid.id}')">
                 <div class="video-header">
-                    <span class="title">${vid.title}</span>
-                    <span class="period">(${period})</span>
+                    <img src="${vid.thumbnail}" alt="${vid.title}" class="thumbnail">
+                    <div class="title-date">
+                        <span class="title">${vid.title}</span>
+                        <span class="period">(${dateStr})</span>
+                    </div>
                 </div>
             </div>
         `;
