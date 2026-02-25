@@ -4,151 +4,101 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Тарас Максимʼяк — кіноархів</title>
-<link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
-
 <style>
-    :root {
-        --bg-color: #f4f4f9; /* Світло-сірий фон сторінки, як стіна архіву */
-        --card-bg: #ffffff;   /* Білий колір для карток */
-        --text-color: #333;
-        --accent-red: #d9534f; /* Червоний для сезонів */
-        --typewriter-font: 'Courier New', Courier, monospace; /* Шрифт друкарської машинки */
-    }
-
+    /* Сучасний мінімалізм: системні шрифти (як на техніці Apple) */
     body {
-        font-family: 'Roboto Slab', serif; /* Більш класичний, "книжковий" шрифт */
-        background-color: var(--bg-color);
-        max-width: 800px; /* Трохи ширше для нового макету */
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        max-width: 600px;
         margin: 0 auto;
-        padding: 30px 20px;
-        color: var(--text-color);
-        line-height: 1.6;
+        padding: 20px 20px 40px;
+        color: #111;
+        background-color: #fff;
     }
 
-    h1 {
-        font-size: 2rem;
-        text-align: center;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        margin-bottom: 40px;
+    h1 { 
+        font-size: 1.8rem; 
         font-weight: 700;
-        border-bottom: 3px double #ccc; /* Подвійна лінія як у старих документах */
-        padding-bottom: 15px;
+        border-bottom: 1px solid #eaeaea; 
+        padding-bottom: 15px; 
+        margin-bottom: 30px;
     }
 
-    h2 {
-        font-family: var(--typewriter-font); /* Рік друкарським шрифтом */
-        font-size: 1.8rem;
-        margin-top: 40px;
-        border-bottom: 1px dashed #ccc;
-        padding-bottom: 5px;
+    h2 { 
+        font-size: 1.4rem; 
+        margin-top: 40px; 
+        margin-bottom: 10px;
+        font-weight: 600;
     }
 
-    h3 {
-        color: var(--accent-red); /* Сезон червоним */
-        font-size: 1.2rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-top: 25px;
-        margin-bottom: 15px;
-        font-weight: bold;
+    h3 { 
+        font-size: 0.85rem; 
+        color: #d93838; /* Елегантний червоний для сезону */
+        text-transform: uppercase; 
+        letter-spacing: 1.5px; 
+        margin-top: 25px; 
+        margin-bottom: 15px; 
+        font-weight: 600;
     }
 
-    /* Стиль картки відео */
-    .video-card {
-        background: var(--card-bg);
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
-        padding: 15px;
-        margin-bottom: 20px;
-        box-shadow: 3px 3px 8px rgba(0,0,0,0.05); /* Легка тінь для об'єму */
-        cursor: pointer;
-        display: flex;
-        justify-content: space-between; /* Розподіл по краях */
-        align-items: flex-start;
-        transition: transform 0.2s, box-shadow 0.2s;
+    .video-item { 
+        margin-bottom: 30px; 
+        cursor: pointer; 
+        transition: opacity 0.2s;
+    }
+    
+    .video-item:active {
+        opacity: 0.7; /* Легка реакція на клік з телефона */
     }
 
-    .video-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 4px 4px 12px rgba(0,0,0,0.1);
+    /* Велике та якісне прев'ю */
+    .thumbnail { 
+        width: 100%; 
+        aspect-ratio: 16 / 9;
+        object-fit: cover; 
+        border-radius: 12px; /* Сучасні заокруглення */
+        margin-bottom: 10px;
+        background-color: #f5f5f5; /* Плейсхолдер поки вантажиться */
     }
 
-    /* Ліва частина з текстом */
-    .video-info {
-        flex: 1; /* Займає весь доступний простір зліва */
-        padding-right: 20px; /* Відступ від картинки */
+    .info {
         display: flex;
         flex-direction: column;
+        gap: 4px;
+        padding: 0 4px;
     }
 
-    .title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 8px;
-        display: block;
+    .title { 
+        font-size: 1.05rem; 
+        font-weight: 500;
+        line-height: 1.3;
     }
 
-    .period {
-        font-family: var(--typewriter-font); /* Дата друкарським шрифтом */
-        color: #777;
+    .period { 
+        color: #888; 
+        font-size: 0.85rem; 
+    }
+
+    /* Відмітка переглянутого */
+    .watched .thumbnail {
+        opacity: 0.5;
+        filter: grayscale(50%);
+    }
+    .watched .title { 
+        text-decoration: line-through; 
+        color: #888;
+    }
+    .watched .title::after { 
+        content: " ❌"; 
         font-size: 0.9rem;
-        background: #f9f9f9;
-        padding: 2px 6px;
-        border-radius: 3px;
-        align-self: flex-start; /* Вирівнювання дати по лівому краю */
-        border: 1px dotted #ccc;
-    }
-
-    /* Права частина з картинкою */
-    .thumbnail {
-        width: 160px; /* Фіксована ширина для великого прев'ю */
-        height: 90px; /* Фіксована висота для формату 16:9 */
-        object-fit: cover;
-        border-radius: 3px;
-        border: 2px solid #eee;
-        flex-shrink: 0; /* Забороняє картинці стискатися */
-    }
-
-    /* Стилі для переглянутого відео */
-    .watched {
-        opacity: 0.7;
-        background-color: #f0f0f0;
-        border-color: #d0d0d0;
-    }
-    .watched .title {
-        text-decoration: line-through;
-    }
-    .watched .video-info::after {
-        content: "ПЕРЕГЛЯНУТО ❌";
-        color: var(--accent-red);
-        font-family: var(--typewriter-font);
-        font-size: 0.8rem;
-        margin-top: 10px;
-        font-weight: bold;
-    }
-
-    /* Адаптивність для дуже малих екранів */
-    @media (max-width: 480px) {
-        .video-card {
-            flex-direction: column-reverse; /* На мобільному картинка зверху */
-        }
-        .thumbnail {
-            width: 100%;
-            height: auto;
-            aspect-ratio: 16 / 9;
-            margin-bottom: 15px;
-        }
-        .video-info {
-            padding-right: 0;
-        }
+        text-decoration: none;
+        display: inline-block;
     }
 </style>
 </head>
 <body>
 
 <h1>Кіноархів</h1>
-<div id="catalog">Завантаження карток...</div>
+<div id="catalog">Завантаження...</div>
 
 <script>
 const API_KEY = 'AIzaSyAM0jqex3ZEPCXGKweCZIs6-Z9NmLryTZ0'; 
@@ -157,7 +107,6 @@ let videos = [];
 
 async function fetchVideos() {
     try {
-        // Використовуємо 'medium' thumbnail, вона досить велика для картки
         const response = await fetch(`https://www.googleapis.com/youtube/v3/search?key=${API_KEY}&channelId=${CHANNEL_ID}&part=snippet,id&order=date&maxResults=50&type=video`);
         const data = await response.json();
         
@@ -166,15 +115,16 @@ async function fetchVideos() {
                 id: item.id.videoId,
                 title: item.snippet.title,
                 date: item.snippet.publishedAt.split('T')[0], 
-                thumbnail: item.snippet.thumbnails.medium.url, 
+                // Використовуємо 'high' якість (480x360) замість 'medium', щоб не було мила
+                thumbnail: item.snippet.thumbnails.high.url, 
                 watched: false
             }));
             render();
         } else {
-            document.getElementById('catalog').innerHTML = "<p>Відео не знайдено або перевищено ліміт запитів API.</p>";
+            document.getElementById('catalog').innerHTML = "<p>Відео не знайдено.</p>";
         }
     } catch (error) {
-        document.getElementById('catalog').innerHTML = "<p>Помилка зв'язку з архівом.</p>";
+        document.getElementById('catalog').innerHTML = "<p>Помилка завантаження даних.</p>";
     }
 }
 
@@ -187,29 +137,25 @@ function getSeason(date) {
 }
 
 function formatDate(date) {
-    // Формат дати через крапки, як на печатці
-    return `${String(date.getDate()).padStart(2,'0')}.${String(date.getMonth()+1).padStart(2,'0')}.${String(date.getFullYear())}`;
+    return `${String(date.getDate()).padStart(2,'0')}.${String(date.getMonth()+1).padStart(2,'0')}.${String(date.getFullYear()).slice(-2)}`;
 }
 
 function render() {
     const catalog = document.getElementById('catalog');
-    if (videos.length === 0) {
-        catalog.innerHTML = "<p>Архів порожній.</p>";
-        return;
-    }
+    if (videos.length === 0) return;
 
     const sorted = [...videos].sort((a, b) => new Date(b.date) - new Date(a.date));
     let html = '';
     let currentYear = null, currentSeason = null;
 
-    sorted.forEach((vid, i) => {
+    sorted.forEach((vid) => {
         const d = new Date(vid.date);
         const year = d.getFullYear();
         const season = getSeason(d);
-        const dateStr = formatDate(d);
+        const dateStr = formatDate(d); // Тільки одна акуратна дата публікації
 
         if (year !== currentYear) {
-            html += `<h2>Архівний рік: ${year}</h2>`;
+            html += `<h2>${year}</h2>`;
             currentYear = year;
             currentSeason = null; 
         }
@@ -219,15 +165,13 @@ function render() {
         }
 
         const watchedClass = vid.watched ? 'watched' : '';
-        
-        // Нова структура HTML для картки
         html += `
-            <div class="video-card ${watchedClass}" onclick="toggleWatched('${vid.id}')">
-                <div class="video-info">
+            <div class="video-item ${watchedClass}" onclick="toggleWatched('${vid.id}')">
+                <img src="${vid.thumbnail}" alt="${vid.title}" class="thumbnail" loading="lazy">
+                <div class="info">
                     <span class="title">${vid.title}</span>
-                    <span class="period">Дата запису: ${dateStr}</span>
+                    <span class="period">${dateStr}</span>
                 </div>
-                <img src="${vid.thumbnail}" alt="${vid.title}" class="thumbnail">
             </div>
         `;
     });
