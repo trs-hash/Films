@@ -16,8 +16,7 @@
     }
 
     h1 { font-size: 1.8rem; font-weight: 700; border-bottom: 1px solid #eaeaea; padding-bottom: 15px; margin-bottom: 20px; }
-    h2 { font-size: 1.4rem; margin-top: 40px; margin-bottom: 10px; font-weight: 600; }
-    h3 { font-size: 0.85rem; color: #d93838; text-transform: uppercase; letter-spacing: 1.5px; margin-top: 25px; margin-bottom: 15px; font-weight: 600; }
+    h2 { font-size: 1.4rem; margin-top: 40px; margin-bottom: 20px; font-weight: 600; color: #d93838; }
 
     /* Стилі для фільтрів */
     .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 30px; }
@@ -44,7 +43,7 @@
     @media (prefers-color-scheme: dark) {
         body { background-color: #121212; color: #e0e0e0; }
         h1 { border-bottom: 1px solid #333; }
-        h3 { color: #ff5c5c; }
+        h2 { color: #ff5c5c; }
         .period { color: #aaa; }
         .thumbnail { background-color: #2a2a2a; }
         .watched .title { color: #555; }
@@ -60,10 +59,6 @@
 <div class="filters">
     <button class="filter-btn active" onclick="setFilter('all')" id="btn-all">Усі</button>
     <button class="filter-btn" onclick="setFilter('unwatched')" id="btn-unwatched">Непереглянуті</button>
-    <button class="filter-btn" onclick="setFilter('Весна')" id="btn-Весна">Весна</button>
-    <button class="filter-btn" onclick="setFilter('Літо')" id="btn-Літо">Літо</button>
-    <button class="filter-btn" onclick="setFilter('Осінь')" id="btn-Осінь">Осінь</button>
-    <button class="filter-btn" onclick="setFilter('Зима')" id="btn-Зима">Зима</button>
 </div>
 
 <div id="catalog"></div>
@@ -74,7 +69,7 @@ const API_KEY = 'AIzaSyAM0jqex3ZEPCXGKweCZIs6-Z9NmLryTZ0';
 const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA';
 const UPLOADS_PLAYLIST_ID = CHANNEL_ID.replace('UC', 'UU'); 
 
-let videos = JSON.parse(localStorage.getItem('cachedVideos')) || []; // Кеш для миттєвого відображення
+let videos = JSON.parse(localStorage.getItem('cachedVideos')) || []; 
 let watchedIds = JSON.parse(localStorage.getItem('watchedVideos')) || [];
 let activeFilter = 'all';
 
@@ -86,7 +81,7 @@ function setFilter(filter) {
 }
 
 async function fetchVideos(pageToken = '', isInit = true) {
-    if (isInit && videos.length > 0) render(); // Показуємо кеш миттєво
+    if (isInit && videos.length > 0) render(); 
     
     const loadingIndicator = document.getElementById('loading-indicator');
     if (pageToken || videos.length === 0) loadingIndicator.style.display = 'block';
@@ -109,10 +104,10 @@ async function fetchVideos(pageToken = '', isInit = true) {
                 };
             });
 
-            if (!pageToken) videos = fetchedVideos; // Оновлюємо базу новими даними
-            else videos = [...videos, ...fetchedVideos]; // Додаємо наступні сторінки
+            if (!pageToken) videos = fetchedVideos; 
+            else videos = [...videos, ...fetchedVideos]; 
 
-            localStorage.setItem('cachedVideos', JSON.stringify(videos)); // Зберігаємо в кеш
+            localStorage.setItem('cachedVideos', JSON.stringify(videos)); 
             render();
 
             if (data.nextPageToken) {
@@ -126,14 +121,6 @@ async function fetchVideos(pageToken = '', isInit = true) {
     }
 }
 
-function getSeason(date) {
-    const month = date.getMonth() + 1;
-    if (month >= 3 && month <= 5) return 'Весна';
-    if (month >= 6 && month <= 8) return 'Літо';
-    if (month >= 9 && month <= 11) return 'Осінь';
-    return 'Зима';
-}
-
 function formatDate(date) {
     return `${String(date.getDate()).padStart(2,'0')}.${String(date.getMonth()+1).padStart(2,'0')}.${String(date.getFullYear()).slice(-2)}`;
 }
@@ -141,12 +128,9 @@ function formatDate(date) {
 function render() {
     const catalog = document.getElementById('catalog');
     
-    // Фільтрація
     let displayVideos = videos;
     if (activeFilter === 'unwatched') {
         displayVideos = videos.filter(v => !v.watched);
-    } else if (activeFilter !== 'all') {
-        displayVideos = videos.filter(v => getSeason(new Date(v.date)) === activeFilter);
     }
 
     if (displayVideos.length === 0) {
@@ -156,18 +140,16 @@ function render() {
 
     const sorted = [...displayVideos].sort((a, b) => new Date(b.date) - new Date(a.date));
     let html = '';
-    let currentYear = null, currentSeason = null;
+    let currentYear = null;
 
     sorted.forEach((vid) => {
         const d = new Date(vid.date);
         const year = d.getFullYear();
-        const season = getSeason(d);
         const dateStr = formatDate(d);
 
-        // Відображаємо заголовки років і сезонів тільки для фільтру "Усі" та "Непереглянуті"
-        if (activeFilter === 'all' || activeFilter === 'unwatched') {
-            if (year !== currentYear) { html += `<h2>${year}</h2>`; currentYear = year; currentSeason = null; }
-            if (season !== currentSeason) { html += `<h3>${season}</h3>`; currentSeason = season; }
+        if (year !== currentYear) { 
+            html += `<h2>${year}</h2>`; 
+            currentYear = year; 
         }
 
         const watchedClass = vid.watched ? 'watched' : '';
@@ -197,7 +179,6 @@ function toggleWatched(id) {
     render();
 }
 
-// Реєстрація Service Worker
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Registration failed: ', err));
