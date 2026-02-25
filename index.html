@@ -1,332 +1,99 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тарас Максимʼяк — кіноархів</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
-    
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #ffffff;
-            color: #111;
-            margin: 0;
-            padding: 40px 20px;
-            font-weight: 300;
-        }
-
-       .container { 
-            max-width: 1000px; 
-            margin: 0 auto; 
-        }
-
-        /* Головний заголовок сайту */
-       .site-title { 
-            font-size: 14px; 
-            font-weight: 600; 
-            letter-spacing: 2px; 
-            text-transform: uppercase; 
-            border-bottom: 1px solid #eee; 
-            padding-bottom: 20px; 
-            margin-bottom: 50px; 
-            color: #888; 
-        }
-
-        /* Роздільники років і сезонів */
-       .year-header { 
-            font-size: 48px; 
-            font-weight: 700; 
-            margin: 60px 0 10px 0; 
-            border-bottom: 2px solid #111; 
-            padding-bottom: 5px; 
-            display: inline-block;
-        }
-
-       .season-header { 
-            font-size: 16px; 
-            font-weight: 600; 
-            color: #e62117; 
-            text-transform: uppercase; 
-            letter-spacing: 2px; 
-            margin: 30px 0 40px 0; 
-        }
-
-        /* Список відео */
-       .video-list { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 70px; 
-        }
-
-        /* Картка одного відео */
-       .video-card { 
-            display: grid; 
-            grid-template-columns: 1fr 1.6fr; 
-            gap: 40px; 
-            align-items: center; 
-            transition: opacity 0.3s;
-        }
-        
-        /* Блок з текстом */
-       .video-info { 
-            text-align: left; 
-        }
-
-       .video-period { 
-            font-size: 12px; 
-            color: #888; 
-            font-weight: 600; 
-            letter-spacing: 1px; 
-            margin-bottom: 10px; 
-        }
-
-       .video-title { 
-            font-size: 32px; 
-            font-weight: 300; 
-            line-height: 1.2; 
-            margin: 0; 
-            color: #111; 
-            text-decoration: none; 
-            display: inline-block; 
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-
-       .video-title:hover { 
-            color: #e62117; 
-        }
-        
-        /* Блок з обкладинкою */
-       .video-thumb-wrapper { 
-            position: relative; 
-            aspect-ratio: 16/9; 
-            background: #f4f4f4; 
-            border-radius: 6px; 
-            overflow: hidden; 
-            cursor: pointer; 
-            transition: transform 0.3s; 
-        }
-
-       .video-thumb-wrapper:hover { 
-            transform: scale(1.02); 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-       .video-thumb { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-            transition: filter 0.3s;
-        }
-        
-        /* --- СТАН: ПЕРЕГЛЯНУТО (ЧЕРВОНИЙ ХРЕСТ) --- */
-       .watched.video-thumb { 
-            filter: grayscale(100%); 
-            opacity: 0.6; 
-        }
-
-       .watched.video-title { 
-            color: #aaa; 
-            text-decoration: line-through;
-        }
-
-       .watched.video-thumb-wrapper::before, 
-       .watched.video-thumb-wrapper::after {
-            content: ''; 
-            position: absolute; 
-            top: 50%; 
-            left: 50%;
-            width: 120%; 
-            height: 4px; 
-            background: #e62117; 
-            z-index: 10;
-            pointer-events: none; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
-        }
-
-       .watched.video-thumb-wrapper::before { 
-            transform: translate(-50%, -50%) rotate(29deg); 
-        }
-
-       .watched.video-thumb-wrapper::after { 
-            transform: translate(-50%, -50%) rotate(-29deg); 
-        }
-
-        #loader { text-align: center; color: #999; margin-top: 50px; font-size: 14px; letter-spacing: 1px; }
-
-        /* Адаптивність для мобільних */
-        @media (max-width: 768px) {
-           .video-card { 
-                grid-template-columns: 1fr; 
-                gap: 15px; 
-                margin-bottom: 20px;
-                border-bottom: 1px solid #f9f9f9;
-                padding-bottom: 40px;
-            }
-           .video-info { order: 2; }
-           .video-thumb-wrapper { order: 1; }
-           .video-title { font-size: 26px; }
-           .year-header { font-size: 36px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Каталог Відео</title>
+<style>
+    body {
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        max-width: 700px;
+        margin: 50px auto;
+        color: #1a1a1a;
+        line-height: 1.5;
+    }
+    h1 { font-size: 1.5rem; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+    h2 { font-size: 1.2rem; margin-top: 30px; }
+    h3 { font-size: 1rem; color: #555; text-transform: uppercase; letter-spacing: 1px; }
+    .video-item { margin-bottom: 12px; cursor: pointer; display: flex; gap: 10px; align-items: center; }
+    .period { color: #888; font-size: 0.85rem; }
+    .title { transition: color 0.2s; }
+    .watched .title { text-decoration: line-through; }
+    .watched::after { content: " ❌"; font-size: 0.9rem; }
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="site-title">Тарас Максимʼяк — Кіноархів</div>
+
+<h1>Мої Відео</h1>
+<div id="catalog"></div>
+
+<script>
+// Тестові дані. Для реальних даних потрібен fetch до YouTube API v3.
+const videos = [
+    { id: '1', title: 'Весняний влог', date: '2026-03-01', watched: false },
+    { id: '2', title: 'Останнє відео', date: '2026-02-23', watched: false },
+    { id: '3', title: 'Попереднє відео', date: '2026-02-12', watched: true },
+    { id: '4', title: 'Новорічне', date: '2025-12-25', watched: false },
+    { id: '5', title: 'Осінній настрій', date: '2025-10-15', watched: false }
+];
+
+function getSeason(date) {
+    const month = date.getMonth() + 1;
+    if (month >= 3 && month <= 5) return 'Весна';
+    if (month >= 6 && month <= 8) return 'Літо';
+    if (month >= 9 && month <= 11) return 'Осінь';
+    return 'Зима';
+}
+
+function formatDate(date) {
+    return `${String(date.getDate()).padStart(2,'0')}.${String(date.getMonth()+1).padStart(2,'0')}.${String(date.getFullYear()).slice(-2)}`;
+}
+
+function render() {
+    const catalog = document.getElementById('catalog');
+    // Сортування: від новіших до старіших
+    const sorted = [...videos].sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    let html = '';
+    let currentYear = null, currentSeason = null;
+
+    sorted.forEach((vid, i) => {
+        const d = new Date(vid.date);
+        const year = d.getFullYear();
+        const season = getSeason(d);
         
-        <div id="loader">Завантаження каталогу...</div>
-        <div id="app" class="video-list"></div>
-    </div>
+        // Розрахунок періоду: від дати публікації попереднього (старішого) відео до поточного
+        const prevVid = sorted[i + 1]; 
+        const startDate = prevVid ? new Date(prevVid.date) : d;
+        const period = `${formatDate(startDate)}-${formatDate(d)}`;
 
-    <script>
-        // --- КОНФІГУРАЦІЯ ---
-        const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc';
-        const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
-        
-        // Зберігання історії переглядів
-        let watched =;
-        try { 
-            const saved = localStorage.getItem('watched_videos');
-            if (saved) {
-                watched = JSON.parse(saved); 
-            }
-        } catch(e) {
-            watched =;
+        if (year !== currentYear) {
+            html += `<h2>${year}</h2>`;
+            currentYear = year;
+            currentSeason = null; 
+        }
+        if (season !== currentSeason) {
+            html += `<h3>${season}</h3>`;
+            currentSeason = season;
         }
 
-        // --- ДОПОМІЖНІ ФУНКЦІЇ ---
-        function formatDate(d) {
-            const day = d.getDate().toString().padStart(2, '0');
-            const month = (d.getMonth() + 1).toString().padStart(2, '0');
-            const year = d.getFullYear().toString().slice(-2);
-            return `${day}.${month}.${year}`;
-        }
+        const watchedClass = vid.watched ? 'watched' : '';
+        html += `
+            <div class="video-item ${watchedClass}" onclick="toggleWatched('${vid.id}')">
+                <span class="title">${vid.title}</span>
+                <span class="period">(${period})</span>
+            </div>
+        `;
+    });
+    catalog.innerHTML = html;
+}
 
-        function getSeason(monthIndex) {
-            if (monthIndex === 11 |
+function toggleWatched(id) {
+    const vid = videos.find(v => v.id === id);
+    if (vid) vid.watched = !vid.watched;
+    render();
+}
 
-| monthIndex <= 1) return "Зима";
-            if (monthIndex >= 2 && monthIndex <= 4) return "Весна";
-            if (monthIndex >= 5 && monthIndex <= 7) return "Літо";
-            return "Осінь";
-        }
-
-        // Функція відмітки "Переглянуто"
-        window.toggleWatch = function(id) {
-            if (!watched.includes(id)) {
-                // Додаємо в переглянуті
-                watched.push(id);
-                localStorage.setItem('watched_videos', JSON.stringify(watched));
-                const el = document.getElementById('vid-' + id);
-                if (el) el.classList.add('watched');
-            } else {
-                // Скасовуємо перегляд при повторному кліку
-                watched = watched.filter(v => v!== id);
-                localStorage.setItem('watched_videos', JSON.stringify(watched));
-                const el = document.getElementById('vid-' + id);
-                if (el) el.classList.remove('watched');
-            }
-        }
-
-        // --- ГОЛОВНА ЛОГІКА ---
-        async function init() {
-            try {
-                let items =;
-                let pageToken = '';
-                
-                // Завантажуємо всі відео з каналу (з урахуванням пагінації)
-                do {
-                    const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}${pageToken? '&pageToken='+pageToken : ''}`);
-                    if (!res.ok) throw new Error("API Error");
-                    const data = await res.json();
-                    if (data.items) {
-                        items.push(...data.items);
-                    }
-                    pageToken = data.nextPageToken;
-                } while (pageToken);
-
-                if (items.length === 0) throw new Error("No videos found");
-
-                // Перетворюємо дані у зручний формат
-                let videos = items.map(item => {
-                    const thumbMax = item.snippet.thumbnails?.maxres?.url;
-                    const thumbHigh = item.snippet.thumbnails?.high?.url;
-                    const thumbMed = item.snippet.thumbnails?.medium?.url;
-                    
-                    return {
-                        id: item.snippet.resourceId.videoId,
-                        title: item.snippet.title,
-                        date: new Date(item.snippet.publishedAt),
-                        dateStr: item.snippet.publishedAt,
-                        thumb: thumbMax |
-
-| thumbHigh |
-| thumbMed |
-| ''
-                    };
-                });
-
-                // КРОК 1: Сортуємо від НАЙСТАРІШОГО до НАЙНОВІШОГО, щоб правильно вирахувати періоди роботи
-                videos.sort((a, b) => a.date - b.date);
-
-                videos.forEach((v, i) => {
-                    if (i === 0) {
-                        // Для найпершого відео просто пишемо дату
-                        v.period = `Початок — ${formatDate(v.date)}`;
-                    } else {
-                        // Беремо дату виходу ПОПЕРЕДНЬОГО відео і дату поточного (проміжок роботи)
-                        v.period = `${formatDate(videos[i-1].date)} — ${formatDate(v.date)}`;
-                    }
-                });
-
-                // КРОК 2: Сортуємо назад: від НАЙНОВІШОГО до НАЙСТАРІШОГО для відображення
-                videos.sort((a, b) => b.date - a.date);
-
-                let html = '';
-                let lastYear = null;
-                let lastSeason = null;
-
-                // Будуємо HTML
-                videos.forEach(v => {
-                    const year = v.date.getFullYear();
-                    const season = getSeason(v.date.getMonth());
-
-                    // Додаємо роздільники років і сезонів
-                    if (year!== lastYear) {
-                        html += `<div class="year-header">${year}</div>`;
-                        lastYear = year;
-                        lastSeason = null; // скидаємо сезон, щоб він відмалювався під новим роком
-                    }
-                    if (season!== lastSeason) {
-                        html += `<div class="season-header">${season}</div>`;
-                        lastSeason = season;
-                    }
-
-                    const watchedClass = watched.includes(v.id)? 'watched' : '';
-
-                    html += `
-                    <div class="video-card ${watchedClass}" id="vid-${v.id}">
-                        <div class="video-info">
-                            <div class="video-period">${v.period}</div>
-                            <a href="https://www.youtube.com/watch?v=${v.id}" target="_blank" class="video-title" onclick="toggleWatch('${v.id}')">${v.title}</a>
-                        </div>
-                        <a href="https://www.youtube.com/watch?v=${v.id}" target="_blank" class="video-thumb-wrapper" onclick="toggleWatch('${v.id}')">
-                            <img src="${v.thumb}" class="video-thumb" loading="lazy" alt="${v.title}">
-                        </a>
-                    </div>`;
-                });
-
-                document.getElementById('app').innerHTML = html;
-                document.getElementById('loader').style.display = 'none';
-
-            } catch (e) {
-                document.getElementById('loader').innerText = "Не вдалося завантажити архів відео. Можливо, закінчилися квоти API.";
-                console.error(e);
-            }
-        }
-
-        init();
-    </script>
+render();
+</script>
 </body>
 </html>
