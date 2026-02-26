@@ -14,7 +14,6 @@
         --card-bg: #ffffff;
         --text-main: #111111;
         --text-muted: #666666;
-        --accent: #D93838;
         --shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
         --shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.08);
     }
@@ -25,7 +24,6 @@
             --card-bg: #1a1a1c;
             --text-main: #f0f0f0;
             --text-muted: #888888;
-            --accent: #e65555;
             --shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
             --shadow-hover: 0 16px 40px rgba(0, 0, 0, 0.6);
         }
@@ -57,9 +55,18 @@
         font-family: 'Space Grotesk', sans-serif;
         font-size: 2.5rem;
         font-weight: 700;
-        margin-bottom: 40px;
+        margin-bottom: 20px;
         letter-spacing: -1px;
     }
+
+    /* Стилі для фільтрів */
+   .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 40px; }
+   .filter-btn {
+        padding: 8px 18px; border: 1px solid var(--text-muted); border-radius: 30px;
+        background: transparent; color: var(--text-main); cursor: pointer; 
+        font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; transition: 0.2s;
+    }
+   .filter-btn.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); }
 
     /* Оптимізація рендерингу DOM: браузер не малює роки поза екраном */
    .year-section {
@@ -70,22 +77,12 @@
 
    .year-title {
         font-family: 'Space Grotesk', sans-serif;
-        font-size: 3rem;
+        font-size: 2.5rem;
         margin: 0 0 20px 0;
         color: var(--text-main);
         opacity: 0.9;
-        border-bottom: 2px solid var(--text-muted);
+        border-bottom: 1px solid var(--text-muted);
         padding-bottom: 10px;
-    }
-
-   .season-title {
-        grid-column: 1 / -1; /* Займає всю ширину сітки */
-        font-family: 'Space Grotesk', sans-serif;
-        color: var(--accent);
-        font-size: 1.1rem;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        margin: 20px 0 10px 0;
     }
 
     /* Bento Сітка */
@@ -146,7 +143,7 @@
         font-family: 'Space Grotesk', monospace;
         font-size: 0.85rem;
         color: var(--text-muted);
-        margin-top: auto; /* Притискає дату до низу картки */
+        margin-top: auto;
     }
 
     /* Стан "Переглянуто" */
@@ -179,6 +176,12 @@
 
 <div class="container">
     <h1>Кіноархів</h1>
+    
+    <div class="filters">
+        <button class="filter-btn active" onclick="setFilter('all')" id="btn-all">Усі</button>
+        <button class="filter-btn" onclick="setFilter('unwatched')" id="btn-unwatched">Непереглянуті</button>
+    </div>
+
     <div id="catalog"></div>
     <div id="loading" class="loading-pulse">Синхронізація архіву...</div>
 </div>
@@ -188,32 +191,50 @@ const API_KEY = 'AIzaSyAM0jqex3ZEPCXGKweCZIs6-Z9NmLryTZ0';
 const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA';
 const UPLOADS_PLAYLIST_ID = CHANNEL_ID.replace('UC', 'UU'); 
 
-let videos =;
+let videos = JSON.parse(localStorage.getItem('cachedVideos')) ||;
 let watchedIds = JSON.parse(localStorage.getItem('watchedVideos')) ||;
+let activeFilter = 'all';
 
-// Intersection Observer для лінивого завантаження зображень (продуктивність)
+// Intersection Observer для лінивого завантаження зображень (висока продуктивність)
 const imageObserver = new IntersectionObserver((entries, observer) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const img = entry.target;
-            img.src = img.dataset.src;
-            img.onload = () => img.classList.add('loaded');
+            if(img.dataset.src) {
+                img.src = img.dataset.src;
+                img.onload = () => img.classList.add('loaded');
+            }
             observer.unobserve(img); // Припиняємо слідкувати після завантаження
         }
     });
-}, { rootMargin: '200px' }); // Починає вантажити за 200px до появи на екрані
+}, { rootMargin: '200px' }); 
 
-async function fetchAllVideos(pageToken = '') {
+function setFilter(filter) {
+    activeFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`btn-${filter}`).classList.add('active');
+    processAndRender();
+}
+
+async function fetchAllVideos(pageToken = '', isInit = true) {
+    if (isInit && videos.length > 0) processAndRender(); // Показуємо кеш миттєво
+
+    const loadingIndicator = document.getElementById('loading');
+    if (pageToken |
+
+| videos.length === 0) loadingIndicator.style.display = 'block';
+
     try {
-        // Оптимізація: параметр fields фільтрує відповідь Google, зменшуючи розмір JSON у 10 разів
         const pageQuery = pageToken? `&pageToken=${pageToken}` : '';
+        // Оптимізація: параметр fields завантажує лише потрібні дані, пришвидшуючи відповідь
         const fields = 'nextPageToken,items(snippet(title,publishedAt,thumbnails,resourceId/videoId))';
         const response = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?key=${API_KEY}&playlistId=${UPLOADS_PLAYLIST_ID}&part=snippet&maxResults=50&fields=${fields}${pageQuery}`);
         const data = await response.json();
         
         if (data.items) {
-            const newVideos = data.items.map(item => {
+            const fetchedVideos = data.items.map(item => {
                 const thumbs = item.snippet.thumbnails;
+                // Виправляємо логіку вибору кращої картинки
                 const bestThumbUrl = thumbs?.maxres?.url |
 
 | thumbs?.standard?.url |
@@ -228,25 +249,23 @@ async function fetchAllVideos(pageToken = '') {
                 };
             });
 
-            videos = [...videos,...newVideos];
+            if (!pageToken) videos = fetchedVideos; 
+            else videos = [...videos,...fetchedVideos]; 
+
+            localStorage.setItem('cachedVideos', JSON.stringify(videos));
 
             if (data.nextPageToken) {
-                await fetchAllVideos(data.nextPageToken);
+                await fetchAllVideos(data.nextPageToken, false);
             } else {
                 processAndRender();
             }
+        } else {
+            processAndRender();
         }
     } catch (error) {
-        document.getElementById('loading').innerText = "Помилка зв'язку з архівом.";
+        if (videos.length === 0) document.getElementById('loading').innerText = "Помилка зв'язку з архівом.";
+        console.error("API Error: ", error);
     }
-}
-
-function getSeason(date) {
-    const month = date.getMonth() + 1;
-    if (month >= 3 && month <= 5) return 'Весна';
-    if (month >= 6 && month <= 8) return 'Літо';
-    if (month >= 9 && month <= 11) return 'Осінь';
-    return 'Зима';
 }
 
 function formatDate(date) {
@@ -256,12 +275,13 @@ function formatDate(date) {
 function processAndRender() {
     document.getElementById('loading').style.display = 'none';
     const catalog = document.getElementById('catalog');
+    
     if (videos.length === 0) {
         catalog.innerHTML = "<p>Архів порожній.</p>";
         return;
     }
 
-    // 1. Сортуємо від старіших до новіших для розрахунку періоду роботи
+    // 1. Сортуємо глобально від старіших до новіших для точного розрахунку періоду роботи
     videos.sort((a, b) => new Date(a.date) - new Date(b.date));
     
     videos.forEach((vid, i) => {
@@ -269,34 +289,35 @@ function processAndRender() {
         const prevDate = i > 0? new Date(videos[i - 1].date) : currentDate;
         vid.workPeriod = `${formatDate(prevDate)}-${formatDate(currentDate)}`;
         vid.year = currentDate.getFullYear();
-        vid.season = getSeason(currentDate);
         vid.watched = watchedIds.includes(vid.id);
     });
 
-    // 2. Реверсуємо назад (від новіших до старіших) для виводу
-    videos.reverse();
+    // 2. Фільтрація (Усі / Непереглянуті)
+    let displayVideos = videos;
+    if (activeFilter === 'unwatched') {
+        displayVideos = videos.filter(v =>!v.watched);
+    }
 
-    // 3. Побудова плоского DOM з використанням Bento Grid
+    if (displayVideos.length === 0) {
+        catalog.innerHTML = "<p style='color: var(--text-muted);'>У цій категорії порожньо.</p>";
+        return;
+    }
+
+    // 3. Реверсуємо назад (від новіших до старіших) для виводу на екран
+    displayVideos.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    // Побудова DOM
     let html = '';
     let currentYear = null;
-    let currentSeason = null;
 
-    videos.forEach((vid) => {
-        // Закриваємо попередню сітку року, якщо рік змінився
+    displayVideos.forEach((vid) => {
         if (vid.year!== currentYear) {
-            if (currentYear!== null) html += `</div></div>`; // Закриваємо попередній.bento-grid та.year-section
+            if (currentYear!== null) html += `</div></div>`; 
             
             html += `<div class="year-section">
                         <h2 class="year-title">${vid.year}</h2>
                         <div class="bento-grid">`;
             currentYear = vid.year;
-            currentSeason = null;
-        }
-
-        // Вставляємо заголовок сезону всередину CSS-сітки
-        if (vid.season!== currentSeason) {
-            html += `<div class="season-title">${vid.season}</div>`;
-            currentSeason = vid.season;
         }
 
         const watchedClass = vid.watched? 'watched' : '';
@@ -313,7 +334,7 @@ function processAndRender() {
         `;
     });
     
-    if (currentYear!== null) html += `</div></div>`; // Закриваємо останню секцію
+    if (currentYear!== null) html += `</div></div>`; 
     
     catalog.innerHTML = html;
 
@@ -321,10 +342,14 @@ function processAndRender() {
     document.querySelectorAll('.thumb').forEach(img => imageObserver.observe(img));
 }
 
-// Оптимізований перемикач (змінює DOM локально без повного перерендеру сторінки)
+// Перемикач стану (змінює DOM локально без повного перерендеру сторінки)
 window.toggleWatched = function(id, cardElement) {
     const isWatched = cardElement.classList.toggle('watched');
     
+    // Знаходимо відео в базі та оновлюємо
+    const vid = videos.find(v => v.id === id);
+    if (vid) vid.watched = isWatched;
+
     if (isWatched) {
         if (!watchedIds.includes(id)) watchedIds.push(id);
     } else {
@@ -332,7 +357,20 @@ window.toggleWatched = function(id, cardElement) {
     }
     
     localStorage.setItem('watchedVideos', JSON.stringify(watchedIds));
+    localStorage.setItem('cachedVideos', JSON.stringify(videos));
+
+    // Якщо активний фільтр "Непереглянуті", ховаємо картку візуально
+    if (activeFilter === 'unwatched' && isWatched) {
+        cardElement.style.display = 'none';
+    }
 };
+
+// Реєстрація Service Worker для кешування
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Registration failed: ', err));
+    });
+}
 
 fetchAllVideos();
 </script>
