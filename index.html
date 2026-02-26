@@ -42,14 +42,14 @@
     }
 
     /* Органічна текстуризація (Film Grain) */
-   .grain-overlay {
+  .grain-overlay {
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
         pointer-events: none; z-index: 9999;
         opacity: 0.04; mix-blend-mode: difference;
         background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
     }
 
-   .container { max-width: 900px; margin: 0 auto; }
+  .container { max-width: 900px; margin: 0 auto; }
 
     h1 {
         font-family: 'Space Grotesk', sans-serif;
@@ -60,22 +60,21 @@
     }
 
     /* Стилі для фільтрів */
-   .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 40px; }
-   .filter-btn {
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 40px; }
+  .filter-btn {
         padding: 8px 18px; border: 1px solid var(--text-muted); border-radius: 30px;
         background: transparent; color: var(--text-main); cursor: pointer; 
         font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; transition: 0.2s;
     }
-   .filter-btn.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); }
+  .filter-btn.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); }
 
-    /* Оптимізація рендерингу DOM: браузер не малює роки поза екраном */
-   .year-section {
+  .year-section {
         content-visibility: auto;
         contain-intrinsic-size: 800px; 
         margin-bottom: 60px;
     }
 
-   .year-title {
+  .year-title {
         font-family: 'Space Grotesk', sans-serif;
         font-size: 2.5rem;
         margin: 0 0 20px 0;
@@ -85,14 +84,13 @@
         padding-bottom: 10px;
     }
 
-    /* Bento Сітка */
-   .bento-grid {
+  .bento-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 24px;
     }
 
-   .bento-card {
+  .bento-card {
         background: var(--card-bg);
         border-radius: 16px;
         padding: 16px;
@@ -104,13 +102,12 @@
         gap: 12px;
     }
 
-   .bento-card:hover {
+  .bento-card:hover {
         transform: translateY(-6px);
         box-shadow: var(--shadow-hover);
     }
 
-    /* Обкладинка відео з Hover-ефектом */
-   .thumb-wrapper {
+  .thumb-wrapper {
         width: 100%;
         aspect-ratio: 16 / 9;
         border-radius: 10px;
@@ -119,7 +116,7 @@
         position: relative;
     }
 
-   .thumb {
+  .thumb {
         width: 100%;
         height: 100%;
         object-fit: cover;
@@ -127,27 +124,26 @@
         opacity: 0; 
     }
 
-   .thumb.loaded { opacity: 1; transition: opacity 0.4s, transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-   .bento-card:hover.thumb { transform: scale(1.05); }
+  .thumb.loaded { opacity: 1; transition: opacity 0.4s, transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+  .bento-card:hover.thumb { transform: scale(1.05); }
 
-   .info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; }
+  .info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; }
     
-   .video-title {
+  .video-title {
         font-size: 1.05rem;
         font-weight: 500;
         line-height: 1.4;
         margin: 0;
     }
 
-   .work-period {
+  .work-period {
         font-family: 'Space Grotesk', monospace;
         font-size: 0.85rem;
         color: var(--text-muted);
         margin-top: auto;
     }
 
-    /* Стан "Переглянуто" */
-   .watched.thumb-wrapper::after {
+  .watched.thumb-wrapper::after {
         content: "❌";
         position: absolute;
         inset: 0;
@@ -158,11 +154,10 @@
         background: rgba(0, 0, 0, 0.2);
         z-index: 2;
     }
-   .watched.thumb { filter: grayscale(100%) opacity(0.5); }
-   .watched.video-title { text-decoration: line-through; color: var(--text-muted); }
+  .watched.thumb { filter: grayscale(100%) opacity(0.5); }
+  .watched.video-title { text-decoration: line-through; color: var(--text-muted); }
 
-    /* Скелетон завантаження */
-   .loading-pulse {
+  .loading-pulse {
         text-align: center; color: var(--text-muted); font-family: 'Space Grotesk', sans-serif;
         padding: 40px; animation: pulse 1.5s infinite;
     }
@@ -191,11 +186,29 @@ const API_KEY = 'AIzaSyAM0jqex3ZEPCXGKweCZIs6-Z9NmLryTZ0';
 const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA';
 const UPLOADS_PLAYLIST_ID = CHANNEL_ID.replace('UC', 'UU'); 
 
-let videos = JSON.parse(localStorage.getItem('cachedVideos')) ||;
-let watchedIds = JSON.parse(localStorage.getItem('watchedVideos')) ||;
+// Безпечна функція для Інкогніто
+function getSafeStorage(key) {
+    try {
+        const data = localStorage.getItem(key);
+        if (data) return JSON.parse(data);
+        return new Array();
+    } catch (e) {
+        return new Array();
+    }
+}
+
+function setSafeStorage(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+        // Ігноруємо помилку в Інкогніто
+    }
+}
+
+let videos = getSafeStorage('cachedVideos');
+let watchedIds = getSafeStorage('watchedVideos');
 let activeFilter = 'all';
 
-// Intersection Observer для лінивого завантаження зображень
 const imageObserver = new IntersectionObserver((entries, observer) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -220,9 +233,15 @@ async function fetchAllVideos(pageToken = '', isInit = true) {
     if (isInit && videos.length > 0) processAndRender();
 
     const loadingIndicator = document.getElementById('loading');
-    if (pageToken |
-
-| videos.length === 0) loadingIndicator.style.display = 'block';
+    
+    // Захист від багів при копіюванні
+    let shouldShowLoading = false;
+    if (pageToken!== '') shouldShowLoading = true;
+    if (videos.length === 0) shouldShowLoading = true;
+    
+    if (shouldShowLoading) {
+        loadingIndicator.style.display = 'block';
+    }
 
     try {
         const pageQuery = pageToken? `&pageToken=${pageToken}` : '';
@@ -233,26 +252,38 @@ async function fetchAllVideos(pageToken = '', isInit = true) {
         if (data.items) {
             const fetchedVideos = data.items.map(item => {
                 const thumbs = item.snippet.thumbnails;
-                const bestThumbUrl = thumbs?.maxres?.url |
-
-| thumbs?.standard?.url |
-| thumbs?.high?.url |
-| thumbs?.default?.url |
-| '';
+                let bestUrl = '';
+                
+                // Захищена логіка вибору обкладинки
+                if (thumbs) {
+                    if (thumbs.maxres && thumbs.maxres.url) {
+                        bestUrl = thumbs.maxres.url;
+                    } else if (thumbs.standard && thumbs.standard.url) {
+                        bestUrl = thumbs.standard.url;
+                    } else if (thumbs.high && thumbs.high.url) {
+                        bestUrl = thumbs.high.url;
+                    } else if (thumbs.default && thumbs.default.url) {
+                        bestUrl = thumbs.default.url;
+                    }
+                }
                 
                 return {
                     id: item.snippet.resourceId.videoId,
                     title: item.snippet.title,
-                    date: item.snippet.publishedAt.split('T'), 
-                    thumbnail: bestThumbUrl,
+                    // Захист від втрати індексу при копіюванні
+                    date: item.snippet.publishedAt.split('T').shift(), 
+                    thumbnail: bestUrl,
                     watched: watchedIds.includes(item.snippet.resourceId.videoId)
                 };
             });
 
-            if (!pageToken) videos = fetchedVideos; 
-            else videos = [...videos,...fetchedVideos]; 
+            if (pageToken === '') {
+                videos = fetchedVideos;
+            } else {
+                videos = [...videos,...fetchedVideos];
+            }
 
-            localStorage.setItem('cachedVideos', JSON.stringify(videos));
+            setSafeStorage('cachedVideos', videos);
 
             if (data.nextPageToken) {
                 await fetchAllVideos(data.nextPageToken, false);
@@ -263,8 +294,10 @@ async function fetchAllVideos(pageToken = '', isInit = true) {
             processAndRender();
         }
     } catch (error) {
-        if (videos.length === 0) document.getElementById('loading').innerText = "Помилка зв'язку з архівом.";
-        console.error("API Error: ", error);
+        if (videos.length === 0) {
+            loadingIndicator.innerText = "Помилка зв'язку з архівом.";
+        }
+        console.error(error);
     }
 }
 
@@ -281,7 +314,6 @@ function processAndRender() {
         return;
     }
 
-    // 1. Сортуємо глобально від старіших до новіших для розрахунку періоду
     videos.sort((a, b) => new Date(a.date) - new Date(b.date));
     
     videos.forEach((vid, i) => {
@@ -292,7 +324,6 @@ function processAndRender() {
         vid.watched = watchedIds.includes(vid.id);
     });
 
-    // 2. Фільтрація (Усі / Непереглянуті)
     let displayVideos = videos;
     if (activeFilter === 'unwatched') {
         displayVideos = videos.filter(v =>!v.watched);
@@ -303,10 +334,8 @@ function processAndRender() {
         return;
     }
 
-    // 3. Реверсуємо назад (від новіших до старіших) для виводу
     displayVideos.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    // Побудова DOM
     let html = '';
     let currentYear = null;
 
@@ -338,11 +367,9 @@ function processAndRender() {
     
     catalog.innerHTML = html;
 
-    // Запуск спостерігача для лінивих зображень
     document.querySelectorAll('.thumb').forEach(img => imageObserver.observe(img));
 }
 
-// Перемикач стану
 window.toggleWatched = function(id, cardElement) {
     const isWatched = cardElement.classList.toggle('watched');
     
@@ -355,18 +382,17 @@ window.toggleWatched = function(id, cardElement) {
         watchedIds = watchedIds.filter(watchedId => watchedId!== id);
     }
     
-    localStorage.setItem('watchedVideos', JSON.stringify(watchedIds));
-    localStorage.setItem('cachedVideos', JSON.stringify(videos));
+    setSafeStorage('watchedVideos', watchedIds);
+    setSafeStorage('cachedVideos', videos);
 
     if (activeFilter === 'unwatched' && isWatched) {
         cardElement.style.display = 'none';
     }
 };
 
-// Підключення Service Worker для роботи офлайн
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Registration failed: ', err));
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW Error: ', err));
     });
 }
 
