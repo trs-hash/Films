@@ -68,7 +68,7 @@
     }
    .filter-btn.active { background: var(--text-main); color: var(--bg-color); border-color: var(--text-main); }
 
-    /* Оптимізація рендерингу DOM */
+    /* Оптимізація рендерингу DOM: браузер не малює роки поза екраном */
    .year-section {
         content-visibility: auto;
         contain-intrinsic-size: 800px; 
@@ -109,6 +109,7 @@
         box-shadow: var(--shadow-hover);
     }
 
+    /* Обкладинка відео з Hover-ефектом */
    .thumb-wrapper {
         width: 100%;
         aspect-ratio: 16 / 9;
@@ -238,11 +239,13 @@ async function fetchAllVideos(pageToken = '', isInit = true) {
 | thumbs?.high?.url |
 | thumbs?.default?.url |
 | '';
+                
                 return {
                     id: item.snippet.resourceId.videoId,
                     title: item.snippet.title,
                     date: item.snippet.publishedAt.split('T'), 
-                    thumbnail: bestThumbUrl
+                    thumbnail: bestThumbUrl,
+                    watched: watchedIds.includes(item.snippet.resourceId.videoId)
                 };
             });
 
