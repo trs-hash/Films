@@ -1,175 +1,44 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Тарас Максимʼяк — кіноархів</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
-<style>
-    :root {
-        --bg-color: #f7f7f9; --card-bg: #ffffff; --text-main: #111111;
-        --text-muted: #666666; --shadow: 0 8px 30px rgba(0,0,0,0.04);
-        --shadow-hover: 0 16px 40px rgba(0,0,0,0.08);
-    }
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --bg-color: #0f0f11; --card-bg: #1a1a1c; --text-main: #f0f0f0;
-            --text-muted: #888888; --shadow: 0 8px 30px rgba(0,0,0,0.4);
-            --shadow-hover: 0 16px 40px rgba(0,0,0,0.6);
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мій YouTube</title>
+    <style>
+        body {
+            background-color: #ffffff; /* Білий фон */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* На всю висоту екрану */
+            margin: 0;
         }
-    }
-    * { box-sizing: border-box; }
-    body { font-family: 'Inter', sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 40px 20px; line-height: 1.5; }
-    .container { max-width: 900px; margin: 0 auto; }
-    h1 { font-family: 'Space Grotesk', sans-serif; font-size: 2.5rem; font-weight: 700; margin-bottom: 20px; letter-spacing: -1px; }
-    .filters { display: flex; gap: 10px; margin-bottom: 40px; }
-    .filter-btn { padding: 8px 18px; border: 1px solid var(--text-muted); border-radius: 30px; background: transparent; color: var(--text-main); cursor: pointer; font-family: 'Space Grotesk', sans-serif; transition: 0.2s; }
-    .filter-btn.active { background: var(--text-main); color: var(--bg-color); }
-    .year-section { content-visibility: auto; contain-intrinsic-size: 800px; margin-bottom: 60px; }
-    .year-title { font-family: 'Space Grotesk', sans-serif; font-size: 2.5rem; margin: 0 0 20px; opacity: 0.9; border-bottom: 1px solid var(--text-muted); padding-bottom: 10px; }
-    .bento-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
-    .bento-card { background: var(--card-bg); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); transition: transform 0.3s, box-shadow 0.3s; cursor: pointer; display: flex; flex-direction: column; gap: 12px; }
-    .bento-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
-    .thumb-wrapper { width: 100%; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden; background: #333; position: relative; }
-    .thumb { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s; }
-    .thumb.loaded { opacity: 1; }
-    .info { display: flex; flex-direction: column; gap: 6px; flex-grow: 1; }
-    .video-title { font-size: 1.05rem; font-weight: 500; margin: 0; }
-    .work-period { font-family: 'Space Grotesk', monospace; font-size: 0.85rem; color: var(--text-muted); margin-top: auto; }
-    .watched .thumb-wrapper::after { content: "❌"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 3rem; background: rgba(0,0,0,0.3); }
-    .watched .thumb { filter: grayscale(100%) opacity(0.5); }
-    .watched .video-title { text-decoration: line-through; color: var(--text-muted); }
-    .loading-pulse { text-align: center; color: var(--text-muted); padding: 40px; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-</style>
+        
+        .youtube-btn {
+            transition: transform 0.2s ease-in-out;
+            cursor: pointer;
+        }
+
+        .youtube-btn:hover {
+            transform: scale(1.1) rotate(-2deg); /* Збільшення та легкий нахил при наведенні */
+        }
+
+        .hand-drawn {
+            width: 150px;
+            height: auto;
+        }
+    </style>
 </head>
 <body>
-<div class="container">
-    <h1>Кіноархів</h1>
-    <div class="filters" id="filters">
-        <button class="filter-btn active" data-filter="all">Усі</button>
-        <button class="filter-btn" data-filter="unwatched">Непереглянуті</button>
-    </div>
-    <div id="catalog"></div>
-    <div id="loading" class="loading-pulse">Синхронізація архіву...</div>
-</div>
 
-<script>
-const API_KEY = 'AIzaSyAM0jqex3ZEPCXGKweCZIs6-Z9NmLryTZ0'; 
-const UPLOADS_PLAYLIST_ID = 'UUChN1_4a8atyqkFcNIJx6MlA'; 
-
-const storage = {
-    get: (k) => { try { return JSON.parse(localStorage.getItem(k)) || []; } catch { return []; } },
-    set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
-};
-
-let videos = storage.get('cachedVideos');
-let watchedIds = new Set(storage.get('watchedVideos'));
-let activeFilter = 'all';
-
-const observer = new IntersectionObserver((entries, obs) => {
-    entries.forEach(e => {
-        if (e.isIntersecting) {
-            const img = e.target;
-            img.src = img.dataset.src;
-            img.onload = () => img.classList.add('loaded');
-            obs.unobserve(img);
-        }
-    });
-}, { rootMargin: '200px' });
-
-document.getElementById('filters').addEventListener('click', (e) => {
-    if (!e.target.classList.contains('filter-btn')) return;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    e.target.classList.add('active');
-    activeFilter = e.target.dataset.filter;
-    render();
-});
-
-async function fetchVideos(pageToken = '') {
-    const loading = document.getElementById('loading');
-    if (!pageToken && videos.length) render();
-    else loading.style.display = 'block';
-
-    try {
-        const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?key=${API_KEY}&playlistId=${UPLOADS_PLAYLIST_ID}&part=snippet&maxResults=50&fields=nextPageToken,items(snippet(title,publishedAt,thumbnails,resourceId/videoId))${pageToken ? `&pageToken=${pageToken}` : ''}`);
-        const data = await res.json();
+    <a href="https://m.youtube.com/channel/UChN1_4a8atyqkFcNIJx6MlA" target="_blank" class="youtube-btn">
         
-        if (data.items) {
-            const newVids = data.items.map(i => {
-                const t = i.snippet.thumbnails;
-                return {
-                    id: i.snippet.resourceId.videoId,
-                    title: i.snippet.title,
-                    date: i.snippet.publishedAt.split('T')[0],
-                    thumb: t?.maxres?.url || t?.standard?.url || t?.high?.url || t?.default?.url || ''
-                };
-            });
-            videos = pageToken ? [...videos, ...newVids] : newVids;
-            storage.set('cachedVideos', videos);
-            
-            if (data.nextPageToken) fetchVideos(data.nextPageToken);
-            else render();
-        } else render();
-    } catch (err) {
-        if (!videos.length) loading.innerText = "Помилка зв'язку.";
-    }
-}
+        <svg class="hand-drawn" viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 8 15 Q 50 5 92 12 Q 98 35 90 60 Q 50 68 8 58 Q 2 35 8 15 Z" fill="#ff0000" stroke="#111" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M 38 25 Q 40 35 38 45 Q 50 40 62 35 Q 50 30 38 25 Z" fill="#ffffff" stroke="#111" stroke-width="2" stroke-linejoin="round"/>
+        </svg>
+        
+    </a>
 
-const format = d => `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getFullYear()).slice(-2)}`;
-
-function render() {
-    document.getElementById('loading').style.display = 'none';
-    const catalog = document.getElementById('catalog');
-    
-    if (!videos.length) return catalog.innerHTML = "<p>Архів порожній.</p>";
-
-    videos.sort((a, b) => new Date(a.date) - new Date(b.date));
-    
-    let filtered = videos.map((v, i) => {
-        const d = new Date(v.date);
-        const prevD = i > 0 ? new Date(videos[i-1].date) : d;
-        return { ...v, year: d.getFullYear(), period: `${format(prevD)}-${format(d)}`, isWatched: watchedIds.has(v.id) };
-    });
-
-    if (activeFilter === 'unwatched') filtered = filtered.filter(v => !v.isWatched);
-    
-    if (!filtered.length) return catalog.innerHTML = "<p style='color:var(--text-muted);'>Порожньо.</p>";
-
-    filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-    let html = '', curYear = null;
-    filtered.forEach(v => {
-        if (v.year !== curYear) {
-            if (curYear !== null) html += `</div></div>`;
-            html += `<div class="year-section"><h2 class="year-title">${v.year}</h2><div class="bento-grid">`;
-            curYear = v.year;
-        }
-        html += `
-            <div class="bento-card ${v.isWatched ? 'watched' : ''}" onclick="toggleWatched('${v.id}', this)">
-                <div class="thumb-wrapper"><img data-src="${v.thumb}" alt="" class="thumb"></div>
-                <div class="info">
-                    <h3 class="video-title">${v.title}</h3>
-                    <span class="work-period">${v.period}</span>
-                </div>
-            </div>`;
-    });
-    catalog.innerHTML = html + (curYear !== null ? `</div></div>` : '');
-    document.querySelectorAll('.thumb').forEach(img => observer.observe(img));
-}
-
-window.toggleWatched = (id, el) => {
-    const isW = el.classList.toggle('watched');
-    isW ? watchedIds.add(id) : watchedIds.delete(id);
-    storage.set('watchedVideos', [...watchedIds]);
-    if (activeFilter === 'unwatched' && isW) el.style.display = 'none';
-};
-
-if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(Boolean));
-
-fetchVideos();
-</script>
 </body>
 </html>
