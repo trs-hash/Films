@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарас Максимʼяк — 365</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
+    <link rel="preconnect" href="https://i.ytimg.com">
+    <link rel="preconnect" href="https://www.googleapis.com">
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #222; margin: 0; padding: 20px; overflow-x: hidden; }
         .main-wrapper { max-width: 1400px; margin: 0 auto; display: none; }
@@ -61,10 +63,14 @@
     const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
     const START_YEAR = 2026;
     const START_MONTH = 2; // 2 = Березень
-    const START_DAY = 10; 
+    const START_DAY = 11; 
+    
+    const CACHE_KEY = 'yt_videos_data';
+    const CACHE_TIME_KEY = 'yt_videos_time';
+    const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 годин
     
     const app = document.getElementById('app');
-    const videosMap = {};
+    let videosMap = {};
     let watchedVideos = [];
     try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
 
@@ -72,8 +78,19 @@
     const monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
     async function init() {
+        const now = Date.now();
+        const cachedData = localStorage.getItem(CACHE_KEY);
+        const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+
+        if (cachedData && cachedTime && (now - parseInt(cachedTime)) < CACHE_TTL) {
+            videosMap = JSON.parse(cachedData);
+            showApp();
+            return;
+        }
+
         try {
             let pageToken = '';
+            videosMap = {}; // Очищаємо перед новим завантаженням
             do {
                 const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}${pageToken ? \`&pageToken=\${pageToken}\` : ''}`;
                 const res = await fetch(url);
@@ -83,15 +100,29 @@
                     data.items.forEach(item => {
                         const dateKey = item.snippet.publishedAt.split('T')[0];
                         if (!videosMap[dateKey]) videosMap[dateKey] = [];
-                        videosMap[dateKey].push(item);
+                        
+                        // Зберігаємо лише необхідне для швидкості та економії пам'яті
+                        videosMap[dateKey].push({
+                            id: item.snippet.resourceId.videoId,
+                            title: item.snippet.title,
+                            thumb: item.snippet.thumbnails?.maxres?.url || item.snippet.thumbnails?.high?.url || item.snippet.thumbnails?.medium?.url || ''
+                        });
                     });
                 }
                 pageToken = data.nextPageToken;
             } while (pageToken);
+
+            localStorage.setItem(CACHE_KEY, JSON.stringify(videosMap));
+            localStorage.setItem(CACHE_TIME_KEY, now.toString());
         } catch (e) {
             console.error("Помилка завантаження даних:", e);
+            if (cachedData) videosMap = JSON.parse(cachedData); // Фолбек на старий кеш при помилці
         }
         
+        showApp();
+    }
+
+    function showApp() {
         render();
         document.getElementById('loading').style.display = 'none';
         document.getElementById('main').style.display = 'block';
@@ -152,14 +183,11 @@
                 cellClass = cellClass.replace('empty-day', 'has-video');
                 
                 let linksHTML = vids.map(vid => {
-                    const id = vid.snippet.resourceId.videoId;
-                    const thumb = vid.snippet.thumbnails?.maxres?.url || vid.snippet.thumbnails?.high?.url || vid.snippet.thumbnails?.medium?.url || '';
-                    const watchedClass = watchedVideos.includes(id) ? 'watched' : '';
-                    
+                    const watchedClass = watchedVideos.includes(vid.id) ? 'watched' : '';
                     return `
-                        <a href="https://www.youtube.com/watch?v=${id}" target="_blank" class="video-link ${watchedClass}" onclick="mark('${id}', this)">
-                            <img src="${thumb}" class="video-thumb" loading="lazy">
-                            <div class="overlay-title">${vid.snippet.title}</div>
+                        <a href="https://www.youtube.com/watch?v=${vid.id}" target="_blank" class="video-link ${watchedClass}" onclick="mark('${vid.id}', this)">
+                            <img src="${vid.thumb}" class="video-thumb" loading="lazy">
+                            <div class="overlay-title">${vid.title}</div>
                         </a>
                     `;
                 }).join('');
