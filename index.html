@@ -76,8 +76,8 @@
 
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.3s ease; }
         .modal.show { display: flex; opacity: 1; }
-        .modal-content { width: 100%; max-width: 1000px; padding: 20px; position: relative; }
-        .iframe-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .modal-content { width: 100%; max-width: 1000px; padding: 20px; position: relative; transition: transform 0.2s ease-out; }
+        .iframe-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; }
         .iframe-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
         .close-btn { position: absolute; top: -15px; right: 20px; color: #fff; font-size: 40px; cursor: pointer; line-height: 1; z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-weight: 300; }
         .close-btn:hover { color: #e62117; }
@@ -116,7 +116,7 @@
 </div>
 
 <div id="videoModal" class="modal" onclick="closeModal()">
-    <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-content" id="modalContent" onclick="event.stopPropagation()">
         <div class="close-btn" onclick="closeModal()">&times;</div>
         <div class="iframe-wrapper">
             <iframe id="ytIframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
@@ -149,6 +149,7 @@
     const weekDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
     const monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
+    // Логіка приховування меню
     window.addEventListener('scroll', () => {
         if (window.scrollY > lastScrollY && window.scrollY > 150) {
             floatingNav.classList.add('hidden'); 
@@ -287,7 +288,7 @@
                 let linksHTML = vids.map(function(vid) {
                     const watchedClass = watchedVideos.includes(vid.id) ? 'watched' : '';
                     return `
-                        <a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link ${watchedClass}" onclick="handleVideoClick(event, '${vid.id}', this)">
+                        <a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link ${watchedClass}" onclick="openModal(event, '${vid.id}', this)">
                             <img src="${vid.thumb}" class="video-thumb" loading="lazy" decoding="async" alt="${vid.title}">
                             <div class="overlay-title">${vid.title}</div>
                         </a>
@@ -329,47 +330,21 @@
             watchedVideos.push(id);
             try { localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos)); } catch(e) {}
         }
-        el.classList.add('watched');
+        if(el) el.classList.add('watched');
     }
 
-    // Нова логіка кліку по відео (додаток vs модалка)
-    window.handleVideoClick = function(e, id, el) {
+    // Спрощена логіка відкриття (завжди модалка)
+    window.openModal = function(e, id, el) {
         e.preventDefault();
         mark(id, el);
-
-        const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-        if (isMobile) {
-            const start = Date.now();
-            let appUrl = '';
-
-            if (/Android/i.test(navigator.userAgent)) {
-                appUrl = 'intent://www.youtube.com/watch?v=' + id + '#Intent;package=com.google.android.youtube;scheme=https;end';
-            } else {
-                appUrl = 'vnd.youtube://watch?v=' + id;
-            }
-
-            window.location.href = appUrl;
-
-            // Якщо ОС не поставила сторінку на паузу (додаток не відкрився) – запускаємо модалку
-            setTimeout(function() {
-                if (Date.now() - start < 1500) {
-                    showModal(id);
-                }
-            }, 1000);
-
-        } else {
-            showModal(id);
-        }
-    }
-
-    window.showModal = function(id) {
         document.getElementById('ytIframe').src = 'https://www.youtube.com/embed/' + id + '?autoplay=1';
         document.getElementById('videoModal').classList.add('show');
         document.body.style.overflow = 'hidden'; 
     }
 
     window.closeModal = function() {
+        const modalContent = document.getElementById('modalContent');
+        modalContent.style.transform = ''; 
         document.getElementById('ytIframe').src = '';
         document.getElementById('videoModal').classList.remove('show');
         document.body.style.overflow = 'auto'; 
@@ -378,6 +353,37 @@
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') closeModal();
     });
+
+    // Логіка Swipe-to-dismiss (свайп вниз)
+    let touchStartY = 0;
+    const modalElement = document.getElementById('videoModal');
+    const modalContent = document.getElementById('modalContent');
+
+    modalElement.addEventListener('touchstart', function(e) {
+        touchStartY = e.touches[0].clientY;
+    }, {passive: true});
+
+    modalElement.addEventListener('touchmove', function(e) {
+        const touchCurrentY = e.touches[0].clientY;
+        const deltaY = touchCurrentY - touchStartY;
+        // Тягнемо лише вниз
+        if (deltaY > 0) {
+            modalContent.style.transform = `translateY(${deltaY}px)`;
+        }
+    }, {passive: true});
+
+    modalElement.addEventListener('touchend', function(e) {
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaY = touchEndY - touchStartY;
+        
+        // Якщо протягнули вниз більше ніж на 100px - закриваємо
+        if (deltaY > 100) {
+            closeModal();
+        } else {
+            // Інакше повертаємо на місце
+            modalContent.style.transform = 'translateY(0)';
+        }
+    }, {passive: true});
 
     init();
 </script>
