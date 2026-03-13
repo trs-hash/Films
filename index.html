@@ -91,7 +91,9 @@
 
 <script>
     const API_KEY = 'AIzaSyC918RPw_8amuFXKD0ztETJMSjTHx4rUWc';
-    const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
+    const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA'; 
+    const UPLOADS_ID = CHANNEL_ID.replace(/^UC/, 'UU');
+
     const START_YEAR = 2026;
     const START_MONTH = 2; // Березень
     const START_DAY = 12; 
@@ -136,10 +138,11 @@
                 if (pageToken) url += '&pageToken=' + pageToken;
 
                 const res = await fetch(url);
-                
-                if (!res.ok) throw new Error('Код помилки API: ' + res.status);
-                
                 const data = await res.json();
+                
+                if (!res.ok) {
+                    throw new Error((data.error && data.error.message) || 'Код помилки: ' + res.status);
+                }
                 
                 if (data.items && data.items.length > 0) {
                     data.items.forEach(function(item) {
@@ -148,7 +151,6 @@
                         const dateKey = item.snippet.publishedAt.split('T')[0];
                         if (!videosMap[dateKey]) videosMap[dateKey] = [];
                         
-                        // Максимально безпечний пошук картинки без сучасного синтаксису (запобігає крашу на iOS)
                         const t = item.snippet.thumbnails || {};
                         const thumb = (t.maxres && t.maxres.url) || 
                                       (t.standard && t.standard.url) || 
@@ -178,7 +180,6 @@
             if (cachedData) {
                 try { videosMap = JSON.parse(cachedData); showApp(); } catch (err) {}
             } else {
-                // Візуальне повідомлення замість вічного завантаження
                 document.getElementById('loading').innerHTML = `
                     <div style="color: #e62117; font-size: 16px; padding: 30px;">
                         Не вдалося підключитися до YouTube.<br>
@@ -233,92 +234,3 @@
             }
             
             htmlChunks.push(createMonthHTML(y, m));
-            loop.setMonth(m + 1);
-        }
-        
-        app.innerHTML = htmlChunks.join(''); 
-    }
-
-    function createMonthHTML(y, m) {
-        let monthHTML = '<div class="month-wrapper"><div class="month-header">' + monthsNames[m] + '</div><div class="calendar-grid">';
-        let firstDay = (y === START_YEAR && m === START_MONTH) ? START_DAY : 1;
-        let daysInMonth = new Date(y, m + 1, 0).getDate();
-        
-        let currentDow = new Date(y, m, firstDay).getDay();
-        const currentDate = new Date();
-
-        for (let d = firstDay; d <= daysInMonth; d++) {
-            const dayName = weekDays[currentDow];
-            currentDow = (currentDow + 1) % 7; 
-            
-            const mStr = (m+1).toString().padStart(2,'0');
-            const dStr = d.toString().padStart(2,'0');
-            const key = y + '-' + mStr + '-' + dStr;
-            const vids = videosMap[key];
-            
-            const isToday = (d === currentDate.getDate() && m === currentDate.getMonth() && y === currentDate.getFullYear());
-            
-            let cellClass = 'day-cell empty-day ' + (isToday ? 'today' : '');
-            const indicatorHTML = isToday ? '<div class="today-indicator"></div>' : '';
-            const dateBlock = '<div class="date-container"><span class="date-num">' + d + '</span><span class="day-name">' + dayName + '</span></div>';
-
-            if (vids && vids.length > 0) {
-                cellClass = cellClass.replace('empty-day', 'has-video');
-                
-                let linksHTML = vids.map(function(vid) {
-                    const watchedClass = watchedVideos.includes(vid.id) ? 'watched' : '';
-                    return `
-                        <a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link ${watchedClass}" onclick="openModal(event, '${vid.id}', this)">
-                            <img src="${vid.thumb}" class="video-thumb" loading="lazy" decoding="async" alt="${vid.title}">
-                            <div class="overlay-title">${vid.title}</div>
-                        </a>
-                    `;
-                }).join('');
-
-                monthHTML += `
-                <div class="${cellClass}">
-                    ${indicatorHTML}
-                    <div class="videos-container ${vids.length > 1 ? 'multiple' : ''}">
-                        ${linksHTML}
-                    </div>
-                    ${dateBlock}
-                </div>`;
-            } else {
-                monthHTML += '<div class="' + cellClass + '">' + indicatorHTML + dateBlock + '</div>';
-            }
-        }
-        monthHTML += '</div></div>';
-        return monthHTML;
-    }
-
-    window.mark = function(id, el) {
-        if (!watchedVideos.includes(id)) {
-            watchedVideos.push(id);
-            try { localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos)); } catch(e) {}
-        }
-        el.classList.add('watched');
-    }
-
-    window.openModal = function(e, id, el) {
-        e.preventDefault();
-        mark(id, el);
-        document.getElementById('ytIframe').src = 'https://www.youtube.com/embed/' + id + '?autoplay=1';
-        document.getElementById('videoModal').classList.add('show');
-        document.body.style.overflow = 'hidden'; 
-    }
-
-    window.closeModal = function() {
-        document.getElementById('ytIframe').src = '';
-        document.getElementById('videoModal').classList.remove('show');
-        document.body.style.overflow = 'auto'; 
-    }
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeModal();
-    });
-
-    init();
-</script>
-</body>
-</html>
-
