@@ -23,7 +23,6 @@
         .day-cell { aspect-ratio: 16/9; position: relative; background: #f8f8f8; border-radius: 6px; overflow: hidden; transform: translateZ(0); box-sizing: border-box; } 
         .day-cell.empty-day { background: transparent; } 
         
-        /* Виділення поточного дня */
         .day-cell.today { border: 2px solid #e62117; box-shadow: 0 4px 12px rgba(230, 33, 23, 0.15); }
         .today-indicator { position: absolute; top: 12px; right: 12px; width: 8px; height: 8px; background-color: #e62117; border-radius: 50%; z-index: 20; animation: pulse 2s infinite; pointer-events: none; }
         @keyframes pulse {
@@ -133,26 +132,34 @@
             let pageToken = '';
             videosMap = {}; 
             do {
-                const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}${pageToken ? \`&pageToken=\${pageToken}\` : ''}`;
+                let url = 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=' + UPLOADS_ID + '&maxResults=50&key=' + API_KEY;
+                if (pageToken) url += '&pageToken=' + pageToken;
+
                 const res = await fetch(url);
                 
-                if (!res.ok) throw new Error(`API Error: ${res.status}`);
+                if (!res.ok) throw new Error('Код помилки API: ' + res.status);
                 
                 const data = await res.json();
                 
                 if (data.items && data.items.length > 0) {
-                    data.items.forEach(item => {
+                    data.items.forEach(function(item) {
+                        if (!item.snippet || !item.snippet.publishedAt) return;
+
                         const dateKey = item.snippet.publishedAt.split('T')[0];
                         if (!videosMap[dateKey]) videosMap[dateKey] = [];
                         
+                        // Максимально безпечний пошук картинки без сучасного синтаксису (запобігає крашу на iOS)
+                        const t = item.snippet.thumbnails || {};
+                        const thumb = (t.maxres && t.maxres.url) || 
+                                      (t.standard && t.standard.url) || 
+                                      (t.high && t.high.url) || 
+                                      (t.medium && t.medium.url) || 
+                                      (t.default && t.default.url) || '';
+
                         videosMap[dateKey].push({
                             id: item.snippet.resourceId.videoId,
                             title: item.snippet.title,
-                            thumb: item.snippet.thumbnails?.maxres?.url || 
-                                   item.snippet.thumbnails?.standard?.url || 
-                                   item.snippet.thumbnails?.high?.url || 
-                                   item.snippet.thumbnails?.medium?.url || 
-                                   item.snippet.thumbnails?.default?.url || ''
+                            thumb: thumb
                         });
                     });
                 }
@@ -163,17 +170,32 @@
                 localStorage.setItem(CACHE_KEY, JSON.stringify(videosMap));
                 localStorage.setItem(CACHE_TIME_KEY, now.toString());
             } catch (e) {}
+
+            showApp();
+
         } catch (e) {
-            if (cachedData) try { videosMap = JSON.parse(cachedData); } catch (err) {}
+            console.error(e);
+            if (cachedData) {
+                try { videosMap = JSON.parse(cachedData); showApp(); } catch (err) {}
+            } else {
+                // Візуальне повідомлення замість вічного завантаження
+                document.getElementById('loading').innerHTML = `
+                    <div style="color: #e62117; font-size: 16px; padding: 30px;">
+                        Не вдалося підключитися до YouTube.<br>
+                        Деталі помилки: ${e.message}
+                    </div>`;
+            }
         }
-        
-        showApp();
     }
 
     function showApp() {
-        render();
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('main').style.display = 'block';
+        try {
+            render();
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('main').style.display = 'block';
+        } catch (e) {
+            document.getElementById('loading').innerHTML = '<div style="color: red;">Помилка побудови календаря: ' + e.message + '</div>';
+        }
     }
 
     function getSeason(m) {
@@ -187,7 +209,6 @@
         const today = new Date();
         let loop = new Date(START_YEAR, START_MONTH, 1);
         let curYear = 0, lastSeason = "";
-        let finalHTML = ""; 
 
         if (today < new Date(START_YEAR, START_MONTH, START_DAY)) {
             app.innerHTML = '<div style="text-align:center; padding: 40px; color:#999;">Календар розпочнеться 12 березня 2026 року.</div>';
@@ -202,12 +223,12 @@
             const seas = getSeason(m);
 
             if (y !== curYear) {
-                htmlChunks.push(`<h2 class="year-header">${y}</h2>`);
+                htmlChunks.push('<h2 class="year-header">' + y + '</h2>');
                 curYear = y;
                 lastSeason = "";
             }
             if (seas !== lastSeason) {
-                htmlChunks.push(`<div class="season-header">${seas}</div>`);
+                htmlChunks.push('<div class="season-header">' + seas + '</div>');
                 lastSeason = seas;
             }
             
@@ -219,7 +240,7 @@
     }
 
     function createMonthHTML(y, m) {
-        let monthHTML = `<div class="month-wrapper"><div class="month-header">${monthsNames[m]}</div><div class="calendar-grid">`;
+        let monthHTML = '<div class="month-wrapper"><div class="month-header">' + monthsNames[m] + '</div><div class="calendar-grid">';
         let firstDay = (y === START_YEAR && m === START_MONTH) ? START_DAY : 1;
         let daysInMonth = new Date(y, m + 1, 0).getDate();
         
@@ -230,20 +251,21 @@
             const dayName = weekDays[currentDow];
             currentDow = (currentDow + 1) % 7; 
             
-            const key = `${y}-${(m+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+            const mStr = (m+1).toString().padStart(2,'0');
+            const dStr = d.toString().padStart(2,'0');
+            const key = y + '-' + mStr + '-' + dStr;
             const vids = videosMap[key];
             
-            // Перевірка на сьогоднішній день
             const isToday = (d === currentDate.getDate() && m === currentDate.getMonth() && y === currentDate.getFullYear());
             
-            let cellClass = `day-cell empty-day ${isToday ? 'today' : ''}`;
+            let cellClass = 'day-cell empty-day ' + (isToday ? 'today' : '');
             const indicatorHTML = isToday ? '<div class="today-indicator"></div>' : '';
-            const dateBlock = `<div class="date-container"><span class="date-num">${d}</span><span class="day-name">${dayName}</span></div>`;
+            const dateBlock = '<div class="date-container"><span class="date-num">' + d + '</span><span class="day-name">' + dayName + '</span></div>';
 
             if (vids && vids.length > 0) {
                 cellClass = cellClass.replace('empty-day', 'has-video');
                 
-                let linksHTML = vids.map(vid => {
+                let linksHTML = vids.map(function(vid) {
                     const watchedClass = watchedVideos.includes(vid.id) ? 'watched' : '';
                     return `
                         <a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link ${watchedClass}" onclick="openModal(event, '${vid.id}', this)">
@@ -262,10 +284,10 @@
                     ${dateBlock}
                 </div>`;
             } else {
-                monthHTML += `<div class="${cellClass}">${indicatorHTML}${dateBlock}</div>`;
+                monthHTML += '<div class="' + cellClass + '">' + indicatorHTML + dateBlock + '</div>';
             }
         }
-        monthHTML += `</div></div>`;
+        monthHTML += '</div></div>';
         return monthHTML;
     }
 
@@ -280,7 +302,7 @@
     window.openModal = function(e, id, el) {
         e.preventDefault();
         mark(id, el);
-        document.getElementById('ytIframe').src = `https://www.youtube.com/embed/${id}?autoplay=1`;
+        document.getElementById('ytIframe').src = 'https://www.youtube.com/embed/' + id + '?autoplay=1';
         document.getElementById('videoModal').classList.add('show');
         document.body.style.overflow = 'hidden'; 
     }
@@ -299,3 +321,4 @@
 </script>
 </body>
 </html>
+
