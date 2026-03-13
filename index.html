@@ -10,15 +10,18 @@
     <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.googleapis.com">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #222; margin: 0; padding: 20px; overflow-x: hidden; }
-        .main-wrapper { max-width: 1400px; margin: 0 auto; display: none; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #222; margin: 0; padding: 20px 20px 80px 20px; overflow-x: hidden; scroll-behavior: smooth; }
+        .main-wrapper { max-width: 1400px; margin: 0 auto; display: block; } 
         
-        .year-header { font-size: 40px; font-weight: 700; margin: 0 0 10px 0; line-height: 1; }
-        .season-header { font-size: 14px; font-weight: 700; color: #e62117; text-transform: uppercase; letter-spacing: 2px; margin: 30px 0 10px; }
+        .year-header { font-size: 48px; font-weight: 800; margin: 60px 0 10px 0; line-height: 1; letter-spacing: -1px; border-bottom: 3px solid #222; padding-bottom: 10px; }
+        .year-header:first-child { margin-top: 10px; }
+        .season-header { font-size: 14px; font-weight: 700; color: #e62117; text-transform: uppercase; letter-spacing: 4px; margin: 40px 0 15px; }
         
-        .month-wrapper { content-visibility: auto; contain-intrinsic-size: 500px; margin-bottom: 20px; }
-        .month-header { color: #555; font-size: 18px; font-weight: 600; text-transform: uppercase; margin: 0 0 15px 0; letter-spacing: 1px; }
+        .month-wrapper { content-visibility: auto; contain-intrinsic-size: 500px; margin-bottom: 40px; scroll-margin-top: 20px; }
+        .month-header { color: #888; font-size: 22px; font-weight: 500; text-transform: uppercase; margin: 0 0 20px 0; letter-spacing: 1px; }
         
+        .week-divider { grid-column: 1 / -1; height: 1px; background: linear-gradient(90deg, transparent, #eaeaea 10%, #eaeaea 90%, transparent); margin: 8px 0; }
+
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
         .day-cell { aspect-ratio: 16/9; position: relative; background: #f8f8f8; border-radius: 6px; overflow: hidden; transform: translateZ(0); box-sizing: border-box; } 
         .day-cell.empty-day { background: transparent; } 
@@ -53,23 +56,36 @@
         .close-btn { position: absolute; top: -15px; right: 20px; color: #fff; font-size: 40px; cursor: pointer; line-height: 1; z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-weight: 300; }
         .close-btn:hover { color: #e62117; }
 
+        /* Очевидна навігація (Нативний Select) */
+        .floating-nav { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: #fff; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex; align-items: center; z-index: 100; border: 1px solid #eee; transition: transform 0.2s; }
+        .floating-nav:active { transform: translateX(-50%) scale(0.97); }
+        .month-select { appearance: none; -webkit-appearance: none; background: transparent; border: none; outline: none; padding: 14px 40px 14px 20px; font-size: 16px; font-weight: 600; color: #222; cursor: pointer; font-family: inherit; text-align: center; }
+        .select-icon { position: absolute; right: 18px; pointer-events: none; font-size: 12px; color: #888; }
+
         @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } }
         @media (max-width: 600px) { 
-            body { padding: 15px; } 
+            body { padding: 15px 15px 70px 15px; } 
             .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
-            .year-header { font-size: 32px; }
+            .year-header { font-size: 38px; }
             .date-num { font-size: 16px; }
             .day-name { font-size: 9px; }
             .modal-content { padding: 10px; }
             .close-btn { right: 10px; top: -25px; }
+            .floating-nav { bottom: 15px; width: 90%; max-width: 300px; }
+            .month-select { width: 100%; }
         }
-        #loading { font-size: 12px; color: #999; text-align: center; margin-top: 50px; }
     </style>
 </head>
 <body>
-<div id="loading">Завантаження...</div>
 <div class="main-wrapper" id="main">
     <div id="app"></div>
+</div>
+
+<div class="floating-nav">
+    <select id="monthSelect" class="month-select" onchange="jumpTo(this.value)">
+        <option value="" disabled selected>📅 Обрати місяць...</option>
+    </select>
+    <span class="select-icon">▼</span>
 </div>
 
 <div id="videoModal" class="modal" onclick="closeModal()">
@@ -95,12 +111,11 @@
     const CACHE_TTL = 6 * 60 * 60 * 1000; 
     
     const app = document.getElementById('app');
+    const monthSelect = document.getElementById('monthSelect');
     let videosMap = {};
     let watchedVideos = [];
     
-    try { 
-        watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); 
-    } catch (e) {}
+    try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
 
     const weekDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
     const monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
@@ -117,7 +132,7 @@
         if (cachedData && cachedTime && (now - parseInt(cachedTime)) < CACHE_TTL) {
             try {
                 videosMap = JSON.parse(cachedData);
-                showApp();
+                render();
                 return;
             } catch (e) {}
         }
@@ -157,17 +172,10 @@
                 localStorage.setItem(CACHE_TIME_KEY, now.toString());
             } catch (e) {}
         } catch (e) {
-            if (cachedData) {
-                try { videosMap = JSON.parse(cachedData); } catch (err) {}
-            }
+            if (cachedData) { try { videosMap = JSON.parse(cachedData); } catch (err) {} }
         }
-        showApp();
-    }
-
-    function showApp() {
+        
         render();
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('main').style.display = 'block';
     }
 
     function getSeason(m) {
@@ -188,6 +196,7 @@
         }
 
         let htmlChunks = [];
+        let navChunks = ['<option value="" disabled selected>📅 Обрати місяць...</option>'];
 
         while (loop <= today) {
             const y = loop.getFullYear();
@@ -195,24 +204,28 @@
             const seas = getSeason(m);
 
             if (y !== curYear) {
-                htmlChunks.push('<h2 class="year-header">' + y + '</h2>');
+                htmlChunks.push(`<h2 class="year-header">${y}</h2>`);
                 curYear = y;
                 lastSeason = "";
             }
             if (seas !== lastSeason) {
-                htmlChunks.push('<div class="season-header">' + seas + '</div>');
+                htmlChunks.push(`<div class="season-header">${seas}</div>`);
                 lastSeason = seas;
             }
             
             htmlChunks.push(createMonthHTML(y, m));
+            // Наповнення випадаючого списку
+            navChunks.push(`<option value="month-${y}-${m}">${monthsNames[m]} ${y}</option>`);
+            
             loop.setMonth(m + 1);
         }
         
         app.innerHTML = htmlChunks.join(''); 
+        monthSelect.innerHTML = navChunks.join(''); 
     }
 
     function createMonthHTML(y, m) {
-        let monthHTML = '<div class="month-wrapper"><div class="month-header">' + monthsNames[m] + '</div><div class="calendar-grid">';
+        let monthHTML = `<div class="month-wrapper" id="month-${y}-${m}"><div class="month-header">${monthsNames[m]}</div><div class="calendar-grid">`;
         let firstDay = (y === START_YEAR && m === START_MONTH) ? START_DAY : 1;
         let daysInMonth = new Date(y, m + 1, 0).getDate();
         
@@ -220,6 +233,7 @@
 
         for (let d = firstDay; d <= daysInMonth; d++) {
             const dayName = weekDays[currentDow];
+            const isSunday = (currentDow === 0);
             currentDow = (currentDow + 1) % 7; 
             
             const mStr = (m+1).toString().padStart(2,'0');
@@ -253,9 +267,26 @@
             } else {
                 monthHTML += '<div class="' + cellClass + '">' + dateBlock + '</div>';
             }
+
+            if (isSunday && d !== daysInMonth) {
+                monthHTML += '<div class="week-divider"></div>';
+            }
         }
         monthHTML += '</div></div>';
         return monthHTML;
+    }
+
+    // Логіка переходу
+    window.jumpTo = function(targetId) {
+        if (!targetId) return;
+        const el = document.getElementById(targetId);
+        if (el) {
+            const yOffset = -20; 
+            const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+            window.scrollTo({top: y, behavior: 'smooth'});
+        }
+        // Скидаємо селект назад на "Обрати місяць..."
+        document.getElementById('monthSelect').selectedIndex = 0;
     }
 
     window.mark = function(id, el) {
