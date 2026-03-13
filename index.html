@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тарас Максимʼяк — 365</title>
+    <title>Кіноархів</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
     <link rel="preconnect" href="https://i.ytimg.com" crossorigin>
     <link rel="dns-prefetch" href="https://i.ytimg.com">
@@ -23,14 +23,6 @@
         .day-cell { aspect-ratio: 16/9; position: relative; background: #f8f8f8; border-radius: 6px; overflow: hidden; transform: translateZ(0); box-sizing: border-box; } 
         .day-cell.empty-day { background: transparent; } 
         
-        .day-cell.today { border: 2px solid #e62117; box-shadow: 0 4px 12px rgba(230, 33, 23, 0.15); }
-        .today-indicator { position: absolute; top: 12px; right: 12px; width: 8px; height: 8px; background-color: #e62117; border-radius: 50%; z-index: 20; animation: pulse 2s infinite; pointer-events: none; }
-        @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 33, 23, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(230, 33, 23, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(230, 33, 23, 0); }
-        }
-
         .date-container { position: absolute; top: 8px; left: 10px; right: 10px; display: flex; align-items: baseline; gap: 6px; z-index: 10; pointer-events: none; }
         .date-num { font-size: 18px; font-weight: 800; line-height: 1; color: #ccc; }
         .day-name { font-size: 10px; font-weight: 500; text-transform: uppercase; color: #ccc; opacity: 0.6; }
@@ -90,13 +82,6 @@
 </div>
 
 <script>
-    window.onerror = function(msg) {
-        var loader = document.getElementById('loading');
-        if(loader) loader.innerHTML = '<div style="color:red; padding: 20px; text-align: center;"><b>Критична помилка браузера:</b><br>' + msg + '<br><br>Схоже, код скопійовано не до кінця.</div>';
-    };
-</script>
-
-<script>
     const API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
     const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA'; 
     const UPLOADS_ID = CHANNEL_ID.replace(/^UC/, 'UU');
@@ -145,19 +130,9 @@
                 if (pageToken) url += '&pageToken=' + pageToken;
 
                 const res = await fetch(url);
-                
-                if (!res.ok) {
-                    let errMsg = 'Код: ' + res.status;
-                    try {
-                        const errData = await res.json();
-                        errMsg = errData.error.message;
-                    } catch(e) {}
-                    throw new Error(errMsg);
-                }
-                
                 const data = await res.json();
                 
-                if (data.items && data.items.length > 0) {
+                if (data.items) {
                     data.items.forEach(function(item) {
                         if (!item.snippet || !item.snippet.publishedAt) return;
 
@@ -165,11 +140,7 @@
                         if (!videosMap[dateKey]) videosMap[dateKey] = [];
                         
                         const t = item.snippet.thumbnails || {};
-                        const thumb = (t.maxres && t.maxres.url) || 
-                                      (t.standard && t.standard.url) || 
-                                      (t.high && t.high.url) || 
-                                      (t.medium && t.medium.url) || 
-                                      (t.default && t.default.url) || '';
+                        const thumb = (t.maxres && t.maxres.url) || (t.standard && t.standard.url) || (t.high && t.high.url) || (t.medium && t.medium.url) || (t.default && t.default.url) || '';
 
                         videosMap[dateKey].push({
                             id: item.snippet.resourceId.videoId,
@@ -185,31 +156,18 @@
                 localStorage.setItem(CACHE_KEY, JSON.stringify(videosMap));
                 localStorage.setItem(CACHE_TIME_KEY, now.toString());
             } catch (e) {}
-
-            showApp();
-
         } catch (e) {
-            console.error(e);
             if (cachedData) {
-                try { videosMap = JSON.parse(cachedData); showApp(); } catch (err) {}
-            } else {
-                document.getElementById('loading').innerHTML = `
-                    <div style="color: #e62117; font-size: 16px; padding: 30px; text-align: center;">
-                        Не вдалося завантажити відео.<br>
-                        Деталі: ${e.message}
-                    </div>`;
+                try { videosMap = JSON.parse(cachedData); } catch (err) {}
             }
         }
+        showApp();
     }
 
     function showApp() {
-        try {
-            render();
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('main').style.display = 'block';
-        } catch (e) {
-            document.getElementById('loading').innerHTML = '<div style="color: red;">Помилка побудови календаря: ' + e.message + '</div>';
-        }
+        render();
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('main').style.display = 'block';
     }
 
     function getSeason(m) {
@@ -259,7 +217,6 @@
         let daysInMonth = new Date(y, m + 1, 0).getDate();
         
         let currentDow = new Date(y, m, firstDay).getDay();
-        const currentDate = new Date();
 
         for (let d = firstDay; d <= daysInMonth; d++) {
             const dayName = weekDays[currentDow];
@@ -270,10 +227,7 @@
             const key = y + '-' + mStr + '-' + dStr;
             const vids = videosMap[key];
             
-            const isToday = (d === currentDate.getDate() && m === currentDate.getMonth() && y === currentDate.getFullYear());
-            
-            let cellClass = 'day-cell empty-day ' + (isToday ? 'today' : '');
-            const indicatorHTML = isToday ? '<div class="today-indicator"></div>' : '';
+            let cellClass = 'day-cell empty-day';
             const dateBlock = '<div class="date-container"><span class="date-num">' + d + '</span><span class="day-name">' + dayName + '</span></div>';
 
             if (vids && vids.length > 0) {
@@ -291,14 +245,13 @@
 
                 monthHTML += `
                 <div class="${cellClass}">
-                    ${indicatorHTML}
                     <div class="videos-container ${vids.length > 1 ? 'multiple' : ''}">
                         ${linksHTML}
                     </div>
                     ${dateBlock}
                 </div>`;
             } else {
-                monthHTML += '<div class="' + cellClass + '">' + indicatorHTML + dateBlock + '</div>';
+                monthHTML += '<div class="' + cellClass + '">' + dateBlock + '</div>';
             }
         }
         monthHTML += '</div></div>';
