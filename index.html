@@ -10,34 +10,60 @@
     <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.googleapis.com">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: #fff; color: #222; margin: 0; padding: 20px 20px 80px 20px; overflow-x: hidden; scroll-behavior: smooth; }
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #222222;
+            --cell-bg: #f8f8f8;
+            --month-color: #888888;
+            --date-color: #cccccc;
+            --divider-color: #eaeaea;
+            --nav-bg: #ffffff;
+            --nav-border: #eeeeee;
+            --thumb-bg: #e0e0e0;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #121212;
+                --text-color: #e0e0e0;
+                --cell-bg: #1e1e1e;
+                --month-color: #aaaaaa;
+                --date-color: #555555;
+                --divider-color: #333333;
+                --nav-bg: #222222;
+                --nav-border: #333333;
+                --thumb-bg: #2a2a2a;
+            }
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px 20px 80px 20px; overflow-x: hidden; scroll-behavior: smooth; transition: background 0.3s, color 0.3s; }
         .main-wrapper { max-width: 1400px; margin: 0 auto; display: block; } 
         
-        .year-header { font-size: 48px; font-weight: 800; margin: 60px 0 10px 0; line-height: 1; letter-spacing: -1px; border-bottom: 3px solid #222; padding-bottom: 10px; }
+        .year-header { font-size: 48px; font-weight: 800; margin: 60px 0 10px 0; line-height: 1; letter-spacing: -1px; border-bottom: 3px solid var(--text-color); padding-bottom: 10px; transition: border-color 0.3s; }
         .year-header:first-child { margin-top: 10px; }
         .season-header { font-size: 14px; font-weight: 700; color: #e62117; text-transform: uppercase; letter-spacing: 4px; margin: 40px 0 15px; }
         
         .month-wrapper { content-visibility: auto; contain-intrinsic-size: 500px; margin-bottom: 40px; scroll-margin-top: 20px; }
-        .month-header { color: #888; font-size: 22px; font-weight: 500; text-transform: uppercase; margin: 0 0 20px 0; letter-spacing: 1px; }
+        .month-header { color: var(--month-color); font-size: 22px; font-weight: 500; text-transform: uppercase; margin: 0 0 20px 0; letter-spacing: 1px; transition: color 0.3s; }
         
-        .week-divider { grid-column: 1 / -1; height: 1px; background: linear-gradient(90deg, transparent, #eaeaea 10%, #eaeaea 90%, transparent); margin: 8px 0; }
+        .week-divider { grid-column: 1 / -1; height: 1px; background: linear-gradient(90deg, transparent, var(--divider-color) 10%, var(--divider-color) 90%, transparent); margin: 8px 0; transition: background 0.3s; }
 
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-        .day-cell { aspect-ratio: 16/9; position: relative; background: #f8f8f8; border-radius: 6px; overflow: hidden; transform: translateZ(0); box-sizing: border-box; } 
+        .day-cell { aspect-ratio: 16/9; position: relative; background: var(--cell-bg); border-radius: 6px; overflow: hidden; transform: translateZ(0); box-sizing: border-box; transition: background 0.3s; } 
         .day-cell.empty-day { background: transparent; } 
         
         .date-container { position: absolute; top: 8px; left: 10px; right: 10px; display: flex; align-items: baseline; gap: 6px; z-index: 10; pointer-events: none; }
-        .date-num { font-size: 18px; font-weight: 800; line-height: 1; color: #ccc; }
-        .day-name { font-size: 10px; font-weight: 500; text-transform: uppercase; color: #ccc; opacity: 0.6; }
+        .date-num { font-size: 18px; font-weight: 800; line-height: 1; color: var(--date-color); transition: color 0.3s; }
+        .day-name { font-size: 10px; font-weight: 500; text-transform: uppercase; color: var(--date-color); opacity: 0.6; transition: color 0.3s; }
 
-        .has-video .date-num { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
-        .has-video .day-name { color: #fff; opacity: 0.7; text-shadow: 0 1px 2px rgba(0,0,0,0.9); }
+        .has-video .date-num, .has-video .day-name { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+        .has-video .day-name { opacity: 0.7; text-shadow: 0 1px 2px rgba(0,0,0,0.9); }
 
         .videos-container { position: absolute; inset: 0; display: flex; z-index: 5; }
         .video-link { position: relative; flex: 1; height: 100%; display: block; cursor: pointer; overflow: hidden; text-decoration: none; }
         .videos-container.multiple .video-link:not(:last-child) { border-right: 2px solid #fff; }
         
-        .video-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; background-color: #e0e0e0; }
+        .video-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; background-color: var(--thumb-bg); }
         .video-link:hover .video-thumb { transform: scale(1.03); }
         .video-link::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.9) 100%); pointer-events: none; }
         
@@ -56,11 +82,11 @@
         .close-btn { position: absolute; top: -15px; right: 20px; color: #fff; font-size: 40px; cursor: pointer; line-height: 1; z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-weight: 300; }
         .close-btn:hover { color: #e62117; }
 
-        /* Очевидна навігація (Нативний Select) */
-        .floating-nav { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: #fff; border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex; align-items: center; z-index: 100; border: 1px solid #eee; transition: transform 0.2s; }
-        .floating-nav:active { transform: translateX(-50%) scale(0.97); }
-        .month-select { appearance: none; -webkit-appearance: none; background: transparent; border: none; outline: none; padding: 14px 40px 14px 20px; font-size: 16px; font-weight: 600; color: #222; cursor: pointer; font-family: inherit; text-align: center; }
-        .select-icon { position: absolute; right: 18px; pointer-events: none; font-size: 12px; color: #888; }
+        .floating-nav { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: var(--nav-bg); border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex; align-items: center; z-index: 100; border: 1px solid var(--nav-border); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s, border-color 0.3s; }
+        .floating-nav.hidden { transform: translate(-50%, 100px); }
+        .month-select { appearance: none; -webkit-appearance: none; background: transparent; border: none; outline: none; padding: 14px 40px 14px 20px; font-size: 16px; font-weight: 600; color: var(--text-color); cursor: pointer; font-family: inherit; text-align: center; }
+        .month-select option { background: var(--bg-color); color: var(--text-color); }
+        .select-icon { position: absolute; right: 18px; pointer-events: none; font-size: 12px; color: var(--month-color); }
 
         @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } }
         @media (max-width: 600px) { 
@@ -72,6 +98,7 @@
             .modal-content { padding: 10px; }
             .close-btn { right: 10px; top: -25px; }
             .floating-nav { bottom: 15px; width: 90%; max-width: 300px; }
+            .floating-nav.hidden { transform: translate(-50%, 120px); }
             .month-select { width: 100%; }
         }
     </style>
@@ -81,7 +108,7 @@
     <div id="app"></div>
 </div>
 
-<div class="floating-nav">
+<div class="floating-nav" id="floatingNav">
     <select id="monthSelect" class="month-select" onchange="jumpTo(this.value)">
         <option value="" disabled selected>📅 Обрати місяць...</option>
     </select>
@@ -112,13 +139,24 @@
     
     const app = document.getElementById('app');
     const monthSelect = document.getElementById('monthSelect');
+    const floatingNav = document.getElementById('floatingNav');
     let videosMap = {};
     let watchedVideos = [];
+    let lastScrollY = window.scrollY;
     
     try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
 
     const weekDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
     const monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > lastScrollY && window.scrollY > 150) {
+            floatingNav.classList.add('hidden'); 
+        } else {
+            floatingNav.classList.remove('hidden'); 
+        }
+        lastScrollY = window.scrollY;
+    }, { passive: true });
 
     async function init() {
         const now = Date.now();
@@ -191,7 +229,7 @@
         let curYear = 0, lastSeason = "";
 
         if (today < new Date(START_YEAR, START_MONTH, START_DAY)) {
-            app.innerHTML = '<div style="text-align:center; padding: 40px; color:#999;">Календар розпочнеться 12 березня 2026 року.</div>';
+            app.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--month-color);">Календар розпочнеться 12 березня 2026 року.</div>';
             return;
         }
 
@@ -214,7 +252,6 @@
             }
             
             htmlChunks.push(createMonthHTML(y, m));
-            // Наповнення випадаючого списку
             navChunks.push(`<option value="month-${y}-${m}">${monthsNames[m]} ${y}</option>`);
             
             loop.setMonth(m + 1);
@@ -250,7 +287,7 @@
                 let linksHTML = vids.map(function(vid) {
                     const watchedClass = watchedVideos.includes(vid.id) ? 'watched' : '';
                     return `
-                        <a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link ${watchedClass}" onclick="openModal(event, '${vid.id}', this)">
+                        <a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link ${watchedClass}" onclick="handleVideoClick(event, '${vid.id}', this)">
                             <img src="${vid.thumb}" class="video-thumb" loading="lazy" decoding="async" alt="${vid.title}">
                             <div class="overlay-title">${vid.title}</div>
                         </a>
@@ -276,7 +313,6 @@
         return monthHTML;
     }
 
-    // Логіка переходу
     window.jumpTo = function(targetId) {
         if (!targetId) return;
         const el = document.getElementById(targetId);
@@ -285,7 +321,6 @@
             const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
             window.scrollTo({top: y, behavior: 'smooth'});
         }
-        // Скидаємо селект назад на "Обрати місяць..."
         document.getElementById('monthSelect').selectedIndex = 0;
     }
 
@@ -297,9 +332,38 @@
         el.classList.add('watched');
     }
 
-    window.openModal = function(e, id, el) {
+    // Нова логіка кліку по відео (додаток vs модалка)
+    window.handleVideoClick = function(e, id, el) {
         e.preventDefault();
         mark(id, el);
+
+        const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        if (isMobile) {
+            const start = Date.now();
+            let appUrl = '';
+
+            if (/Android/i.test(navigator.userAgent)) {
+                appUrl = 'intent://www.youtube.com/watch?v=' + id + '#Intent;package=com.google.android.youtube;scheme=https;end';
+            } else {
+                appUrl = 'vnd.youtube://watch?v=' + id;
+            }
+
+            window.location.href = appUrl;
+
+            // Якщо ОС не поставила сторінку на паузу (додаток не відкрився) – запускаємо модалку
+            setTimeout(function() {
+                if (Date.now() - start < 1500) {
+                    showModal(id);
+                }
+            }, 1000);
+
+        } else {
+            showModal(id);
+        }
+    }
+
+    window.showModal = function(id) {
         document.getElementById('ytIframe').src = 'https://www.youtube.com/embed/' + id + '?autoplay=1';
         document.getElementById('videoModal').classList.add('show');
         document.body.style.overflow = 'hidden'; 
