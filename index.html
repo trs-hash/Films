@@ -10,103 +10,64 @@
     <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.googleapis.com">
     <style>
-        :root {
-            --bg-color: #ffffff;
-            --text-color: #222222;
-            --cell-bg: #f8f8f8;
-            --month-color: #888888;
-            --date-color: #cccccc;
-            --divider-color: #eaeaea;
-            --nav-bg: #ffffff;
-            --nav-border: #eeeeee;
-            --thumb-bg: #e0e0e0;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-color: #121212;
-                --text-color: #e0e0e0;
-                --cell-bg: #1e1e1e;
-                --month-color: #aaaaaa;
-                --date-color: #555555;
-                --divider-color: #333333;
-                --nav-bg: #222222;
-                --nav-border: #333333;
-                --thumb-bg: #2a2a2a;
-            }
-        }
-
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px 20px 80px 20px; overflow-x: hidden; scroll-behavior: smooth; transition: background 0.3s, color 0.3s; }
-        .main-wrapper { max-width: 1400px; margin: 0 auto; display: block; } 
-        
-        .year-header { font-size: 48px; font-weight: 800; margin: 60px 0 10px 0; line-height: 1; letter-spacing: -1px; border-bottom: 3px solid var(--text-color); padding-bottom: 10px; transition: border-color 0.3s; }
-        .year-header:first-child { margin-top: 10px; }
-        .season-header { font-size: 14px; font-weight: 700; color: #e62117; text-transform: uppercase; letter-spacing: 4px; margin: 40px 0 15px; }
-        
-        .month-wrapper { content-visibility: auto; contain-intrinsic-size: 500px; margin-bottom: 40px; scroll-margin-top: 20px; }
-        .month-header { color: var(--month-color); font-size: 22px; font-weight: 500; text-transform: uppercase; margin: 0 0 20px 0; letter-spacing: 1px; transition: color 0.3s; }
-        
-        .week-divider { grid-column: 1 / -1; height: 1px; background: linear-gradient(90deg, transparent, var(--divider-color) 10%, var(--divider-color) 90%, transparent); margin: 8px 0; transition: background 0.3s; }
-
-        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
-        .day-cell { aspect-ratio: 16/9; position: relative; background: var(--cell-bg); border-radius: 6px; overflow: hidden; transform: translateZ(0); box-sizing: border-box; transition: background 0.3s; } 
-        .day-cell.empty-day { background: transparent; } 
-        
-        .date-container { position: absolute; top: 8px; left: 10px; right: 10px; display: flex; align-items: baseline; gap: 6px; z-index: 10; pointer-events: none; }
-        .date-num { font-size: 18px; font-weight: 800; line-height: 1; color: var(--date-color); transition: color 0.3s; }
-        .day-name { font-size: 10px; font-weight: 500; text-transform: uppercase; color: var(--date-color); opacity: 0.6; transition: color 0.3s; }
-
-        .has-video .date-num, .has-video .day-name { color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
-        .has-video .day-name { opacity: 0.7; text-shadow: 0 1px 2px rgba(0,0,0,0.9); }
-
-        .videos-container { position: absolute; inset: 0; display: flex; z-index: 5; }
-        .video-link { position: relative; flex: 1; height: 100%; display: block; cursor: pointer; overflow: hidden; text-decoration: none; }
-        .videos-container.multiple .video-link:not(:last-child) { border-right: 2px solid #fff; }
-        
-        .video-thumb { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; background-color: var(--thumb-bg); }
-        .video-link:hover .video-thumb { transform: scale(1.03); }
-        .video-link::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.9) 100%); pointer-events: none; }
-        
-        .overlay-title { position: absolute; bottom: 10px; left: 10px; right: 10px; color: #fff; font-size: 11px; font-weight: 500; text-shadow: 0 1px 2px #000; z-index: 10; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; }
-        
-        .video-link.watched .video-thumb { filter: none; opacity: 0.8; }
-        .video-link.watched::before, .video-link.watched::after { content: ''; position: absolute; top: 50%; left: 50%; width: 150%; height: 3px; background: #e62117; z-index: 20; pointer-events: none; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
-        .video-link.watched::before { transform: translate(-50%, -50%) rotate(45deg); }
-        .video-link.watched::after { transform: translate(-50%, -50%) rotate(-45deg); }
-
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(4px); opacity: 0; transition: opacity 0.3s ease; }
-        .modal.show { display: flex; opacity: 1; }
-        .modal-content { width: 100%; max-width: 1000px; padding: 20px; position: relative; transition: transform 0.2s ease-out; }
-        .iframe-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto; }
-        .iframe-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
-        .close-btn { position: absolute; top: -15px; right: 20px; color: #fff; font-size: 40px; cursor: pointer; line-height: 1; z-index: 10; text-shadow: 0 2px 4px rgba(0,0,0,0.5); font-weight: 300; }
-        .close-btn:hover { color: #e62117; }
-
-        .floating-nav { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: var(--nav-bg); border-radius: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: flex; align-items: center; z-index: 100; border: 1px solid var(--nav-border); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s, border-color 0.3s; }
-        .floating-nav.hidden { transform: translate(-50%, 100px); }
-        .month-select { appearance: none; -webkit-appearance: none; background: transparent; border: none; outline: none; padding: 14px 40px 14px 20px; font-size: 16px; font-weight: 600; color: var(--text-color); cursor: pointer; font-family: inherit; text-align: center; }
-        .month-select option { background: var(--bg-color); color: var(--text-color); }
-        .select-icon { position: absolute; right: 18px; pointer-events: none; font-size: 12px; color: var(--month-color); }
-
-        @media (max-width: 1024px) { .calendar-grid { grid-template-columns: repeat(4, 1fr); } }
-        @media (max-width: 600px) { 
-            body { padding: 15px 15px 70px 15px; } 
-            .calendar-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } 
-            .year-header { font-size: 38px; }
-            .date-num { font-size: 16px; }
-            .day-name { font-size: 9px; }
-            .modal-content { padding: 10px; }
-            .close-btn { right: 10px; top: -25px; }
-            .floating-nav { bottom: 15px; width: 90%; max-width: 300px; }
-            .floating-nav.hidden { transform: translate(-50%, 120px); }
-            .month-select { width: 100%; }
+        :root{--bg-color:#fff;--text-color:#222;--cell-bg:#f8f8f8;--month-color:#888;--date-color:#ccc;--divider-color:#eaeaea;--nav-bg:#fff;--nav-border:#eee;--thumb-bg:#e0e0e0}
+        @media (prefers-color-scheme:dark){:root{--bg-color:#121212;--text-color:#e0e0e0;--cell-bg:#1e1e1e;--month-color:#aaa;--date-color:#555;--divider-color:#333;--nav-bg:#222;--nav-border:#333;--thumb-bg:#2a2a2a}}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg-color);color:var(--text-color);margin:0;padding:20px 20px 80px;overflow-x:hidden;scroll-behavior:smooth;transition:background .3s,color .3s}
+        .main-wrapper{max-width:1400px;margin:0 auto;display:block}
+        .year-header{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px;border-bottom:3px solid var(--text-color);padding-bottom:10px}
+        .year-header:first-child{margin-top:10px}
+        .season-header{font-size:14px;font-weight:700;color:#e62117;text-transform:uppercase;letter-spacing:4px;margin:40px 0 15px}
+        .month-wrapper{content-visibility:auto;contain-intrinsic-size:500px;margin-bottom:40px;scroll-margin-top:20px}
+        .month-header{color:var(--month-color);font-size:22px;font-weight:500;text-transform:uppercase;margin:0 0 20px;letter-spacing:1px}
+        .week-divider{grid-column:1/-1;height:1px;background:linear-gradient(90deg,transparent,var(--divider-color) 10%,var(--divider-color) 90%,transparent);margin:8px 0}
+        .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+        .day-cell{aspect-ratio:16/9;position:relative;background:var(--cell-bg);border-radius:6px;overflow:hidden;transform:translateZ(0);box-sizing:border-box}
+        .day-cell.empty-day{background:transparent}
+        .date-container{position:absolute;top:8px;left:10px;right:10px;display:flex;align-items:baseline;gap:6px;z-index:10;pointer-events:none}
+        .date-num{font-size:18px;font-weight:800;line-height:1;color:var(--date-color)}
+        .day-name{font-size:10px;font-weight:500;text-transform:uppercase;color:var(--date-color);opacity:.6}
+        .has-video .date-num,.has-video .day-name{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+        .has-video .day-name{opacity:.7;text-shadow:0 1px 2px rgba(0,0,0,.9)}
+        .videos-container{position:absolute;inset:0;display:flex;z-index:5}
+        .video-link{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
+        .videos-container.multiple .video-link:not(:last-child){border-right:2px solid #fff}
+        .video-thumb{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;background-color:var(--thumb-bg)}
+        .video-link:hover .video-thumb{transform:scale(1.03)}
+        .video-link::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.6) 0%,transparent 30%,transparent 60%,rgba(0,0,0,.9) 100%);pointer-events:none}
+        .overlay-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
+        .video-link.watched .video-thumb{filter:none;opacity:.8}
+        .video-link.watched::before,.video-link.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:#e62117;z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
+        .video-link.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
+        .video-link.watched::after{transform:translate(-50%,-50%) rotate(-45deg)}
+        .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(4px);opacity:0;transition:opacity .3s ease}
+        .modal.show{display:flex;opacity:1}
+        .modal-content{width:100%;max-width:1000px;padding:20px;position:relative;transition:transform .2s ease-out}
+        .iframe-wrapper{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;background:#000;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+        .iframe-wrapper iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
+        .close-btn{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10;text-shadow:0 2px 4px rgba(0,0,0,.5);font-weight:300}
+        .close-btn:hover{color:#e62117}
+        .floating-nav{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);background:var(--nav-bg);border-radius:30px;box-shadow:0 4px 15px rgba(0,0,0,.15);display:flex;align-items:center;z-index:100;border:1px solid var(--nav-border);transition:transform .3s cubic-bezier(.4,0,.2,1),background .3s,border-color .3s}
+        .floating-nav.hidden{transform:translate(-50%,100px)}
+        .month-select{appearance:none;-webkit-appearance:none;background:transparent;border:none;outline:none;padding:14px 40px 14px 20px;font-size:16px;font-weight:600;color:var(--text-color);cursor:pointer;font-family:inherit;text-align:center}
+        .month-select option{background:var(--bg-color);color:var(--text-color)}
+        .select-icon{position:absolute;right:18px;pointer-events:none;font-size:12px;color:var(--month-color)}
+        @media (max-width:1024px){.calendar-grid{grid-template-columns:repeat(4,1fr)}}
+        @media (max-width:600px){
+            body{padding:15px 15px 70px}
+            .calendar-grid{grid-template-columns:repeat(2,1fr);gap:6px}
+            .year-header{font-size:38px}
+            .date-num{font-size:16px}
+            .day-name{font-size:9px}
+            .modal-content{padding:10px}
+            .close-btn{right:10px;top:-25px}
+            .floating-nav{bottom:15px;width:90%;max-width:300px}
+            .floating-nav.hidden{transform:translate(-50%,120px)}
+            .month-select{width:100%}
         }
     </style>
 </head>
 <body>
-<div class="main-wrapper" id="main">
-    <div id="app"></div>
-</div>
+<div class="main-wrapper" id="main"><div id="app"></div></div>
 
 <div class="floating-nav" id="floatingNav">
     <select id="monthSelect" class="month-select" onchange="jumpTo(this.value)">
@@ -126,20 +87,20 @@
 
 <script>
     const API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
-    const CHANNEL_ID = 'UChN1_4a8atyqkFcNIJx6MlA'; 
-    const UPLOADS_ID = CHANNEL_ID.replace(/^UC/, 'UU');
+    const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
+    const START_YEAR = 2026, START_MONTH = 2, START_DAY = 12; 
+    const CACHE_KEY = 'yt_videos_data', CACHE_TIME_KEY = 'yt_videos_time', CACHE_TTL = 21600000; // 6 годин
+    
+    // Кешування DOM-елементів для швидкодії
+    const DOM = {
+        app: document.getElementById('app'),
+        monthSelect: document.getElementById('monthSelect'),
+        nav: document.getElementById('floatingNav'),
+        modal: document.getElementById('videoModal'),
+        modalContent: document.getElementById('modalContent'),
+        iframe: document.getElementById('ytIframe')
+    };
 
-    const START_YEAR = 2026;
-    const START_MONTH = 2; // Березень
-    const START_DAY = 12; 
-    
-    const CACHE_KEY = 'yt_videos_data';
-    const CACHE_TIME_KEY = 'yt_videos_time';
-    const CACHE_TTL = 6 * 60 * 60 * 1000; 
-    
-    const app = document.getElementById('app');
-    const monthSelect = document.getElementById('monthSelect');
-    const floatingNav = document.getElementById('floatingNav');
     let videosMap = {};
     let watchedVideos = [];
     let lastScrollY = window.scrollY;
@@ -149,71 +110,50 @@
     const weekDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
     const monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
-    // Логіка приховування меню
     window.addEventListener('scroll', () => {
-        if (window.scrollY > lastScrollY && window.scrollY > 150) {
-            floatingNav.classList.add('hidden'); 
-        } else {
-            floatingNav.classList.remove('hidden'); 
-        }
-        lastScrollY = window.scrollY;
+        const currentScrollY = window.scrollY;
+        if (currentScrollY > lastScrollY && currentScrollY > 150) DOM.nav.classList.add('hidden');
+        else DOM.nav.classList.remove('hidden');
+        lastScrollY = currentScrollY;
     }, { passive: true });
 
     async function init() {
         const now = Date.now();
-        let cachedData = null, cachedTime = null;
-
-        try {
-            cachedData = localStorage.getItem(CACHE_KEY);
-            cachedTime = localStorage.getItem(CACHE_TIME_KEY);
-        } catch (e) {}
+        let cachedData = localStorage.getItem(CACHE_KEY);
+        let cachedTime = localStorage.getItem(CACHE_TIME_KEY);
 
         if (cachedData && cachedTime && (now - parseInt(cachedTime)) < CACHE_TTL) {
-            try {
-                videosMap = JSON.parse(cachedData);
-                render();
-                return;
-            } catch (e) {}
+            try { videosMap = JSON.parse(cachedData); render(); return; } catch (e) {}
         }
 
         try {
             let pageToken = '';
             videosMap = {}; 
             do {
-                let url = 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=' + UPLOADS_ID + '&maxResults=50&key=' + API_KEY;
-                if (pageToken) url += '&pageToken=' + pageToken;
-
+                let url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}${pageToken ? '&pageToken=' + pageToken : ''}`;
                 const res = await fetch(url);
                 const data = await res.json();
                 
                 if (data.items) {
-                    data.items.forEach(function(item) {
-                        if (!item.snippet || !item.snippet.publishedAt) return;
-
+                    data.items.forEach(item => {
+                        if (!item.snippet?.publishedAt) return;
                         const dateKey = item.snippet.publishedAt.split('T')[0];
                         if (!videosMap[dateKey]) videosMap[dateKey] = [];
                         
                         const t = item.snippet.thumbnails || {};
-                        const thumb = (t.maxres && t.maxres.url) || (t.standard && t.standard.url) || (t.high && t.high.url) || (t.medium && t.medium.url) || (t.default && t.default.url) || '';
+                        const thumb = (t.maxres?.url || t.standard?.url || t.high?.url || t.medium?.url || t.default?.url || '');
 
-                        videosMap[dateKey].push({
-                            id: item.snippet.resourceId.videoId,
-                            title: item.snippet.title,
-                            thumb: thumb
-                        });
+                        videosMap[dateKey].push({ id: item.snippet.resourceId.videoId, title: item.snippet.title, thumb });
                     });
                 }
                 pageToken = data.nextPageToken;
             } while (pageToken);
 
-            try {
-                localStorage.setItem(CACHE_KEY, JSON.stringify(videosMap));
-                localStorage.setItem(CACHE_TIME_KEY, now.toString());
-            } catch (e) {}
+            localStorage.setItem(CACHE_KEY, JSON.stringify(videosMap));
+            localStorage.setItem(CACHE_TIME_KEY, now.toString());
         } catch (e) {
-            if (cachedData) { try { videosMap = JSON.parse(cachedData); } catch (err) {} }
+            if (cachedData) try { videosMap = JSON.parse(cachedData); } catch (err) {}
         }
-        
         render();
     }
 
@@ -228,161 +168,86 @@
         const today = new Date();
         let loop = new Date(START_YEAR, START_MONTH, 1);
         let curYear = 0, lastSeason = "";
-
-        if (today < new Date(START_YEAR, START_MONTH, START_DAY)) {
-            app.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--month-color);">Календар розпочнеться 12 березня 2026 року.</div>';
-            return;
-        }
-
-        let htmlChunks = [];
-        let navChunks = ['<option value="" disabled selected>📅 Обрати місяць...</option>'];
+        let html = '', navHtml = '<option value="" disabled selected>📅 Обрати місяць...</option>';
 
         while (loop <= today) {
-            const y = loop.getFullYear();
-            const m = loop.getMonth();
-            const seas = getSeason(m);
-
-            if (y !== curYear) {
-                htmlChunks.push(`<h2 class="year-header">${y}</h2>`);
-                curYear = y;
-                lastSeason = "";
-            }
-            if (seas !== lastSeason) {
-                htmlChunks.push(`<div class="season-header">${seas}</div>`);
-                lastSeason = seas;
-            }
+            const y = loop.getFullYear(), m = loop.getMonth(), seas = getSeason(m);
+            if (y !== curYear) { html += `<h2 class="year-header">${y}</h2>`; curYear = y; lastSeason = ""; }
+            if (seas !== lastSeason) { html += `<div class="season-header">${seas}</div>`; lastSeason = seas; }
             
-            htmlChunks.push(createMonthHTML(y, m));
-            navChunks.push(`<option value="month-${y}-${m}">${monthsNames[m]} ${y}</option>`);
-            
+            html += createMonthHTML(y, m);
+            navHtml += `<option value="month-${y}-${m}">${monthsNames[m]} ${y}</option>`;
             loop.setMonth(m + 1);
         }
         
-        app.innerHTML = htmlChunks.join(''); 
-        monthSelect.innerHTML = navChunks.join(''); 
+        DOM.app.innerHTML = html; 
+        DOM.monthSelect.innerHTML = navHtml; 
     }
 
     function createMonthHTML(y, m) {
-        let monthHTML = `<div class="month-wrapper" id="month-${y}-${m}"><div class="month-header">${monthsNames[m]}</div><div class="calendar-grid">`;
+        let html = `<div class="month-wrapper" id="month-${y}-${m}"><div class="month-header">${monthsNames[m]}</div><div class="calendar-grid">`;
         let firstDay = (y === START_YEAR && m === START_MONTH) ? START_DAY : 1;
         let daysInMonth = new Date(y, m + 1, 0).getDate();
-        
         let currentDow = new Date(y, m, firstDay).getDay();
 
         for (let d = firstDay; d <= daysInMonth; d++) {
-            const dayName = weekDays[currentDow];
-            const isSunday = (currentDow === 0);
+            const dayName = weekDays[currentDow], isSunday = (currentDow === 0);
             currentDow = (currentDow + 1) % 7; 
-            
-            const mStr = (m+1).toString().padStart(2,'0');
-            const dStr = d.toString().padStart(2,'0');
-            const key = y + '-' + mStr + '-' + dStr;
+            const key = `${y}-${(m+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
             const vids = videosMap[key];
-            
-            let cellClass = 'day-cell empty-day';
-            const dateBlock = '<div class="date-container"><span class="date-num">' + d + '</span><span class="day-name">' + dayName + '</span></div>';
+            const dateBlock = `<div class="date-container"><span class="date-num">${d}</span><span class="day-name">${dayName}</span></div>`;
 
             if (vids && vids.length > 0) {
-                cellClass = cellClass.replace('empty-day', 'has-video');
-                
-                let linksHTML = vids.map(function(vid) {
+                let linksHTML = vids.map(vid => {
                     const watchedClass = watchedVideos.includes(vid.id) ? 'watched' : '';
-                    return `
-                        <a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link ${watchedClass}" onclick="openModal(event, '${vid.id}', this)">
-                            <img src="${vid.thumb}" class="video-thumb" loading="lazy" decoding="async" alt="${vid.title}">
-                            <div class="overlay-title">${vid.title}</div>
-                        </a>
-                    `;
+                    return `<a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link ${watchedClass}" onclick="openModal(event, '${vid.id}', this)"><img src="${vid.thumb}" class="video-thumb" loading="lazy" decoding="async" alt="${vid.title}"><div class="overlay-title">${vid.title}</div></a>`;
                 }).join('');
-
-                monthHTML += `
-                <div class="${cellClass}">
-                    <div class="videos-container ${vids.length > 1 ? 'multiple' : ''}">
-                        ${linksHTML}
-                    </div>
-                    ${dateBlock}
-                </div>`;
+                html += `<div class="day-cell has-video"><div class="videos-container ${vids.length > 1 ? 'multiple' : ''}">${linksHTML}</div>${dateBlock}</div>`;
             } else {
-                monthHTML += '<div class="' + cellClass + '">' + dateBlock + '</div>';
+                html += `<div class="day-cell empty-day">${dateBlock}</div>`;
             }
-
-            if (isSunday && d !== daysInMonth) {
-                monthHTML += '<div class="week-divider"></div>';
-            }
+            if (isSunday && d !== daysInMonth) html += `<div class="week-divider"></div>`;
         }
-        monthHTML += '</div></div>';
-        return monthHTML;
+        return html + `</div></div>`;
     }
 
     window.jumpTo = function(targetId) {
         if (!targetId) return;
         const el = document.getElementById(targetId);
-        if (el) {
-            const yOffset = -20; 
-            const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-            window.scrollTo({top: y, behavior: 'smooth'});
-        }
-        document.getElementById('monthSelect').selectedIndex = 0;
+        if (el) window.scrollTo({top: el.getBoundingClientRect().top + window.pageYOffset - 20, behavior: 'smooth'});
+        DOM.monthSelect.selectedIndex = 0;
     }
 
-    window.mark = function(id, el) {
+    window.openModal = function(e, id, el) {
+        e.preventDefault();
         if (!watchedVideos.includes(id)) {
             watchedVideos.push(id);
             try { localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos)); } catch(e) {}
         }
         if(el) el.classList.add('watched');
-    }
-
-    // Спрощена логіка відкриття (завжди модалка)
-    window.openModal = function(e, id, el) {
-        e.preventDefault();
-        mark(id, el);
-        document.getElementById('ytIframe').src = 'https://www.youtube.com/embed/' + id + '?autoplay=1';
-        document.getElementById('videoModal').classList.add('show');
+        DOM.iframe.src = `https://www.youtube.com/embed/${id}?autoplay=1`;
+        DOM.modal.classList.add('show');
         document.body.style.overflow = 'hidden'; 
     }
 
     window.closeModal = function() {
-        const modalContent = document.getElementById('modalContent');
-        modalContent.style.transform = ''; 
-        document.getElementById('ytIframe').src = '';
-        document.getElementById('videoModal').classList.remove('show');
+        DOM.modalContent.style.transform = ''; 
+        DOM.iframe.src = '';
+        DOM.modal.classList.remove('show');
         document.body.style.overflow = 'auto'; 
     }
 
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeModal();
-    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-    // Логіка Swipe-to-dismiss (свайп вниз)
     let touchStartY = 0;
-    const modalElement = document.getElementById('videoModal');
-    const modalContent = document.getElementById('modalContent');
-
-    modalElement.addEventListener('touchstart', function(e) {
-        touchStartY = e.touches[0].clientY;
+    DOM.modal.addEventListener('touchstart', e => touchStartY = e.touches[0].clientY, {passive: true});
+    DOM.modal.addEventListener('touchmove', e => {
+        const deltaY = e.touches[0].clientY - touchStartY;
+        if (deltaY > 0) DOM.modalContent.style.transform = `translateY(${deltaY}px)`;
     }, {passive: true});
-
-    modalElement.addEventListener('touchmove', function(e) {
-        const touchCurrentY = e.touches[0].clientY;
-        const deltaY = touchCurrentY - touchStartY;
-        // Тягнемо лише вниз
-        if (deltaY > 0) {
-            modalContent.style.transform = `translateY(${deltaY}px)`;
-        }
-    }, {passive: true});
-
-    modalElement.addEventListener('touchend', function(e) {
-        const touchEndY = e.changedTouches[0].clientY;
-        const deltaY = touchEndY - touchStartY;
-        
-        // Якщо протягнули вниз більше ніж на 100px - закриваємо
-        if (deltaY > 100) {
-            closeModal();
-        } else {
-            // Інакше повертаємо на місце
-            modalContent.style.transform = 'translateY(0)';
-        }
+    DOM.modal.addEventListener('touchend', e => {
+        if (e.changedTouches[0].clientY - touchStartY > 100) closeModal();
+        else DOM.modalContent.style.transform = 'translateY(0)';
     }, {passive: true});
 
     init();
