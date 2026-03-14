@@ -88,10 +88,9 @@
 <script>
     const API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
     const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
-    const START_YEAR = 2026, START_MONTH = 2, START_DAY = 12; 
-    const CACHE_KEY = 'yt_videos_data', CACHE_TIME_KEY = 'yt_videos_time', CACHE_TTL = 21600000; // 6 годин
+    const START_YEAR = 2026, START_MONTH = 2, START_DAY = 14; 
+    const CACHE_KEY = 'yt_videos_data', CACHE_TIME_KEY = 'yt_videos_time', CACHE_TTL = 21600000; 
     
-    // Кешування DOM-елементів для швидкодії
     const DOM = {
         app: document.getElementById('app'),
         monthSelect: document.getElementById('monthSelect'),
@@ -169,6 +168,11 @@
         let loop = new Date(START_YEAR, START_MONTH, 1);
         let curYear = 0, lastSeason = "";
         let html = '', navHtml = '<option value="" disabled selected>📅 Обрати місяць...</option>';
+
+        if (today < new Date(START_YEAR, START_MONTH, START_DAY)) {
+            DOM.app.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--month-color);">Календар розпочнеться 14 березня 2026 року.</div>';
+            return;
+        }
 
         while (loop <= today) {
             const y = loop.getFullYear(), m = loop.getMonth(), seas = getSeason(m);
