@@ -17,21 +17,26 @@
     <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.googleapis.com">
     <style>
-        :root{--bg-color:#fff;--text-color:#222;--cell-bg:#f8f8f8;--month-color:#888;--date-color:#ccc;--divider-color:#eaeaea;--nav-border:#ddd;--nav-glass:rgba(255,255,255,0.85);--thumb-bg:#e0e0e0}
-        @media (prefers-color-scheme:dark){:root{--bg-color:#121212;--text-color:#e0e0e0;--cell-bg:#1e1e1e;--month-color:#aaa;--date-color:#555;--divider-color:#333;--nav-border:#444;--nav-glass:rgba(30,30,30,0.85);--thumb-bg:#2a2a2a}}
+        :root{--bg-color:#fff;--text-color:#222;--cell-bg:#f8f8f8;--month-color:#888;--date-color:#ccc;--divider-color:#eaeaea;--nav-border:#ddd;--nav-glass:rgba(255,255,255,0.85);--thumb-bg:#e0e0e0;--accent-gold:#D4AF37}
+        @media (prefers-color-scheme:dark){:root{--bg-color:#121212;--text-color:#e0e0e0;--cell-bg:#1e1e1e;--month-color:#aaa;--date-color:#555;--divider-color:#333;--nav-border:#444;--nav-glass:rgba(30,30,30,0.85);--thumb-bg:#2a2a2a;--accent-gold:#C59B27}}
         
-        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg-color);color:var(--text-color);margin:0;padding:20px 20px 80px;overflow-x:hidden;scroll-behavior:smooth;transition:background .3s,color .3s}
-        .main-wrapper{max-width:1400px;margin:0 auto;display:block}
+        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg-color);color:var(--text-color);margin:0;padding:20px 20px 0px;overflow-x:hidden;scroll-behavior:smooth;transition:background .3s,color .3s}
+        .main-wrapper{max-width:1400px;margin:0 auto;display:block;min-height:100vh;display:flex;flex-direction:column}
+        .content-flex{flex:1}
         
         .year-header{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px;border-bottom:3px solid var(--text-color);padding-bottom:10px;transition:border-color .3s}
         .year-header:first-child{margin-top:10px}
         
-        .header-subinfo{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--month-color);font-weight:600;letter-spacing:2px;margin-top:-5px;margin-bottom:25px;text-transform:uppercase}
+        .header-subinfo{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--month-color);font-weight:600;letter-spacing:2px;margin-top:-5px;margin-bottom:15px;text-transform:uppercase}
         .header-subinfo .dot-separator{font-size:10px;opacity:0.5}
         .insta-link{color:var(--month-color);text-decoration:none;transition:color .3s;display:flex;align-items:center;gap:5px}
         .insta-link svg{margin-bottom:2px}
         .insta-link:hover{color:#e62117}
         
+        /* Шкала прогресу */
+        .progress-bar-wrap{width:100%;height:3px;background:var(--divider-color);border-radius:2px;overflow:hidden;margin-bottom:30px}
+        .progress-bar-fill{height:100%;background:var(--accent-gold);width:0%;transition:width 1.5s cubic-bezier(0.22, 1, 0.36, 1)}
+
         .season-header{font-size:14px;font-weight:700;color:#e62117;text-transform:uppercase;letter-spacing:4px;margin:40px 0 15px}
         
         .month-wrapper{content-visibility:auto;contain-intrinsic-size:500px;margin-bottom:40px;scroll-margin-top:20px}
@@ -51,7 +56,7 @@
         .season-marker{background:#e62117!important;display:flex;align-items:center;justify-content:center;text-align:center;box-shadow:inset 0 0 20px rgba(0,0,0,0.1)}
         .season-marker-content{display:flex;flex-direction:column;align-items:center;margin-top:4px}
         .season-marker-text{color:#fff;font-size:16px;font-weight:800;letter-spacing:6px;text-transform:uppercase;margin-left:6px;line-height:1.1}
-        .season-marker-arrow{color:#fff;font-size:16px;font-weight:bold;margin-top:2px;letter-spacing:0}
+        .season-marker-arrow{color:#fff;font-size:20px;font-weight:bold;margin-top:2px;letter-spacing:0}
 
         .videos-container{position:absolute;inset:0;display:flex;z-index:5}
         .video-link{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
@@ -63,7 +68,7 @@
         
         .overlay-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
         
-        /* Стилі для переглянутих відео */
+        /* Червоний хрестик перегляду */
         .video-link.watched .video-thumb{filter:none;opacity:.8}
         .video-link.watched::before,.video-link.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:#e62117;z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
         .video-link.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
@@ -83,9 +88,11 @@
         .month-select option{background:var(--bg-color);color:var(--text-color);text-transform:none}
         .select-icon{position:absolute;right:15px;pointer-events:none;font-size:10px;color:var(--month-color)}
 
+        .site-footer{text-align:center;padding:60px 0 30px;font-size:11px;color:var(--date-color);text-transform:uppercase;letter-spacing:2px}
+
         @media (max-width:1024px){.calendar-grid{grid-template-columns:repeat(4,1fr)}}
         @media (max-width:600px){
-            body{padding:15px 15px 70px}
+            body{padding:15px 15px 0px}
             .calendar-grid{grid-template-columns:repeat(2,1fr);gap:6px}
             .year-header{font-size:38px}
             .date-num{font-size:16px}
@@ -94,13 +101,14 @@
             .close-btn{right:10px;top:-25px}
             .floating-nav{bottom:15px;width:auto;max-width:300px}
             .season-marker-text{font-size:14px;letter-spacing:4px}
-            .season-marker-arrow{font-size:14px}
+            .site-footer{padding:50px 0 90px} /* Відступ знизу для навігації */
         }
     </style>
 </head>
 <body>
 <div class="main-wrapper" id="main">
-    <div id="app"></div>
+    <div class="content-flex" id="app"></div>
+    <div class="site-footer">© 2026 ТАРАС МАКСИМʼЯК</div>
 </div>
 
 <div class="floating-nav" id="floatingNav">
@@ -120,18 +128,24 @@
 </div>
 
 <script>
-    // БАЗОВІ НАЛАШТУВАННЯ
     var API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
     var UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
     var START_YEAR = 2026, START_MONTH = 2, START_DAY = 14; 
     var CACHE_KEY = 'yt_videos_data', CACHE_TIME_KEY = 'yt_videos_time', CACHE_TTL = 21600000; 
     
+    var DOM = {
+        app: document.getElementById('app'),
+        monthSelect: document.getElementById('monthSelect'),
+        nav: document.getElementById('floatingNav'),
+        modal: document.getElementById('videoModal'),
+        modalContent: document.getElementById('modalContent'),
+        iframe: document.getElementById('ytIframe')
+    };
+
     var videosMap = {};
     var watchedVideos = [];
     var lastScrollY = window.scrollY;
-
-    var weekDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
-    var monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+    var initialScrollDone = false; // Прапорець для автоскролу
 
     function safeGetStorage(key) {
         try { return localStorage.getItem(key); } catch(e) { return null; }
@@ -223,9 +237,6 @@
 
     function render() {
         try {
-            var appElement = document.getElementById('app');
-            var selectElement = document.getElementById('monthSelect');
-            
             var today = new Date();
             var startDate = new Date(START_YEAR, START_MONTH, START_DAY);
             
@@ -234,7 +245,7 @@
             var html = '', navHtml = '<option value="" disabled selected>ОБРАТИ МІСЯЦЬ</option>';
 
             if (today < startDate) {
-                appElement.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--month-color);">Календар розпочнеться 14 березня 2026 року.</div>';
+                DOM.app.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--month-color);">Календар розпочнеться 14 березня 2026 року.</div>';
                 return;
             }
 
@@ -250,6 +261,9 @@
                     }
                 }
             }
+            
+            var progressPercent = (totalVideos / 365) * 100;
+            if (progressPercent > 100) progressPercent = 100;
 
             while (loop <= today) {
                 var y = loop.getFullYear();
@@ -261,6 +275,8 @@
                     if (curYear === 0) {
                         var instaIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>';
                         html += '<div class="header-subinfo"><span>' + totalVideos + ' / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
+                        // Золота шкала прогресу
+                        html += '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + progressPercent + '%"></div></div>';
                     }
                     curYear = y; lastSeason = ""; 
                 }
@@ -271,12 +287,26 @@
                 }
                 
                 html += createMonthHTML(y, m);
+                
+                var monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
                 navHtml += '<option value="month-' + y + '-' + m + '">' + monthsNames[m] + ' ' + y + '</option>';
                 loop.setMonth(m + 1);
             }
             
-            appElement.innerHTML = html; 
-            selectElement.innerHTML = navHtml; 
+            DOM.app.innerHTML = html; 
+            DOM.monthSelect.innerHTML = navHtml; 
+
+            // АВТОМАТИЧНИЙ СКРОЛ ДО ОСТАННЬОГО ПЕРЕГЛЯНУТОГО ВІДЕО
+            if (!initialScrollDone) {
+                setTimeout(function() {
+                    var watchedElements = document.querySelectorAll('.video-link.watched');
+                    if (watchedElements.length > 0) {
+                        var lastWatched = watchedElements[watchedElements.length - 1];
+                        lastWatched.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                    initialScrollDone = true;
+                }, 600); // Невелика затримка для плавного завантаження сторінки
+            }
 
         } catch (e) {
             document.getElementById('app').innerHTML = '<div style="padding:40px; text-align:center; color:red;">Сталася помилка відображення сторінки. Спробуйте оновити.</div>';
@@ -284,6 +314,9 @@
     }
 
     function createMonthHTML(y, m) {
+        var weekDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
+        var monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+        
         var html = '<div class="month-wrapper" id="month-' + y + '-' + m + '"><div class="month-header">' + monthsNames[m] + '</div><div class="calendar-grid">';
         
         var firstDay = (y === START_YEAR && m === START_MONTH) ? START_DAY : 1;
@@ -304,7 +337,8 @@
             var cellClass = 'day-cell empty-day';
 
             if (y === 2026 && m === 2 && d === 16) {
-                html += '<div class="day-cell season-marker"><div class="season-marker-content"><div class="season-marker-text">СЕЗОН 1</div><div class="season-marker-arrow">—&gt;</div></div></div>';
+                // Типографічна стрілка ➔ замість —>
+                html += '<div class="day-cell season-marker"><div class="season-marker-content"><div class="season-marker-text">СЕЗОН 1</div><div class="season-marker-arrow">➔</div></div></div>';
             } else if (vids && vids.length > 0) {
                 cellClass = cellClass.replace('empty-day', 'has-video');
                 var linksHTML = '';
@@ -333,14 +367,17 @@
         document.getElementById('monthSelect').selectedIndex = 0;
     }
 
-    window.openModal = function(e, id, el) {
-        e.preventDefault();
-        
+    window.mark = function(id, el) {
         if (watchedVideos.indexOf(id) === -1) {
             watchedVideos.push(id);
             safeSetStorage('my_watched_videos', JSON.stringify(watchedVideos));
         }
-        if (el) el.classList.add('watched');
+        if(el) el.classList.add('watched');
+    }
+
+    window.openModal = function(e, id, el) {
+        e.preventDefault();
+        mark(id, el); 
         
         var iframe = document.getElementById('ytIframe');
         var modal = document.getElementById('videoModal');
