@@ -94,7 +94,9 @@
     </style>
 </head>
 <body>
-<div class="main-wrapper" id="main"><div id="app"></div></div>
+<div class="main-wrapper" id="main">
+    <div id="app"></div>
+</div>
 
 <div class="floating-nav" id="floatingNav">
     <select id="monthSelect" class="month-select" onchange="jumpTo(this.value)">
@@ -113,110 +115,105 @@
 </div>
 
 <script>
-    const API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
-    const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
-    const START_YEAR = 2026, START_MONTH = 2, START_DAY = 14; 
-    const CACHE_KEY = 'yt_videos_data', CACHE_TIME_KEY = 'yt_videos_time', CACHE_TTL = 21600000; 
+    // БАЗОВІ НАЛАШТУВАННЯ
+    var API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
+    var UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
+    var START_YEAR = 2026, START_MONTH = 2, START_DAY = 14; 
+    var CACHE_KEY = 'yt_videos_data', CACHE_TIME_KEY = 'yt_videos_time', CACHE_TTL = 21600000; 
     
-    const DOM = {
-        app: document.getElementById('app'),
-        monthSelect: document.getElementById('monthSelect'),
-        nav: document.getElementById('floatingNav'),
-        modal: document.getElementById('videoModal'),
-        modalContent: document.getElementById('modalContent'),
-        iframe: document.getElementById('ytIframe')
-    };
+    var videosMap = {};
+    var watchedVideos = [];
+    var lastScrollY = window.scrollY;
 
-    let videosMap = {};
-    let watchedVideos = [];
-    let lastScrollY = window.scrollY;
-    
-    // МАКСИМАЛЬНИЙ ЗАПОБІЖНИК №1: Безпечне читання пам'яті
-    try { 
-        var stored = localStorage.getItem('my_watched_videos');
-        if (stored) watchedVideos = JSON.parse(stored);
-    } catch (e) {
+    var weekDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
+    var monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+
+    // 1. БЕЗПЕЧНА РОБОТА З ПАМ'ЯТТЮ (Safari Privacy Mode Fix)
+    function safeGetStorage(key) {
+        try { return localStorage.getItem(key); } catch(e) { return null; }
+    }
+    function safeSetStorage(key, value) {
+        try { localStorage.setItem(key, value); } catch(e) {}
+    }
+
+    // Завантажуємо історію переглядів
+    try {
+        var storedWatched = safeGetStorage('my_watched_videos');
+        if (storedWatched) {
+            watchedVideos = JSON.parse(storedWatched);
+            if (!Array.isArray(watchedVideos)) watchedVideos = [];
+        }
+    } catch(e) {
         watchedVideos = [];
     }
-    
-    window.addEventListener('scroll', function() {
-        const currentScrollY = window.scrollY;
-        if (currentScrollY > lastScrollY && currentScrollY > 150) DOM.nav.classList.add('hidden');
-        else DOM.nav.classList.remove('hidden');
-        lastScrollY = currentScrollY;
-    }, { passive: true });
 
-    async function init() {
-        const now = Date.now();
-        let cachedData = null;
-        let cachedTime = null;
+    // 2. ГОЛОВНА ФУНКЦІЯ ЗАВАНТАЖЕННЯ
+    function init() {
+        var now = Date.now();
+        var cachedData = safeGetStorage(CACHE_KEY);
+        var cachedTime = safeGetStorage(CACHE_TIME_KEY);
 
-        // МАКСИМАЛЬНИЙ ЗАПОБІЖНИК №2: Блокування кешу в Safari
-        try {
-            cachedData = localStorage.getItem(CACHE_KEY);
-            cachedTime = localStorage.getItem(CACHE_TIME_KEY);
-        } catch (e) {
-            cachedData = null;
-            cachedTime = null;
-        }
-
+        // Якщо є свіжий кеш
         if (cachedData && cachedTime && (now - parseInt(cachedTime, 10)) < CACHE_TTL) {
             try { 
-                videosMap = JSON.parse(cachedData) || {}; 
+                videosMap = JSON.parse(cachedData); 
+                if (typeof videosMap !== 'object' || videosMap === null) videosMap = {};
                 render(); 
                 return; 
-            } catch (e) {
-                videosMap = {};
+            } catch(e) { 
+                videosMap = {}; 
             }
         }
 
-        try {
-            let pageToken = '';
-            videosMap = {}; 
-            do {
-                let url = 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=' + UPLOADS_ID + '&maxResults=50&key=' + API_KEY;
-                if (pageToken) url += '&pageToken=' + pageToken;
+        // Якщо кешу немає — завантажуємо через API
+        fetchAPI('', {})
+            .then(function(resultMap) {
+                videosMap = resultMap;
+                safeSetStorage(CACHE_KEY, JSON.stringify(videosMap));
+                safeSetStorage(CACHE_TIME_KEY, now.toString());
+                render();
+            })
+            .catch(function(error) {
+                // Якщо API впало (немає інтернету або заблоковано), використовуємо старий кеш
+                if (cachedData) {
+                    try { videosMap = JSON.parse(cachedData) || {}; } catch(e) { videosMap = {}; }
+                }
+                render();
+            });
+    }
 
-                const res = await fetch(url);
-                if (!res.ok) throw new Error('API Error'); // Якщо ліміт або мережа впала
-                const data = await res.json();
-                
-                if (data && data.items) {
-                    data.items.forEach(function(item) {
-                        if (!item.snippet || !item.snippet.publishedAt || !item.snippet.resourceId) return;
-                        
-                        const dateKey = item.snippet.publishedAt.split('T')[0];
-                        if (!videosMap[dateKey]) videosMap[dateKey] = [];
-                        
-                        const t = item.snippet.thumbnails || {};
-                        // ЗАМІНЕНО ?., ЩОБ ПІДТРИМУВАТИ СТАРІ IPHONE ТА ВБУДОВАНІ БРАУЗЕРИ
-                        const thumb = (t.maxres && t.maxres.url) || (t.standard && t.standard.url) || (t.high && t.high.url) || (t.medium && t.medium.url) || (t.default && t.default.url) || '';
+    // Безпечний запит до YouTube API (без ES6 синтаксису, що може падати на старих iOS)
+    function fetchAPI(pageToken, currentMap) {
+        var url = 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=' + UPLOADS_ID + '&maxResults=50&key=' + API_KEY;
+        if (pageToken) url += '&pageToken=' + pageToken;
 
-                        videosMap[dateKey].push({ 
-                            id: item.snippet.resourceId.videoId, 
-                            title: item.snippet.title, 
-                            thumb: thumb 
-                        });
+        return fetch(url).then(function(res) {
+            if (!res.ok) throw new Error('API Error');
+            return res.json();
+        }).then(function(data) {
+            if (data && data.items) {
+                for (var i = 0; i < data.items.length; i++) {
+                    var item = data.items[i];
+                    if (!item.snippet || !item.snippet.publishedAt || !item.snippet.resourceId) continue;
+                    
+                    var dateKey = item.snippet.publishedAt.split('T')[0];
+                    if (!currentMap[dateKey]) currentMap[dateKey] = [];
+                    
+                    var t = item.snippet.thumbnails || {};
+                    var thumb = (t.maxres && t.maxres.url) || (t.standard && t.standard.url) || (t.high && t.high.url) || (t.medium && t.medium.url) || (t.default && t.default.url) || '';
+
+                    currentMap[dateKey].push({ 
+                        id: item.snippet.resourceId.videoId, 
+                        title: item.snippet.title, 
+                        thumb: thumb 
                     });
                 }
-                pageToken = data.nextPageToken;
-            } while (pageToken);
-
-            try {
-                localStorage.setItem(CACHE_KEY, JSON.stringify(videosMap));
-                localStorage.setItem(CACHE_TIME_KEY, now.toString());
-            } catch (e) {}
-
-        } catch (e) {
-            // МАКСИМАЛЬНИЙ ЗАПОБІЖНИК №3: Якщо впало все — підтягуємо що є, аби не було білого екрану
-            if (cachedData) {
-                try { videosMap = JSON.parse(cachedData) || {}; } catch (err) { videosMap = {}; }
-            } else {
-                videosMap = {};
             }
-        }
-        
-        render();
+            if (data.nextPageToken) {
+                return fetchAPI(data.nextPageToken, currentMap);
+            }
+            return currentMap;
+        });
     }
 
     function getSeason(m) {
@@ -226,139 +223,182 @@
         return "ОСІНЬ";
     }
 
+    // 3. БЕЗПЕЧНИЙ РЕНДЕР ІНТЕРФЕЙСУ
     function render() {
-        const today = new Date();
-        let loop = new Date(START_YEAR, START_MONTH, 1);
-        let curYear = 0, lastSeason = "";
-        let html = '', navHtml = '<option value="" disabled selected>ОБРАТИ МІСЯЦЬ</option>';
-
-        if (today < new Date(START_YEAR, START_MONTH, START_DAY)) {
-            DOM.app.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--month-color);">Календар розпочнеться 14 березня 2026 року.</div>';
-            return;
-        }
-
-        let totalVideos = 0;
-        if (videosMap) {
-            for (const date in videosMap) {
-                if (videosMap.hasOwnProperty(date) && videosMap[date]) {
-                    totalVideos += videosMap[date].length;
-                }
-            }
-        }
-
-        while (loop <= today) {
-            const y = loop.getFullYear(), m = loop.getMonth(), seas = getSeason(m);
-            if (y !== curYear) { 
-                html += `<h2 class="year-header">${y}</h2>`; 
-                if (curYear === 0) {
-                    html += `<div class="header-subinfo"><span>${totalVideos} / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" class="insta-link">INSTAGRAM</a></div>`;
-                }
-                curYear = y; lastSeason = ""; 
-            }
-            if (seas !== lastSeason) { html += `<div class="season-header">${seas}</div>`; lastSeason = seas; }
+        try {
+            var appElement = document.getElementById('app');
+            var selectElement = document.getElementById('monthSelect');
             
-            html += createMonthHTML(y, m);
-            navHtml += `<option value="month-${y}-${m}">${monthsNames[m]} ${y}</option>`;
-            loop.setMonth(m + 1);
+            var today = new Date();
+            var startDate = new Date(START_YEAR, START_MONTH, START_DAY);
+            
+            var loop = new Date(START_YEAR, START_MONTH, 1);
+            var curYear = 0, lastSeason = "";
+            var html = '', navHtml = '<option value="" disabled selected>ОБРАТИ МІСЯЦЬ</option>';
+
+            // Перевірка чи дата вже настала
+            if (today < startDate) {
+                appElement.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--month-color);">Календар розпочнеться 14 березня 2026 року.</div>';
+                return;
+            }
+
+            // Підрахунок завантажених відео
+            var totalVideos = 0;
+            if (videosMap) {
+                var keys = Object.keys(videosMap);
+                for (var i = 0; i < keys.length; i++) {
+                    if (Array.isArray(videosMap[keys[i]])) {
+                        totalVideos += videosMap[keys[i]].length;
+                    }
+                }
+            }
+
+            while (loop <= today) {
+                var y = loop.getFullYear();
+                var m = loop.getMonth();
+                var seas = getSeason(m);
+                
+                if (y !== curYear) { 
+                    html += '<h2 class="year-header">' + y + '</h2>'; 
+                    if (curYear === 0) {
+                        html += '<div class="header-subinfo"><span>' + totalVideos + ' / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" class="insta-link">INSTAGRAM</a></div>';
+                    }
+                    curYear = y; lastSeason = ""; 
+                }
+                
+                if (seas !== lastSeason) { 
+                    html += '<div class="season-header">' + seas + '</div>'; 
+                    lastSeason = seas; 
+                }
+                
+                html += createMonthHTML(y, m);
+                navHtml += '<option value="month-' + y + '-' + m + '">' + monthsNames[m] + ' ' + y + '</option>';
+                loop.setMonth(m + 1);
+            }
+            
+            appElement.innerHTML = html; 
+            selectElement.innerHTML = navHtml; 
+
+        } catch (e) {
+            document.getElementById('app').innerHTML = '<div style="padding:40px; text-align:center; color:red;">Сталася помилка відображення сторінки. Спробуйте оновити.</div>';
         }
-        
-        DOM.app.innerHTML = html; 
-        DOM.monthSelect.innerHTML = navHtml; 
     }
 
     function createMonthHTML(y, m) {
-        let html = `<div class="month-wrapper" id="month-${y}-${m}"><div class="month-header">${monthsNames[m]}</div><div class="calendar-grid">`;
-        let firstDay = (y === START_YEAR && m === START_MONTH) ? START_DAY : 1;
-        let daysInMonth = new Date(y, m + 1, 0).getDate();
-        let currentDow = new Date(y, m, firstDay).getDay();
+        var html = '<div class="month-wrapper" id="month-' + y + '-' + m + '"><div class="month-header">' + monthsNames[m] + '</div><div class="calendar-grid">';
+        
+        var firstDay = (y === START_YEAR && m === START_MONTH) ? START_DAY : 1;
+        var daysInMonth = new Date(y, m + 1, 0).getDate();
+        var currentDow = new Date(y, m, firstDay).getDay();
 
-        for (let d = firstDay; d <= daysInMonth; d++) {
-            const dayName = weekDays[currentDow], isSunday = (currentDow === 0);
+        for (var d = firstDay; d <= daysInMonth; d++) {
+            var dayName = weekDays[currentDow];
+            var isSunday = (currentDow === 0);
             currentDow = (currentDow + 1) % 7; 
-            const key = y + '-' + (m+1).toString().padStart(2,'0') + '-' + d.toString().padStart(2,'0');
-            const vids = videosMap ? videosMap[key] : null;
-            const dateBlock = `<div class="date-container"><span class="date-num">${d}</span><span class="day-name">${dayName}</span></div>`;
-
-            let cellClass = 'day-cell empty-day';
+            
+            // Формування безпечного ключа "YYYY-MM-DD"
+            var mStr = (m + 1) < 10 ? '0' + (m + 1) : (m + 1);
+            var dStr = d < 10 ? '0' + d : d;
+            var key = y + '-' + mStr + '-' + dStr;
+            
+            var vids = videosMap ? videosMap[key] : null;
+            var dateBlock = '<div class="date-container"><span class="date-num">' + d + '</span><span class="day-name">' + dayName + '</span></div>';
+            var cellClass = 'day-cell empty-day';
 
             if (y === 2026 && m === 2 && d === 16) {
-                html += `<div class="day-cell season-marker"><div class="season-marker-text">СЕЗОН 1</div></div>`;
+                html += '<div class="day-cell season-marker"><div class="season-marker-text">СЕЗОН 1</div></div>';
             } else if (vids && vids.length > 0) {
                 cellClass = cellClass.replace('empty-day', 'has-video');
-                let linksHTML = vids.map(function(vid) {
-                    const watchedClass = watchedVideos.includes(vid.id) ? 'watched' : ''; 
-                    return `<a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link ${watchedClass}" onclick="openModal(event, '${vid.id}', this)"><img src="${vid.thumb}" class="video-thumb" loading="lazy" decoding="async" alt="${vid.title}"><div class="overlay-title">${vid.title}</div></a>`;
-                }).join('');
-                html += `<div class="${cellClass}"><div class="videos-container ${vids.length > 1 ? 'multiple' : ''}">${linksHTML}</div>${dateBlock}</div>`;
+                var linksHTML = '';
+                for (var v = 0; v < vids.length; v++) {
+                    var vid = vids[v];
+                    var watchedClass = watchedVideos.indexOf(vid.id) !== -1 ? 'watched' : ''; 
+                    linksHTML += '<a href="https://www.youtube.com/watch?v=' + vid.id + '" class="video-link ' + watchedClass + '" onclick="openModal(event, \'' + vid.id + '\', this)"><img src="' + vid.thumb + '" class="video-thumb" loading="lazy" decoding="async" alt=""><div class="overlay-title">' + vid.title + '</div></a>';
+                }
+                var multiClass = vids.length > 1 ? 'multiple' : '';
+                html += '<div class="' + cellClass + '"><div class="videos-container ' + multiClass + '">' + linksHTML + '</div>' + dateBlock + '</div>';
             } else {
-                html += `<div class="${cellClass}">${dateBlock}</div>`;
+                html += '<div class="' + cellClass + '">' + dateBlock + '</div>';
             }
 
-            if (isSunday && d !== daysInMonth) html += `<div class="week-divider"></div>`;
+            if (isSunday && d !== daysInMonth) {
+                html += '<div class="week-divider"></div>';
+            }
         }
-        return html + `</div></div>`;
+        return html + '</div></div>';
     }
 
+    // 4. ЛОГІКА ІНТЕРФЕЙСУ
     window.jumpTo = function(targetId) {
         if (!targetId) return;
-        const el = document.getElementById(targetId);
+        var el = document.getElementById(targetId);
         if (el) window.scrollTo({top: el.getBoundingClientRect().top + window.pageYOffset - 20, behavior: 'smooth'});
-        DOM.monthSelect.selectedIndex = 0;
-    }
-
-    window.mark = function(id, el) {
-        if (!watchedVideos.includes(id)) {
-            watchedVideos.push(id);
-            try { localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos)); } catch(e) {}
-        }
-        if(el) el.classList.add('watched');
+        document.getElementById('monthSelect').selectedIndex = 0;
     }
 
     window.openModal = function(e, id, el) {
         e.preventDefault();
-        mark(id, el); 
         
-        const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        if (isMobile) {
-            const start = Date.now();
-            let appUrl = /Android/i.test(navigator.userAgent) 
-                ? 'intent://www.youtube.com/watch?v=' + id + '#Intent;package=com.google.android.youtube;scheme=https;end'
-                : 'vnd.youtube://watch?v=' + id;
-
-            window.location.href = appUrl;
-            setTimeout(function() { if (Date.now() - start < 1500) showModal(id); }, 1000);
-        } else {
-            showModal(id);
+        // Позначаємо як переглянуте
+        if (watchedVideos.indexOf(id) === -1) {
+            watchedVideos.push(id);
+            safeSetStorage('my_watched_videos', JSON.stringify(watchedVideos));
         }
-    }
-
-    window.showModal = function(id) {
-        DOM.iframe.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1';
-        DOM.modal.classList.add('show');
+        if (el) el.classList.add('watched');
+        
+        // ВІДКРИВАЄМО ЛИШЕ У МОДАЛЬНОМУ ВІКНІ (БЕЗ DEEP LINKS)
+        var iframe = document.getElementById('ytIframe');
+        var modal = document.getElementById('videoModal');
+        iframe.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1';
+        modal.classList.add('show');
         document.body.style.overflow = 'hidden'; 
     }
 
     window.closeModal = function() {
-        DOM.modalContent.style.transform = ''; 
-        DOM.iframe.src = '';
-        DOM.modal.classList.remove('show');
+        var modalContent = document.getElementById('modalContent');
+        var iframe = document.getElementById('ytIframe');
+        var modal = document.getElementById('videoModal');
+        
+        modalContent.style.transform = ''; 
+        iframe.src = '';
+        modal.classList.remove('show');
         document.body.style.overflow = 'auto'; 
     }
 
+    // Приховування меню при скролі
+    window.addEventListener('scroll', function() {
+        var nav = document.getElementById('floatingNav');
+        if (!nav) return;
+        var currentScrollY = window.scrollY;
+        if (currentScrollY > lastScrollY && currentScrollY > 150) nav.classList.add('hidden');
+        else nav.classList.remove('hidden');
+        lastScrollY = currentScrollY;
+    }, { passive: true });
+
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
 
-    let touchStartY = 0;
-    DOM.modal.addEventListener('touchstart', function(e) { touchStartY = e.touches[0].clientY; }, {passive: true});
-    DOM.modal.addEventListener('touchmove', function(e) {
-        const deltaY = e.touches[0].clientY - touchStartY;
-        if (deltaY > 0) DOM.modalContent.style.transform = `translateY(${deltaY}px)`;
+    // Swipe-to-dismiss для мобільного вікна
+    var touchStartY = 0;
+    var modalElement = document.getElementById('videoModal');
+    var modalContent = document.getElementById('modalContent');
+    
+    modalElement.addEventListener('touchstart', function(e) { 
+        touchStartY = e.touches[0].clientY; 
     }, {passive: true});
-    DOM.modal.addEventListener('touchend', function(e) {
+    
+    modalElement.addEventListener('touchmove', function(e) {
+        var deltaY = e.touches[0].clientY - touchStartY;
+        if (deltaY > 0) modalContent.style.transform = 'translateY(' + deltaY + 'px)';
+    }, {passive: true});
+    
+    modalElement.addEventListener('touchend', function(e) {
         if (e.changedTouches[0].clientY - touchStartY > 100) closeModal();
-        else DOM.modalContent.style.transform = 'translateY(0)';
+        else modalContent.style.transform = 'translateY(0)';
     }, {passive: true});
 
+    // Запускаємо додаток
     init();
+
 </script>
 </body>
 </html>
