@@ -28,6 +28,16 @@
         .day-name{font-size:10px;font-weight:500;text-transform:uppercase;color:var(--date-color);opacity:.6}
         .has-video .date-num,.has-video .day-name{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
         .has-video .day-name{opacity:.7;text-shadow:0 1px 2px rgba(0,0,0,.9)}
+        
+        /* Стиль для саморобної таблички 15 березня */
+        .season-marker{background:#e62117!important;border:3px dashed #fff;transform:rotate(-3deg);box-shadow:5px 5px 0 rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;color:#fff;font-family:"Comic Sans MS",cursive,sans-serif;overflow:visible!important;z-index:15}
+        .season-marker-text{font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:-1px;position:relative}
+        .season-marker-arrow{position:absolute;right:-40px;top:50%;transform:translateY(-50%);font-size:40px;line-height:1}
+
+        /* Підсвічування 16 березня */
+        .season-start-target{border:2px solid #e62117;background:#fffde7!important}
+        @media (prefers-color-scheme:dark){.season-start-target{background:#2a2815!important}}
+
         .videos-container{position:absolute;inset:0;display:flex;z-index:5}
         .video-link{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
         .videos-container.multiple .video-link:not(:last-child){border-right:2px solid #fff}
@@ -63,6 +73,8 @@
             .floating-nav{bottom:15px;width:90%;max-width:300px}
             .floating-nav.hidden{transform:translate(-50%,120px)}
             .month-select{width:100%}
+            .season-marker-text{font-size:16px}
+            .season-marker-arrow{right:-25px;font-size:30px}
         }
     </style>
 </head>
@@ -201,7 +213,13 @@
             const vids = videosMap[key];
             const dateBlock = `<div class="date-container"><span class="date-num">${d}</span><span class="day-name">${dayName}</span></div>`;
 
-            if (vids && vids.length > 0) {
+            // Спеціальна логіка для 15 та 16 березня 2026
+            if (y === 2026 && m === 2 && d === 15) {
+                html += `<div class="day-cell season-marker"><div class="season-marker-text">СЕЗОН 1<span class="season-marker-arrow">👉</span></div></div>`;
+            } else if (y === 2026 && m === 2 && d === 16) {
+                // Додаємо клас .season-start-target для 16 березня
+                html += `<div class="day-cell empty-day season-start-target">${dateBlock}</div>`;
+            } else if (vids && vids.length > 0) {
                 let linksHTML = vids.map(vid => {
                     const watchedClass = watchedVideos.includes(vid.id) ? 'watched' : '';
                     return `<a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link ${watchedClass}" onclick="openModal(event, '${vid.id}', this)"><img src="${vid.thumb}" class="video-thumb" loading="lazy" decoding="async" alt="${vid.title}"><div class="overlay-title">${vid.title}</div></a>`;
