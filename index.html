@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Кіноархів</title>
+    <title>Кіноархів Тараса Максимʼяка</title>
+    
+    <meta property="og:title" content="Кіноархів Тараса Максимʼяка">
+    <meta property="og:description" content="Один день — одне відео. Каталог мого щоденного кіночеленджу.">
+    <meta property="og:image" content="image.png">
+    <meta property="og:url" content="https://taras.kyiv.ua/">
+    <meta name="twitter:card" content="summary_large_image">
+
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
     <link rel="preconnect" href="https://i.ytimg.com" crossorigin>
     <link rel="dns-prefetch" href="https://i.ytimg.com">
@@ -16,27 +23,33 @@
         body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg-color);color:var(--text-color);margin:0;padding:20px 20px 80px;overflow-x:hidden;scroll-behavior:smooth;transition:background .3s,color .3s}
         .main-wrapper{max-width:1400px;margin:0 auto;display:block}
         
-        .year-header{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px;border-bottom:3px solid var(--text-color);padding-bottom:10px}
+        .year-header{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px;border-bottom:3px solid var(--text-color);padding-bottom:10px;transition:border-color .3s}
         .year-header:first-child{margin-top:10px}
+        
+        /* Стиль для блоку інформації під роком (лічильник + інстаграм) */
+        .header-subinfo{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--month-color);font-weight:600;letter-spacing:2px;margin-top:-5px;margin-bottom:25px;text-transform:uppercase}
+        .header-subinfo .dot-separator{font-size:10px;opacity:0.5}
+        .insta-link{color:var(--month-color);text-decoration:none;transition:color .3s}
+        .insta-link:hover{color:#e62117}
+        
         .season-header{font-size:14px;font-weight:700;color:#e62117;text-transform:uppercase;letter-spacing:4px;margin:40px 0 15px}
         
         .month-wrapper{content-visibility:auto;contain-intrinsic-size:500px;margin-bottom:40px;scroll-margin-top:20px}
-        .month-header{color:var(--month-color);font-size:22px;font-weight:500;text-transform:uppercase;margin:0 0 20px;letter-spacing:1px}
+        .month-header{color:var(--month-color);font-size:22px;font-weight:500;text-transform:uppercase;margin:0 0 20px;letter-spacing:1px;transition:color .3s}
         
-        .week-divider{grid-column:1/-1;height:1px;background:linear-gradient(90deg,transparent,var(--divider-color) 10%,var(--divider-color) 90%,transparent);margin:8px 0}
+        .week-divider{grid-column:1/-1;height:1px;background:linear-gradient(90deg,transparent,var(--divider-color) 10%,var(--divider-color) 90%,transparent);margin:8px 0;transition:background .3s}
         .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
-        .day-cell{aspect-ratio:16/9;position:relative;background:var(--cell-bg);border-radius:6px;overflow:hidden;transform:translateZ(0);box-sizing:border-box}
+        .day-cell{aspect-ratio:16/9;position:relative;background:var(--cell-bg);border-radius:6px;overflow:hidden;transform:translateZ(0);box-sizing:border-box;transition:background .3s}
         .day-cell.empty-day{background:transparent}
         
         .date-container{position:absolute;top:8px;left:10px;right:10px;display:flex;align-items:baseline;gap:6px;z-index:10;pointer-events:none}
-        .date-num{font-size:18px;font-weight:800;line-height:1;color:var(--date-color)}
-        .day-name{font-size:10px;font-weight:500;text-transform:uppercase;color:var(--date-color);opacity:.6}
+        .date-num{font-size:18px;font-weight:800;line-height:1;color:var(--date-color);transition:color .3s}
+        .day-name{font-size:10px;font-weight:500;text-transform:uppercase;color:var(--date-color);opacity:.6;transition:color .3s}
         .has-video .date-num,.has-video .day-name{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
         .has-video .day-name{opacity:.7;text-shadow:0 1px 2px rgba(0,0,0,.9)}
 
-        /* Стильний мінімалістичний маркер сезону */
         .season-marker{background:#e62117!important;display:flex;align-items:center;justify-content:center;text-align:center;box-shadow:inset 0 0 20px rgba(0,0,0,0.1)}
-        .season-marker-text{color:#fff;font-size:16px;font-weight:800;letter-spacing:6px;text-transform:uppercase;margin-left:6px} /* margin-left компенсує letter-spacing для ідеального центрування */
+        .season-marker-text{color:#fff;font-size:16px;font-weight:800;letter-spacing:6px;text-transform:uppercase;margin-left:6px}
 
         .videos-container{position:absolute;inset:0;display:flex;z-index:5}
         .video-link{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
@@ -48,11 +61,6 @@
         
         .overlay-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
         
-        .video-link.watched .video-thumb{filter:none;opacity:.8}
-        .video-link.watched::before,.video-link.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:#e62117;z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
-        .video-link.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
-        .video-link.watched::after{transform:translate(-50%,-50%) rotate(-45deg)}
-
         .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(4px);opacity:0;transition:opacity .3s ease}
         .modal.show{display:flex;opacity:1}
         .modal-content{width:100%;max-width:1000px;padding:20px;position:relative;transition:transform .2s ease-out}
@@ -61,7 +69,6 @@
         .close-btn{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10;text-shadow:0 2px 4px rgba(0,0,0,.5);font-weight:300}
         .close-btn:hover{color:#e62117}
 
-        /* Навігація з ефектом матового скла */
         .floating-nav{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);background:var(--nav-glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:4px;display:flex;align-items:center;z-index:100;border:1px solid var(--nav-border);box-shadow:0 4px 15px rgba(0,0,0,0.05);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;opacity:1}
         .floating-nav.hidden{transform:translate(-50%,100px);opacity:0}
         .month-select{appearance:none;-webkit-appearance:none;background:transparent;border:none;outline:none;padding:12px 35px 12px 20px;font-size:13px;font-weight:600;color:var(--text-color);cursor:pointer;font-family:inherit;text-align:center;text-transform:uppercase;letter-spacing:1px}
@@ -117,14 +124,8 @@
     };
 
     let videosMap = {};
-    let watchedVideos = [];
     let lastScrollY = window.scrollY;
     
-    try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
-
-    const weekDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
-    const monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
-
     window.addEventListener('scroll', () => {
         const currentScrollY = window.scrollY;
         if (currentScrollY > lastScrollY && currentScrollY > 150) DOM.nav.classList.add('hidden');
@@ -190,9 +191,20 @@
             return;
         }
 
+        let totalVideos = 0;
+        for (const date in videosMap) {
+            totalVideos += videosMap[date].length;
+        }
+
         while (loop <= today) {
             const y = loop.getFullYear(), m = loop.getMonth(), seas = getSeason(m);
-            if (y !== curYear) { html += `<h2 class="year-header">${y}</h2>`; curYear = y; lastSeason = ""; }
+            if (y !== curYear) { 
+                html += `<h2 class="year-header">${y}</h2>`; 
+                if (curYear === 0) {
+                    html += `<div class="header-subinfo"><span>${totalVideos} / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" class="insta-link">INSTAGRAM</a></div>`;
+                }
+                curYear = y; lastSeason = ""; 
+            }
             if (seas !== lastSeason) { html += `<div class="season-header">${seas}</div>`; lastSeason = seas; }
             
             html += createMonthHTML(y, m);
@@ -219,14 +231,12 @@
 
             let cellClass = 'day-cell empty-day';
 
-            // Мінімалістична заставка для 16 березня
             if (y === 2026 && m === 2 && d === 16) {
                 html += `<div class="day-cell season-marker"><div class="season-marker-text">СЕЗОН 1</div></div>`;
             } else if (vids && vids.length > 0) {
                 cellClass = cellClass.replace('empty-day', 'has-video');
                 let linksHTML = vids.map(vid => {
-                    const watchedClass = watchedVideos.includes(vid.id) ? 'watched' : '';
-                    return `<a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link ${watchedClass}" onclick="openModal(event, '${vid.id}', this)"><img src="${vid.thumb}" class="video-thumb" loading="lazy" decoding="async" alt="${vid.title}"><div class="overlay-title">${vid.title}</div></a>`;
+                    return `<a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link" onclick="openModal(event, '${vid.id}')"><img src="${vid.thumb}" class="video-thumb" loading="lazy" decoding="async" alt="${vid.title}"><div class="overlay-title">${vid.title}</div></a>`;
                 }).join('');
                 html += `<div class="${cellClass}"><div class="videos-container ${vids.length > 1 ? 'multiple' : ''}">${linksHTML}</div>${dateBlock}</div>`;
             } else {
@@ -245,18 +255,8 @@
         DOM.monthSelect.selectedIndex = 0;
     }
 
-    window.mark = function(id, el) {
-        if (!watchedVideos.includes(id)) {
-            watchedVideos.push(id);
-            try { localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos)); } catch(e) {}
-        }
-        if(el) el.classList.add('watched');
-    }
-
-    window.openModal = function(e, id, el) {
+    window.openModal = function(e, id) {
         e.preventDefault();
-        mark(id, el);
-        
         const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
         if (isMobile) {
             const start = Date.now();
