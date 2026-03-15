@@ -24,7 +24,8 @@
         .main-wrapper{max-width:1400px;margin:0 auto;display:block;min-height:100vh;display:flex;flex-direction:column}
         .content-flex{flex:1}
         
-        .year-header{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px;border-bottom:3px solid var(--text-color);padding-bottom:10px;transition:border-color .3s}
+        /* Змінена лінія під роком: тепер тонка і ледь помітна */
+        .year-header{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px;border-bottom:1px solid var(--divider-color);padding-bottom:15px;transition:border-color .3s}
         .year-header:first-child{margin-top:10px}
         
         .header-subinfo{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--month-color);font-weight:600;letter-spacing:2px;margin-top:-5px;margin-bottom:15px;text-transform:uppercase}
@@ -33,7 +34,6 @@
         .insta-link svg{margin-bottom:2px}
         .insta-link:hover{color:#e62117}
         
-        /* Шкала прогресу */
         .progress-bar-wrap{width:100%;height:3px;background:var(--divider-color);border-radius:2px;overflow:hidden;margin-bottom:30px}
         .progress-bar-fill{height:100%;background:var(--accent-gold);width:0%;transition:width 1.5s cubic-bezier(0.22, 1, 0.36, 1)}
 
@@ -56,7 +56,9 @@
         .season-marker{background:#e62117!important;display:flex;align-items:center;justify-content:center;text-align:center;box-shadow:inset 0 0 20px rgba(0,0,0,0.1)}
         .season-marker-content{display:flex;flex-direction:column;align-items:center;margin-top:4px}
         .season-marker-text{color:#fff;font-size:16px;font-weight:800;letter-spacing:6px;text-transform:uppercase;margin-left:6px;line-height:1.1}
-        .season-marker-arrow{color:#fff;font-size:20px;font-weight:bold;margin-top:2px;letter-spacing:0}
+        
+        /* Змінена стрілка */
+        .season-marker-arrow{display:flex;align-items:center;justify-content:center;margin-top:2px;opacity:0.9}
 
         .videos-container{position:absolute;inset:0;display:flex;z-index:5}
         .video-link{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
@@ -68,7 +70,6 @@
         
         .overlay-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
         
-        /* Червоний хрестик перегляду */
         .video-link.watched .video-thumb{filter:none;opacity:.8}
         .video-link.watched::before,.video-link.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:#e62117;z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
         .video-link.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
@@ -101,7 +102,7 @@
             .close-btn{right:10px;top:-25px}
             .floating-nav{bottom:15px;width:auto;max-width:300px}
             .season-marker-text{font-size:14px;letter-spacing:4px}
-            .site-footer{padding:50px 0 90px} /* Відступ знизу для навігації */
+            .site-footer{padding:50px 0 90px} 
         }
     </style>
 </head>
@@ -145,7 +146,7 @@
     var videosMap = {};
     var watchedVideos = [];
     var lastScrollY = window.scrollY;
-    var initialScrollDone = false; // Прапорець для автоскролу
+    var initialScrollDone = false; 
 
     function safeGetStorage(key) {
         try { return localStorage.getItem(key); } catch(e) { return null; }
@@ -249,7 +250,6 @@
                 return;
             }
 
-            // ПІДРАХУНОК ВІДЕО ТІЛЬКИ З 17 БЕРЕЗНЯ 2026 РОКУ
             var totalVideos = 0;
             if (videosMap) {
                 var keys = Object.keys(videosMap);
@@ -275,7 +275,6 @@
                     if (curYear === 0) {
                         var instaIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>';
                         html += '<div class="header-subinfo"><span>' + totalVideos + ' / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
-                        // Золота шкала прогресу
                         html += '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + progressPercent + '%"></div></div>';
                     }
                     curYear = y; lastSeason = ""; 
@@ -296,7 +295,6 @@
             DOM.app.innerHTML = html; 
             DOM.monthSelect.innerHTML = navHtml; 
 
-            // АВТОМАТИЧНИЙ СКРОЛ ДО ОСТАННЬОГО ПЕРЕГЛЯНУТОГО ВІДЕО
             if (!initialScrollDone) {
                 setTimeout(function() {
                     var watchedElements = document.querySelectorAll('.video-link.watched');
@@ -305,7 +303,7 @@
                         lastWatched.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                     initialScrollDone = true;
-                }, 600); // Невелика затримка для плавного завантаження сторінки
+                }, 600); 
             }
 
         } catch (e) {
@@ -337,8 +335,9 @@
             var cellClass = 'day-cell empty-day';
 
             if (y === 2026 && m === 2 && d === 16) {
-                // Типографічна стрілка ➔ замість —>
-                html += '<div class="day-cell season-marker"><div class="season-marker-content"><div class="season-marker-text">СЕЗОН 1</div><div class="season-marker-arrow">➔</div></div></div>';
+                // Витончена SVG стрілка
+                var thinArrowSVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+                html += '<div class="day-cell season-marker"><div class="season-marker-content"><div class="season-marker-text">СЕЗОН 1</div><div class="season-marker-arrow">' + thinArrowSVG + '</div></div></div>';
             } else if (vids && vids.length > 0) {
                 cellClass = cellClass.replace('empty-day', 'has-video');
                 var linksHTML = '';
