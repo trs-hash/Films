@@ -60,6 +60,12 @@
         
         .overlay-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
         
+        /* Стилі для переглянутих відео */
+        .video-link.watched .video-thumb{filter:none;opacity:.8}
+        .video-link.watched::before,.video-link.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:#e62117;z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
+        .video-link.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
+        .video-link.watched::after{transform:translate(-50%,-50%) rotate(-45deg)}
+        
         .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(4px);opacity:0;transition:opacity .3s ease}
         .modal.show{display:flex;opacity:1}
         .modal-content{width:100%;max-width:1000px;padding:20px;position:relative;transition:transform .2s ease-out}
@@ -123,7 +129,11 @@
     };
 
     let videosMap = {};
+    let watchedVideos = []; // ВІДНОВЛЕНО
     let lastScrollY = window.scrollY;
+    
+    // ВІДНОВЛЕНО ЗАПОБІЖНИК ДЛЯ ПАМ'ЯТІ ПЕРЕГЛЯДІВ
+    try { watchedVideos = JSON.parse(localStorage.getItem('my_watched_videos') || '[]'); } catch (e) {}
     
     window.addEventListener('scroll', () => {
         const currentScrollY = window.scrollY;
@@ -137,7 +147,6 @@
         let cachedData = null;
         let cachedTime = null;
 
-        // ЗАПОБІЖНИК: Перехоплюємо блокування localStorage в Safari
         try {
             cachedData = localStorage.getItem(CACHE_KEY);
             cachedTime = localStorage.getItem(CACHE_TIME_KEY);
@@ -172,7 +181,6 @@
                 pageToken = data.nextPageToken;
             } while (pageToken);
 
-            // ЗАПОБІЖНИК 2: Збереження також може бути заблоковано
             try {
                 localStorage.setItem(CACHE_KEY, JSON.stringify(videosMap));
                 localStorage.setItem(CACHE_TIME_KEY, now.toString());
@@ -182,7 +190,6 @@
             if (cachedData) try { videosMap = JSON.parse(cachedData); } catch (err) {}
         }
         
-        // Обов'язково малюємо інтерфейс навіть при помилках API
         render();
     }
 
@@ -249,7 +256,8 @@
             } else if (vids && vids.length > 0) {
                 cellClass = cellClass.replace('empty-day', 'has-video');
                 let linksHTML = vids.map(vid => {
-                    return `<a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link" onclick="openModal(event, '${vid.id}')"><img src="${vid.thumb}" class="video-thumb" loading="lazy" decoding="async" alt="${vid.title}"><div class="overlay-title">${vid.title}</div></a>`;
+                    const watchedClass = watchedVideos.includes(vid.id) ? 'watched' : ''; // ВІДНОВЛЕНО
+                    return `<a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link ${watchedClass}" onclick="openModal(event, '${vid.id}', this)"><img src="${vid.thumb}" class="video-thumb" loading="lazy" decoding="async" alt="${vid.title}"><div class="overlay-title">${vid.title}</div></a>`;
                 }).join('');
                 html += `<div class="${cellClass}"><div class="videos-container ${vids.length > 1 ? 'multiple' : ''}">${linksHTML}</div>${dateBlock}</div>`;
             } else {
@@ -268,8 +276,19 @@
         DOM.monthSelect.selectedIndex = 0;
     }
 
-    window.openModal = function(e, id) {
+    // ВІДНОВЛЕНО ФУНКЦІЮ MARK
+    window.mark = function(id, el) {
+        if (!watchedVideos.includes(id)) {
+            watchedVideos.push(id);
+            try { localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos)); } catch(e) {}
+        }
+        if(el) el.classList.add('watched');
+    }
+
+    window.openModal = function(e, id, el) {
         e.preventDefault();
+        mark(id, el); // ВІДНОВЛЕНО ВИКЛИК MARK
+        
         const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
         if (isMobile) {
             const start = Date.now();
