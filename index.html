@@ -28,7 +28,8 @@
         
         .header-subinfo{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--month-color);font-weight:600;letter-spacing:2px;margin-top:-5px;margin-bottom:25px;text-transform:uppercase}
         .header-subinfo .dot-separator{font-size:10px;opacity:0.5}
-        .insta-link{color:var(--month-color);text-decoration:none;transition:color .3s}
+        .insta-link{color:var(--month-color);text-decoration:none;transition:color .3s;display:flex;align-items:center;gap:5px}
+        .insta-link svg{margin-bottom:2px}
         .insta-link:hover{color:#e62117}
         
         .season-header{font-size:14px;font-weight:700;color:#e62117;text-transform:uppercase;letter-spacing:4px;margin:40px 0 15px}
@@ -48,7 +49,9 @@
         .has-video .day-name{opacity:.7;text-shadow:0 1px 2px rgba(0,0,0,.9)}
 
         .season-marker{background:#e62117!important;display:flex;align-items:center;justify-content:center;text-align:center;box-shadow:inset 0 0 20px rgba(0,0,0,0.1)}
-        .season-marker-text{color:#fff;font-size:16px;font-weight:800;letter-spacing:6px;text-transform:uppercase;margin-left:6px}
+        .season-marker-content{display:flex;flex-direction:column;align-items:center;margin-top:4px}
+        .season-marker-text{color:#fff;font-size:16px;font-weight:800;letter-spacing:6px;text-transform:uppercase;margin-left:6px;line-height:1.1}
+        .season-marker-arrow{color:#fff;font-size:16px;font-weight:bold;margin-top:2px;letter-spacing:0}
 
         .videos-container{position:absolute;inset:0;display:flex;z-index:5}
         .video-link{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
@@ -60,6 +63,7 @@
         
         .overlay-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
         
+        /* Стилі для переглянутих відео */
         .video-link.watched .video-thumb{filter:none;opacity:.8}
         .video-link.watched::before,.video-link.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:#e62117;z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
         .video-link.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
@@ -90,6 +94,7 @@
             .close-btn{right:10px;top:-25px}
             .floating-nav{bottom:15px;width:auto;max-width:300px}
             .season-marker-text{font-size:14px;letter-spacing:4px}
+            .season-marker-arrow{font-size:14px}
         }
     </style>
 </head>
@@ -128,7 +133,6 @@
     var weekDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
     var monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
 
-    // 1. БЕЗПЕЧНА РОБОТА З ПАМ'ЯТТЮ (Safari Privacy Mode Fix)
     function safeGetStorage(key) {
         try { return localStorage.getItem(key); } catch(e) { return null; }
     }
@@ -136,7 +140,6 @@
         try { localStorage.setItem(key, value); } catch(e) {}
     }
 
-    // Завантажуємо історію переглядів
     try {
         var storedWatched = safeGetStorage('my_watched_videos');
         if (storedWatched) {
@@ -147,13 +150,11 @@
         watchedVideos = [];
     }
 
-    // 2. ГОЛОВНА ФУНКЦІЯ ЗАВАНТАЖЕННЯ
     function init() {
         var now = Date.now();
         var cachedData = safeGetStorage(CACHE_KEY);
         var cachedTime = safeGetStorage(CACHE_TIME_KEY);
 
-        // Якщо є свіжий кеш
         if (cachedData && cachedTime && (now - parseInt(cachedTime, 10)) < CACHE_TTL) {
             try { 
                 videosMap = JSON.parse(cachedData); 
@@ -165,7 +166,6 @@
             }
         }
 
-        // Якщо кешу немає — завантажуємо через API
         fetchAPI('', {})
             .then(function(resultMap) {
                 videosMap = resultMap;
@@ -174,7 +174,6 @@
                 render();
             })
             .catch(function(error) {
-                // Якщо API впало (немає інтернету або заблоковано), використовуємо старий кеш
                 if (cachedData) {
                     try { videosMap = JSON.parse(cachedData) || {}; } catch(e) { videosMap = {}; }
                 }
@@ -182,7 +181,6 @@
             });
     }
 
-    // Безпечний запит до YouTube API (без ES6 синтаксису, що може падати на старих iOS)
     function fetchAPI(pageToken, currentMap) {
         var url = 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=' + UPLOADS_ID + '&maxResults=50&key=' + API_KEY;
         if (pageToken) url += '&pageToken=' + pageToken;
@@ -223,7 +221,6 @@
         return "ОСІНЬ";
     }
 
-    // 3. БЕЗПЕЧНИЙ РЕНДЕР ІНТЕРФЕЙСУ
     function render() {
         try {
             var appElement = document.getElementById('app');
@@ -236,19 +233,20 @@
             var curYear = 0, lastSeason = "";
             var html = '', navHtml = '<option value="" disabled selected>ОБРАТИ МІСЯЦЬ</option>';
 
-            // Перевірка чи дата вже настала
             if (today < startDate) {
                 appElement.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--month-color);">Календар розпочнеться 14 березня 2026 року.</div>';
                 return;
             }
 
-            // Підрахунок завантажених відео
+            // ПІДРАХУНОК ВІДЕО ТІЛЬКИ З 17 БЕРЕЗНЯ 2026 РОКУ
             var totalVideos = 0;
             if (videosMap) {
                 var keys = Object.keys(videosMap);
                 for (var i = 0; i < keys.length; i++) {
-                    if (Array.isArray(videosMap[keys[i]])) {
-                        totalVideos += videosMap[keys[i]].length;
+                    if (keys[i] >= "2026-03-17") {
+                        if (Array.isArray(videosMap[keys[i]])) {
+                            totalVideos += videosMap[keys[i]].length;
+                        }
                     }
                 }
             }
@@ -261,7 +259,8 @@
                 if (y !== curYear) { 
                     html += '<h2 class="year-header">' + y + '</h2>'; 
                     if (curYear === 0) {
-                        html += '<div class="header-subinfo"><span>' + totalVideos + ' / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" class="insta-link">INSTAGRAM</a></div>';
+                        var instaIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>';
+                        html += '<div class="header-subinfo"><span>' + totalVideos + ' / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
                     }
                     curYear = y; lastSeason = ""; 
                 }
@@ -296,7 +295,6 @@
             var isSunday = (currentDow === 0);
             currentDow = (currentDow + 1) % 7; 
             
-            // Формування безпечного ключа "YYYY-MM-DD"
             var mStr = (m + 1) < 10 ? '0' + (m + 1) : (m + 1);
             var dStr = d < 10 ? '0' + d : d;
             var key = y + '-' + mStr + '-' + dStr;
@@ -306,7 +304,7 @@
             var cellClass = 'day-cell empty-day';
 
             if (y === 2026 && m === 2 && d === 16) {
-                html += '<div class="day-cell season-marker"><div class="season-marker-text">СЕЗОН 1</div></div>';
+                html += '<div class="day-cell season-marker"><div class="season-marker-content"><div class="season-marker-text">СЕЗОН 1</div><div class="season-marker-arrow">—&gt;</div></div></div>';
             } else if (vids && vids.length > 0) {
                 cellClass = cellClass.replace('empty-day', 'has-video');
                 var linksHTML = '';
@@ -328,7 +326,6 @@
         return html + '</div></div>';
     }
 
-    // 4. ЛОГІКА ІНТЕРФЕЙСУ
     window.jumpTo = function(targetId) {
         if (!targetId) return;
         var el = document.getElementById(targetId);
@@ -339,14 +336,12 @@
     window.openModal = function(e, id, el) {
         e.preventDefault();
         
-        // Позначаємо як переглянуте
         if (watchedVideos.indexOf(id) === -1) {
             watchedVideos.push(id);
             safeSetStorage('my_watched_videos', JSON.stringify(watchedVideos));
         }
         if (el) el.classList.add('watched');
         
-        // ВІДКРИВАЄМО ЛИШЕ У МОДАЛЬНОМУ ВІКНІ (БЕЗ DEEP LINKS)
         var iframe = document.getElementById('ytIframe');
         var modal = document.getElementById('videoModal');
         iframe.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1';
@@ -365,7 +360,6 @@
         document.body.style.overflow = 'auto'; 
     }
 
-    // Приховування меню при скролі
     window.addEventListener('scroll', function() {
         var nav = document.getElementById('floatingNav');
         if (!nav) return;
@@ -377,7 +371,6 @@
 
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
 
-    // Swipe-to-dismiss для мобільного вікна
     var touchStartY = 0;
     var modalElement = document.getElementById('videoModal');
     var modalContent = document.getElementById('modalContent');
@@ -396,7 +389,6 @@
         else modalContent.style.transform = 'translateY(0)';
     }, {passive: true});
 
-    // Запускаємо додаток
     init();
 
 </script>
