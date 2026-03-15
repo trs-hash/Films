@@ -29,13 +29,13 @@
         .has-video .date-num,.has-video .day-name{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
         .has-video .day-name{opacity:.7;text-shadow:0 1px 2px rgba(0,0,0,.9)}
         
-        /* Стиль для саморобної таблички 15 березня */
-        .season-marker{background:#e62117!important;border:3px dashed #fff;transform:rotate(-3deg);box-shadow:5px 5px 0 rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;color:#fff;font-family:"Comic Sans MS",cursive,sans-serif;overflow:visible!important;z-index:15}
-        .season-marker-text{font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:-1px;position:relative}
-        .season-marker-arrow{position:absolute;right:-40px;top:50%;transform:translateY(-50%);font-size:40px;line-height:1}
+        /* Оновлений стиль для 16 березня */
+        .season-marker{background:#99140d!important;transform:rotate(-3deg);box-shadow:4px 4px 0 rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;color:#fff;font-family:"Courier New",Courier,monospace;overflow:visible!important;z-index:15}
+        .season-marker-text{font-size:22px;font-weight:bold;text-transform:uppercase;position:relative}
+        .season-marker-arrow{position:absolute;right:-40px;top:50%;transform:translateY(-50%);font-size:22px;white-space:nowrap}
 
-        /* Підсвічування 16 березня */
-        .season-start-target{border:2px solid #e62117;background:#fffde7!important}
+        /* Підсвічування 17 березня */
+        .season-start-target{border:2px solid #99140d;background:#fffde7!important}
         @media (prefers-color-scheme:dark){.season-start-target{background:#2a2815!important}}
 
         .videos-container{position:absolute;inset:0;display:flex;z-index:5}
@@ -74,7 +74,7 @@
             .floating-nav.hidden{transform:translate(-50%,120px)}
             .month-select{width:100%}
             .season-marker-text{font-size:16px}
-            .season-marker-arrow{right:-25px;font-size:30px}
+            .season-marker-arrow{right:-30px;font-size:16px}
         }
     </style>
 </head>
@@ -213,21 +213,25 @@
             const vids = videosMap[key];
             const dateBlock = `<div class="date-container"><span class="date-num">${d}</span><span class="day-name">${dayName}</span></div>`;
 
-            // Спеціальна логіка для 15 та 16 березня 2026
-            if (y === 2026 && m === 2 && d === 15) {
-                html += `<div class="day-cell season-marker"><div class="season-marker-text">СЕЗОН 1<span class="season-marker-arrow">👉</span></div></div>`;
-            } else if (y === 2026 && m === 2 && d === 16) {
-                // Додаємо клас .season-start-target для 16 березня
-                html += `<div class="day-cell empty-day season-start-target">${dateBlock}</div>`;
+            let cellClass = 'day-cell empty-day';
+            
+            // Підсвічуємо 17 березня (незалежно від того, чи є відео, чи ні)
+            if (y === 2026 && m === 2 && d === 17) cellClass += ' season-start-target';
+
+            if (y === 2026 && m === 2 && d === 16) {
+                // Табличка 16 березня
+                html += `<div class="day-cell season-marker"><div class="season-marker-text">СЕЗОН 1<span class="season-marker-arrow">—></span></div></div>`;
             } else if (vids && vids.length > 0) {
+                cellClass = cellClass.replace('empty-day', 'has-video');
                 let linksHTML = vids.map(vid => {
                     const watchedClass = watchedVideos.includes(vid.id) ? 'watched' : '';
                     return `<a href="https://www.youtube.com/watch?v=${vid.id}" class="video-link ${watchedClass}" onclick="openModal(event, '${vid.id}', this)"><img src="${vid.thumb}" class="video-thumb" loading="lazy" decoding="async" alt="${vid.title}"><div class="overlay-title">${vid.title}</div></a>`;
                 }).join('');
-                html += `<div class="day-cell has-video"><div class="videos-container ${vids.length > 1 ? 'multiple' : ''}">${linksHTML}</div>${dateBlock}</div>`;
+                html += `<div class="${cellClass}"><div class="videos-container ${vids.length > 1 ? 'multiple' : ''}">${linksHTML}</div>${dateBlock}</div>`;
             } else {
-                html += `<div class="day-cell empty-day">${dateBlock}</div>`;
+                html += `<div class="${cellClass}">${dateBlock}</div>`;
             }
+
             if (isSunday && d !== daysInMonth) html += `<div class="week-divider"></div>`;
         }
         return html + `</div></div>`;
