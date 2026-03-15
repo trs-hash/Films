@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.googleapis.com">
     <style>
-        :root{--bg-color:#fff;--text-color:#222;--cell-bg:#f8f8f8;--month-color:#888;--date-color:#ccc;--divider-color:#eaeaea;--nav-border:#ddd;--thumb-bg:#e0e0e0}
-        @media (prefers-color-scheme:dark){:root{--bg-color:#121212;--text-color:#e0e0e0;--cell-bg:#1e1e1e;--month-color:#aaa;--date-color:#555;--divider-color:#333;--nav-border:#444;--thumb-bg:#2a2a2a}}
+        :root{--bg-color:#fff;--text-color:#222;--cell-bg:#f8f8f8;--month-color:#888;--date-color:#ccc;--divider-color:#eaeaea;--nav-border:#ddd;--nav-glass:rgba(255,255,255,0.85);--thumb-bg:#e0e0e0}
+        @media (prefers-color-scheme:dark){:root{--bg-color:#121212;--text-color:#e0e0e0;--cell-bg:#1e1e1e;--month-color:#aaa;--date-color:#555;--divider-color:#333;--nav-border:#444;--nav-glass:rgba(30,30,30,0.85);--thumb-bg:#2a2a2a}}
         
         body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg-color);color:var(--text-color);margin:0;padding:20px 20px 80px;overflow-x:hidden;scroll-behavior:smooth;transition:background .3s,color .3s}
         .main-wrapper{max-width:1400px;margin:0 auto;display:block}
@@ -34,14 +34,9 @@
         .has-video .date-num,.has-video .day-name{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
         .has-video .day-name{opacity:.7;text-shadow:0 1px 2px rgba(0,0,0,.9)}
 
-        /* Саморобна табличка 16 березня */
-        .season-marker{background:#99140d!important;transform:rotate(-2deg);display:flex;align-items:center;justify-content:center;color:#fff;font-family:"Courier New",Courier,monospace;overflow:visible!important;z-index:15;border-radius:2px}
-        .season-marker-text{font-size:20px;font-weight:bold;text-transform:uppercase;position:relative;letter-spacing:-1px}
-        .season-marker-arrow{position:absolute;right:-40px;top:50%;transform:translateY(-50%);font-size:18px;white-space:nowrap;letter-spacing:0}
-
-        /* Підсвічування 17 березня */
-        .season-start-target{border:2px solid #99140d;background:#fffde7!important}
-        @media (prefers-color-scheme:dark){.season-start-target{background:#2a2815!important}}
+        /* Стильний мінімалістичний маркер сезону */
+        .season-marker{background:#e62117!important;display:flex;align-items:center;justify-content:center;text-align:center;box-shadow:inset 0 0 20px rgba(0,0,0,0.1)}
+        .season-marker-text{color:#fff;font-size:16px;font-weight:800;letter-spacing:6px;text-transform:uppercase;margin-left:6px} /* margin-left компенсує letter-spacing для ідеального центрування */
 
         .videos-container{position:absolute;inset:0;display:flex;z-index:5}
         .video-link{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
@@ -66,12 +61,12 @@
         .close-btn{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10;text-shadow:0 2px 4px rgba(0,0,0,.5);font-weight:300}
         .close-btn:hover{color:#e62117}
 
-        /* Мінімалістична навігація */
-        .floating-nav{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);background:var(--bg-color);border-radius:4px;display:flex;align-items:center;z-index:100;border:1px solid var(--nav-border);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;opacity:0.9}
+        /* Навігація з ефектом матового скла */
+        .floating-nav{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);background:var(--nav-glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:4px;display:flex;align-items:center;z-index:100;border:1px solid var(--nav-border);box-shadow:0 4px 15px rgba(0,0,0,0.05);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;opacity:1}
         .floating-nav.hidden{transform:translate(-50%,100px);opacity:0}
-        .month-select{appearance:none;-webkit-appearance:none;background:transparent;border:none;outline:none;padding:10px 35px 10px 15px;font-size:13px;font-weight:600;color:var(--text-color);cursor:pointer;font-family:inherit;text-align:center;text-transform:uppercase;letter-spacing:1px}
+        .month-select{appearance:none;-webkit-appearance:none;background:transparent;border:none;outline:none;padding:12px 35px 12px 20px;font-size:13px;font-weight:600;color:var(--text-color);cursor:pointer;font-family:inherit;text-align:center;text-transform:uppercase;letter-spacing:1px}
         .month-select option{background:var(--bg-color);color:var(--text-color);text-transform:none}
-        .select-icon{position:absolute;right:12px;pointer-events:none;font-size:10px;color:var(--month-color)}
+        .select-icon{position:absolute;right:15px;pointer-events:none;font-size:10px;color:var(--month-color)}
 
         @media (max-width:1024px){.calendar-grid{grid-template-columns:repeat(4,1fr)}}
         @media (max-width:600px){
@@ -83,8 +78,7 @@
             .modal-content{padding:10px}
             .close-btn{right:10px;top:-25px}
             .floating-nav{bottom:15px;width:auto;max-width:300px}
-            .season-marker-text{font-size:16px}
-            .season-marker-arrow{right:-30px;font-size:16px}
+            .season-marker-text{font-size:14px;letter-spacing:4px}
         }
     </style>
 </head>
@@ -93,7 +87,7 @@
 
 <div class="floating-nav" id="floatingNav">
     <select id="monthSelect" class="month-select" onchange="jumpTo(this.value)">
-        <option value="" disabled selected>Обрати місяць</option>
+        <option value="" disabled selected>ОБРАТИ МІСЯЦЬ</option>
     </select>
     <span class="select-icon">▼</span>
 </div>
@@ -224,13 +218,10 @@
             const dateBlock = `<div class="date-container"><span class="date-num">${d}</span><span class="day-name">${dayName}</span></div>`;
 
             let cellClass = 'day-cell empty-day';
-            
-            // Підсвічуємо 17 березня
-            if (y === 2026 && m === 2 && d === 17) cellClass += ' season-start-target';
 
-            // Табличка перенесена на 16 березня
+            // Мінімалістична заставка для 16 березня
             if (y === 2026 && m === 2 && d === 16) {
-                html += `<div class="day-cell season-marker"><div class="season-marker-text">СЕЗОН 1<span class="season-marker-arrow">—></span></div></div>`;
+                html += `<div class="day-cell season-marker"><div class="season-marker-text">СЕЗОН 1</div></div>`;
             } else if (vids && vids.length > 0) {
                 cellClass = cellClass.replace('empty-day', 'has-video');
                 let linksHTML = vids.map(vid => {
