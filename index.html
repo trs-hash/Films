@@ -10,29 +10,34 @@
     <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.googleapis.com">
     <style>
-        :root{--bg-color:#fff;--text-color:#222;--cell-bg:#f8f8f8;--month-color:#888;--date-color:#ccc;--divider-color:#eaeaea;--nav-bg:#fff;--nav-border:#eee;--thumb-bg:#e0e0e0}
-        @media (prefers-color-scheme:dark){:root{--bg-color:#121212;--text-color:#e0e0e0;--cell-bg:#1e1e1e;--month-color:#aaa;--date-color:#555;--divider-color:#333;--nav-bg:#222;--nav-border:#333;--thumb-bg:#2a2a2a}}
+        :root{--bg-color:#fff;--text-color:#222;--cell-bg:#f8f8f8;--month-color:#888;--date-color:#ccc;--divider-color:#eaeaea;--nav-border:#ddd;--thumb-bg:#e0e0e0}
+        @media (prefers-color-scheme:dark){:root{--bg-color:#121212;--text-color:#e0e0e0;--cell-bg:#1e1e1e;--month-color:#aaa;--date-color:#555;--divider-color:#333;--nav-border:#444;--thumb-bg:#2a2a2a}}
+        
         body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg-color);color:var(--text-color);margin:0;padding:20px 20px 80px;overflow-x:hidden;scroll-behavior:smooth;transition:background .3s,color .3s}
         .main-wrapper{max-width:1400px;margin:0 auto;display:block}
+        
         .year-header{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px;border-bottom:3px solid var(--text-color);padding-bottom:10px}
         .year-header:first-child{margin-top:10px}
         .season-header{font-size:14px;font-weight:700;color:#e62117;text-transform:uppercase;letter-spacing:4px;margin:40px 0 15px}
+        
         .month-wrapper{content-visibility:auto;contain-intrinsic-size:500px;margin-bottom:40px;scroll-margin-top:20px}
         .month-header{color:var(--month-color);font-size:22px;font-weight:500;text-transform:uppercase;margin:0 0 20px;letter-spacing:1px}
+        
         .week-divider{grid-column:1/-1;height:1px;background:linear-gradient(90deg,transparent,var(--divider-color) 10%,var(--divider-color) 90%,transparent);margin:8px 0}
         .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
         .day-cell{aspect-ratio:16/9;position:relative;background:var(--cell-bg);border-radius:6px;overflow:hidden;transform:translateZ(0);box-sizing:border-box}
         .day-cell.empty-day{background:transparent}
+        
         .date-container{position:absolute;top:8px;left:10px;right:10px;display:flex;align-items:baseline;gap:6px;z-index:10;pointer-events:none}
         .date-num{font-size:18px;font-weight:800;line-height:1;color:var(--date-color)}
         .day-name{font-size:10px;font-weight:500;text-transform:uppercase;color:var(--date-color);opacity:.6}
         .has-video .date-num,.has-video .day-name{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
         .has-video .day-name{opacity:.7;text-shadow:0 1px 2px rgba(0,0,0,.9)}
-        
-        /* Оновлений стиль для 16 березня */
-        .season-marker{background:#99140d!important;transform:rotate(-3deg);box-shadow:4px 4px 0 rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center;color:#fff;font-family:"Courier New",Courier,monospace;overflow:visible!important;z-index:15}
-        .season-marker-text{font-size:22px;font-weight:bold;text-transform:uppercase;position:relative}
-        .season-marker-arrow{position:absolute;right:-40px;top:50%;transform:translateY(-50%);font-size:22px;white-space:nowrap}
+
+        /* Саморобна табличка 16 березня */
+        .season-marker{background:#99140d!important;transform:rotate(-2deg);display:flex;align-items:center;justify-content:center;color:#fff;font-family:"Courier New",Courier,monospace;overflow:visible!important;z-index:15;border-radius:2px}
+        .season-marker-text{font-size:20px;font-weight:bold;text-transform:uppercase;position:relative;letter-spacing:-1px}
+        .season-marker-arrow{position:absolute;right:-40px;top:50%;transform:translateY(-50%);font-size:18px;white-space:nowrap;letter-spacing:0}
 
         /* Підсвічування 17 березня */
         .season-start-target{border:2px solid #99140d;background:#fffde7!important}
@@ -41,14 +46,18 @@
         .videos-container{position:absolute;inset:0;display:flex;z-index:5}
         .video-link{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
         .videos-container.multiple .video-link:not(:last-child){border-right:2px solid #fff}
+        
         .video-thumb{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;background-color:var(--thumb-bg)}
         .video-link:hover .video-thumb{transform:scale(1.03)}
         .video-link::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.6) 0%,transparent 30%,transparent 60%,rgba(0,0,0,.9) 100%);pointer-events:none}
+        
         .overlay-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
+        
         .video-link.watched .video-thumb{filter:none;opacity:.8}
         .video-link.watched::before,.video-link.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:#e62117;z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
         .video-link.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
         .video-link.watched::after{transform:translate(-50%,-50%) rotate(-45deg)}
+
         .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(4px);opacity:0;transition:opacity .3s ease}
         .modal.show{display:flex;opacity:1}
         .modal-content{width:100%;max-width:1000px;padding:20px;position:relative;transition:transform .2s ease-out}
@@ -56,11 +65,14 @@
         .iframe-wrapper iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
         .close-btn{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10;text-shadow:0 2px 4px rgba(0,0,0,.5);font-weight:300}
         .close-btn:hover{color:#e62117}
-        .floating-nav{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);background:var(--nav-bg);border-radius:30px;box-shadow:0 4px 15px rgba(0,0,0,.15);display:flex;align-items:center;z-index:100;border:1px solid var(--nav-border);transition:transform .3s cubic-bezier(.4,0,.2,1),background .3s,border-color .3s}
-        .floating-nav.hidden{transform:translate(-50%,100px)}
-        .month-select{appearance:none;-webkit-appearance:none;background:transparent;border:none;outline:none;padding:14px 40px 14px 20px;font-size:16px;font-weight:600;color:var(--text-color);cursor:pointer;font-family:inherit;text-align:center}
-        .month-select option{background:var(--bg-color);color:var(--text-color)}
-        .select-icon{position:absolute;right:18px;pointer-events:none;font-size:12px;color:var(--month-color)}
+
+        /* Мінімалістична навігація */
+        .floating-nav{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);background:var(--bg-color);border-radius:4px;display:flex;align-items:center;z-index:100;border:1px solid var(--nav-border);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;opacity:0.9}
+        .floating-nav.hidden{transform:translate(-50%,100px);opacity:0}
+        .month-select{appearance:none;-webkit-appearance:none;background:transparent;border:none;outline:none;padding:10px 35px 10px 15px;font-size:13px;font-weight:600;color:var(--text-color);cursor:pointer;font-family:inherit;text-align:center;text-transform:uppercase;letter-spacing:1px}
+        .month-select option{background:var(--bg-color);color:var(--text-color);text-transform:none}
+        .select-icon{position:absolute;right:12px;pointer-events:none;font-size:10px;color:var(--month-color)}
+
         @media (max-width:1024px){.calendar-grid{grid-template-columns:repeat(4,1fr)}}
         @media (max-width:600px){
             body{padding:15px 15px 70px}
@@ -70,9 +82,7 @@
             .day-name{font-size:9px}
             .modal-content{padding:10px}
             .close-btn{right:10px;top:-25px}
-            .floating-nav{bottom:15px;width:90%;max-width:300px}
-            .floating-nav.hidden{transform:translate(-50%,120px)}
-            .month-select{width:100%}
+            .floating-nav{bottom:15px;width:auto;max-width:300px}
             .season-marker-text{font-size:16px}
             .season-marker-arrow{right:-30px;font-size:16px}
         }
@@ -83,7 +93,7 @@
 
 <div class="floating-nav" id="floatingNav">
     <select id="monthSelect" class="month-select" onchange="jumpTo(this.value)">
-        <option value="" disabled selected>📅 Обрати місяць...</option>
+        <option value="" disabled selected>Обрати місяць</option>
     </select>
     <span class="select-icon">▼</span>
 </div>
@@ -179,7 +189,7 @@
         const today = new Date();
         let loop = new Date(START_YEAR, START_MONTH, 1);
         let curYear = 0, lastSeason = "";
-        let html = '', navHtml = '<option value="" disabled selected>📅 Обрати місяць...</option>';
+        let html = '', navHtml = '<option value="" disabled selected>ОБРАТИ МІСЯЦЬ</option>';
 
         if (today < new Date(START_YEAR, START_MONTH, START_DAY)) {
             DOM.app.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--month-color);">Календар розпочнеться 14 березня 2026 року.</div>';
@@ -215,11 +225,11 @@
 
             let cellClass = 'day-cell empty-day';
             
-            // Підсвічуємо 17 березня (незалежно від того, чи є відео, чи ні)
+            // Підсвічуємо 17 березня
             if (y === 2026 && m === 2 && d === 17) cellClass += ' season-start-target';
 
+            // Табличка перенесена на 16 березня
             if (y === 2026 && m === 2 && d === 16) {
-                // Табличка 16 березня
                 html += `<div class="day-cell season-marker"><div class="season-marker-text">СЕЗОН 1<span class="season-marker-arrow">—></span></div></div>`;
             } else if (vids && vids.length > 0) {
                 cellClass = cellClass.replace('empty-day', 'has-video');
@@ -244,13 +254,33 @@
         DOM.monthSelect.selectedIndex = 0;
     }
 
-    window.openModal = function(e, id, el) {
-        e.preventDefault();
+    window.mark = function(id, el) {
         if (!watchedVideos.includes(id)) {
             watchedVideos.push(id);
             try { localStorage.setItem('my_watched_videos', JSON.stringify(watchedVideos)); } catch(e) {}
         }
         if(el) el.classList.add('watched');
+    }
+
+    window.openModal = function(e, id, el) {
+        e.preventDefault();
+        mark(id, el);
+        
+        const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (isMobile) {
+            const start = Date.now();
+            let appUrl = /Android/i.test(navigator.userAgent) 
+                ? 'intent://www.youtube.com/watch?v=' + id + '#Intent;package=com.google.android.youtube;scheme=https;end'
+                : 'vnd.youtube://watch?v=' + id;
+
+            window.location.href = appUrl;
+            setTimeout(() => { if (Date.now() - start < 1500) showModal(id); }, 1000);
+        } else {
+            showModal(id);
+        }
+    }
+
+    window.showModal = function(id) {
         DOM.iframe.src = `https://www.youtube.com/embed/${id}?autoplay=1`;
         DOM.modal.classList.add('show');
         document.body.style.overflow = 'hidden'; 
