@@ -6,7 +6,7 @@
     <title>Кіноархів Тараса Максимʼяка</title>
     
     <meta property="og:title" content="Кіноархів Тараса Максимʼяка">
-    <meta property="og:description" content="Один день — одне відео. Каталог мого щоденного кіночеленджу.">
+    <meta property="og:description" content="Особистий кіноархів.">
     <meta property="og:image" content="image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
@@ -247,7 +247,6 @@
                 return;
             }
 
-            // ПІДРАХУНОК ВІДЕО ТІЛЬКИ З 22 БЕРЕЗНЯ 2026 РОКУ
             var totalVideos = 0;
             if (videosMap) {
                 var keys = Object.keys(videosMap);
@@ -319,7 +318,6 @@
         var daysInMonth = new Date(y, m + 1, 0).getDate();
 
         for (var d = firstDay; d <= daysInMonth; d++) {
-            // Приховуємо 16, 17, 18, 19, 20 березня
             if (y === 2026 && m === 2 && d >= 16 && d <= 20) {
                 continue;
             }
