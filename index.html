@@ -6,7 +6,7 @@
     <title>Кіноархів Тараса Максимʼяка</title>
     
     <meta property="og:title" content="Кіноархів Тараса Максимʼяка">
-    <meta property="og:description" content="Особистий кіноархів.">
+    <meta property="og:description" content="Один день — одне відео. Каталог мого щоденного кіночеленджу.">
     <meta property="og:image" content="image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
@@ -247,11 +247,12 @@
                 return;
             }
 
+            // ПІДРАХУНОК ВІДЕО ТІЛЬКИ З 24 БЕРЕЗНЯ 2026 РОКУ
             var totalVideos = 0;
             if (videosMap) {
                 var keys = Object.keys(videosMap);
                 for (var i = 0; i < keys.length; i++) {
-                    if (keys[i] >= "2026-03-22") {
+                    if (keys[i] >= "2026-03-24") {
                         if (Array.isArray(videosMap[keys[i]])) {
                             totalVideos += videosMap[keys[i]].length;
                         }
@@ -318,7 +319,8 @@
         var daysInMonth = new Date(y, m + 1, 0).getDate();
 
         for (var d = firstDay; d <= daysInMonth; d++) {
-            if (y === 2026 && m === 2 && d >= 16 && d <= 20) {
+            // Приховуємо з 16 по 22 березня
+            if (y === 2026 && m === 2 && d >= 16 && d <= 22) {
                 continue;
             }
 
@@ -334,7 +336,8 @@
             var dateBlock = '<div class="date-container"><span class="date-num">' + d + '</span><span class="day-name">' + dayName + '</span></div>';
             var cellClass = 'day-cell empty-day';
 
-            if (y === 2026 && m === 2 && d === 21) {
+            // Маркер стоїть на 23 березня
+            if (y === 2026 && m === 2 && d === 23) {
                 var thinArrowSVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
                 html += '<div class="day-cell season-marker"><div class="season-marker-content"><div class="season-marker-text">СЕЗОН 1</div><div class="season-marker-arrow">' + thinArrowSVG + '</div></div></div>';
             } else if (vids && vids.length > 0) {
