@@ -8,18 +8,96 @@
     <meta name="apple-mobile-web-app-title" content="Casey">
     <title>Casey Vlogs</title>
     <style>
-        body { background-color: #111; color: #fff; font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; text-align: center; }
+        /* Весь екран тепер реагує на клік (курсор-показник) */
+        body { background-color: #111; color: #fff; font-family: -apple-system, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; text-align: center; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
         .loader { border: 4px solid #333; border-top: 4px solid #ff0000; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 20px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .status { font-size: 20px; font-weight: bold; margin-bottom: 10px; }
-        .btn { margin-top: 20px; padding: 15px 30px; font-size: 16px; background-color: #333; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .status { font-size: 22px; font-weight: bold; margin-bottom: 10px; }
+        .sub-text { color: #888; font-size: 16px; margin-top: 15px; }
     </style>
 </head>
-<body>
+<body id="main-body">
     <div id="content">
-        <div class="status" id="status-text">Запускаємо YouTube...</div>
-        <div class="loader"></div>
+        <div class="status" id="status-text">Запускаємо...</div>
+        <div class="loader" id="loader"></div>
+        <div class="sub-text" id="hint"></div>
     </div>
     <script>
-        // Твій повний масив ID
-        const newestToOldestIds = ["ipLRsAN-SJM","FUtgcOxRrqY","NeE8pPCW4cg","9uv-4ddCApw","-jCQerxzF48","Ww9efydpfL8","I1dW-nZqhew","vRKayRN0QhU","MAZRqzcZRKo","EnhXwiPC3rE","Ud2BcD5NC2A","AjKGToaFDvA","StMltAX0mp0","TUbIKg-lrow","h-vWRLGnTGg","9IiTdSnmS7E","UvkgmyfMPks","lI_3AiV0CnI","o2C35kWHPAA","JFKJYE3LcYk","kVHGhdUDjPU","DpJzOuYSpKo","BZEr7_Oggcw","LgKulg2YVZo","0TvLl2f0wC8","Cm_uIxcczWM","UVX6kxnJgMU","h9xaHwBsRUw","YpqFOB7_9go","Ygj9vBF_WUk","3CJZli1VFQg","34k7UI-DR_8","ouPPSqFAbb4","rzCFZypafAM","WlY9pDwGbjw","o0xoWsYXIrY","cldSbEoNR2A","KehujfbRBts","i4GJnpOZmiM","mshN3N0jOng","Qwr5tGG0jfQ","7lGLhhoIsNc","YbE_FD8df80","bEriqRN7Xpg","LODwfHdZA_k","kvnn_EptPiQ","2MQF00rTEJU","NK45KHO5ng0","6ksZoza2Fhc","fIdRWKel0xQ","C3P-b5Szz44","l30V426-_S4","X16jagQdNIE","igZ6PoZAszQ","RoDi72mL5sg","4juSAp9jQjA","oED9tZyI-vU","Ipv_LWcdfC0","8H771jAxq9E","PF3iysOyelg","UVA8pPxOPk4","asbAlDd6wrM","HgYVuXaihNs","qaanivZHttE","TXLUafBNjnc","4NBI6nrGI1w","p4Cd-xKpJ9A","p4FQ-nyaInA","rDJG4NTeWiY","mHrjKpmmVK8","r5eLfX-MiTo","FnbY_dS0pyA","_K3SMg088j8","QxsFiJWjbeA","bhiSxcObwQE","JWEYGDpTfAA","AwNpOuW-L9w","Yoxmv_huEhA","p9N1lc0FGBM","xFfxCbjMAS8","KvlgGZbDC-k","Hc6ptqErY_Q","OWM9sW2DYdM","nvEs23YNXVI","knAzdJgj8Mw","nk0aCRuU2qw","dujs-an7ppQ","qHO-wInp-0k","RFXT14i0wGE","1PBmPN0tqys","8yqpfLLG_vQ","49Z6Mv4_WCA","FKqYNke5sO4","ag0MwmwGyG0","sUm3mvZii6Y","rj25YHshXo8","DvwMVIJbOJk","Zu073TPW3E8","mvMJl_0oQ_8","1wBsKxwzPyo","MF_zO_gjbls","FtlF-6TnMuo","2-czoC-Rv7I","naWydIuWMiY","aLij6qUs-PM","5ay5M82IcUI","s41j8ZSShnc","N9NH0Jqh7Is","uBNFgU4sfP4","3FLogS1CquI","dSmsQraeCVM","cWPbGSZpSdE","9Ti4wBKB4Yo","fxa0lifjXdk","wFnzFZvD3tM","aekZX4Banmk","XxJlI6FOZ4A","h0nO27dUlHU","CEV9anFQR2o","wX9OLMNShPQ","86Lr_tChDAU","EbR3muQJ66I","UE6UkF9sABU","6DfP10OeDP0","-B4wmuJ-qSs","ROfBLx6bLZI","60iQSbNkISo","7yCtB1JYXs0","95kffMA2dNA","SEuQAUbgJII","yto4a3tdqYc","bNRIVJFFpbY","dj_87DmX4BA","1YzwjfwNeEg","uWzJHADNDx0","y92SwP4odAk","1gTBZyGJyQc","lDfu8pA8tlo","ZhMvlTLE14E","evm6KoRgFxw","_H-UnmiMc3s","Aqihu5HOYIU","RVrJUIijNOk","07kJSgNNdTM","S5TGPGACJ2M","cfHzr4eIXBg","6El57pnllV4","Bi_JIHmpNLs","NQDyWg7oQ5M","vyhcOpW-LxA","5PPdDTYhDKs","KcyPbfAFw4A","ilrkeqtmd84","C-Cvl3_CH2A","__sDwF7N2I0","ZWqLqKcvRoI","_GpXYRcBZYc","dbxl8DsQJgo","4EEiRtxU3aw","BnUX10UbddE","HcTrKOZodRk","EM16ZeR7oEU","OfAGFbUkZ-g","O-CJZg7hXY0","Hlwy_EK3Mjs","BBc3pd0GJG0","T8KHUj5noEQ","txvX4aSuEWY","OkRJuL2WNAA","TtRBaGNxCS0","BOi0qhnpakk","rxso9FJ-nrI","dZ27wm2JGqA","t051xnvLr6E","BDs6WWzj62o","vnGMJnI1mwA","CLCAivpi6x0","Jqa8iqBRTTA","zY7_XJ1WUqk","4gd0wKc135A","a49xvHviVds","SxsW-XZ9cQw","5s-Nq99j37k","9z69lUQfmS8","iANQH_5wc3U","yDLsqYXyxiw","lK1SzfgV3zg","uXZcS4YSob4","m6vp6qNy8xI","ezLWA47hCKU","ixUoG024OQo","UEJTBXYcMOY","GGoVE516dgg","U4b1S9U3mCw","kbr-A2gJMFQ","H6lWMsMjTgI","NRURbwbbqS8","MTBMJ40MM8E","5z_XblGKXBo","SAQLDbFGypU","VYvBrl2pCwE","aBkHb8e3UAk","h2cgovUFSVA","1HLMi1s6Tho","CJdehmJIH3U","5HFiDYYvSYM","zMPQK5fUNY4","G38ixvYVNyM","pKUT5lY3Ew0","nSUqk7B3fy0","PcM5JCGsw3c","i65Nilyjv6E","m3TNhDwkL-Y","7-cp_xLrHzk","VMWj_MxdV0Y","l_gtcKsuuaM","wMzSSzI51x8","1C3oTE0Px90","J02iZ3FvRoc","g3s0--LcgQw","JI6iczwm0Ys","jPzC_jqrqE8","gWvW6ffjJ2Y","wglytopH34s","4JicV34rzYA","2eMVHIheyp4","gE7mM_l6vYQ","yG1MIe_GYzo","66DMQMSUvII","XoXMYO0g2N0","3Gmv61Uoy0A","p1_AIM4VdIE","qaBnfACoq9g","og3aFSeEm94","RBC4t1uxJ2k","0l-IU-wPAmo","TJOQYnumxDM","Aj6-U7GVDt8","maQ56YeoLMc","hlkKUym2h_o","ZWhfSmk3fSI","bykhuJYlagA","oGxsEpRWgmg","Lh595TVbEYw","B9tZULmhA5o","E8RrVitzI9I","MA_zTtF5WDc","WVHbHzGDs7Q","HQiDKE85P3U","WkqqNkembNA","xyVdZrL3Sbo","mlJGtSg5oRw","ZqYlVq_MAnI","qcIn9AwWJks","8F0DyRGTEd4","VUuN0_fJdo8","rgqU0MbRLDo","ycuMyyqBWQY","7kLO2AB5SPM","pxnldd9ZaEM","YeJdrOGW3NQ","a3uRBpGEUD0","lfIhBu0TZBs","xp_hlUxJSI4","OdUryRvNmgs","JSJ_h3eZagU","XcXSmGDxH-4","2Dpd_8n3A5U","C8BzkL8SaxQ","VMmkHEnH-RE","NGjcPQ05Fns","0-7wMD5ISIs","a7NJ6Gek9v4","FY81DRYLoac","12xh3DqT7s8","_ghETRi4LaQ","GcbsIv3QdFs","-tj27TdsLEs","nMbUA7dghlk","94qDt1yX9Rg","0bTAkAdyWpM","FiL9uLDRS-Q","oh4moyHypmc","KZcJeTzJC7A","PIYJF040Qng","2kyS6SvSYSE","-7dTzc8kTOY","uHgY24xxcc8","foQdKqAno6g","J5etXw2ngaE","wR7QKyQ33q8","YPQF0j6NgxM","i8s_T4NpBPs","supEpsHzkkU","N024vtWsyhM","8nEqb0WE-BM","IUaTb_1QGRs","HZakJFqdpRY","2rDHAEknyDo","q0B8k3UPZNc","Tj7hRjl3sAY","P8alZwCgygE","vE-mcsfxLhg","tfZvSS_f254","Yq2sP2Lh5K8","8-M7WA1qX1g","MtOiRhapfFE","D6mgVOF2Ov8","Rmg5fLRBkZo","oKI4EAIcaLw","aTOGEZJj-vg","W8RPb5sQ50I","7uOk3erdEWs","wZcnM4eMWts","Sy3Sghe5NPM","4N365ETpKEg","imxRr8sn118","ZE2tylRYJW8","btGJtdW07w4","rIa76juhxgQ","Uaf6JsCxqas","cfqAHfpQkno","411LXplWp0Q","OWWUdxYFu2E","vZiUBoZ454E","MxOFo0ATVq0","KwfD6Ybb5SU","KIwqboJLrpY","qJglz85MUrY","osdjooEeeXo","uGKRhHCgYSc","oS169nq8Prw","V8mUeGa3HEE","_owlId4hil4","h3yPKl10DQU","xGoegViDrwo","Q980C74SdYQ","4zDZ3clucMI","MdsPkZ4WGqE","BY-aB72nONA","59iu8agjHRY","pqCWxf7OlOg","nujgBunvgBI","Z2_f9BO041s","wOn8xawC-HQ","m2D-ywDiefQ","H5iKZY8AKxk","7-nzTfv5IZY","TAtB8fupP3w","uOFDmbUlrT4","CDXOp12kwh4","pqQiimdTIL0","Gnr2k-VvsCc","2dhl2M6D4bA","vXUIqoiqHIM","rcpv_UDw8QA","-DmHL0jWC28","UmHPGFs3IAA","3iQ8BGw13So","NkfNLhgV6O8","Qw4xMdG4K8Q","9VvaFOYebnI","9YJdZinenUk","2hCPdT4vkG4","_6owNyhj12A","PqBbqjM_pKE","4AxWuk52ZUQ","CG6N3f81fQQ","4z7h8ZjXeP0","vf9GpYiDqQ8","GlEqd42OxbI","l1lWWDr-yNQ","_w93Y9iAYE0","n0makpckS8c","eoV82ryz_BI","jzTEUD1SRDE","MpVfH5QDbPo","ua9lfsSX6Y0","GTjy9VlsNaY","5aEFHrXCfAk","0-xQtISyAl0","93dDP-O4VsI","Y2-4kGrMLf8","9fjvwaNANxQ","jG7dSXcfVqE","5g2BHRcVhGE","5-HowngZ7EA","ZFRGQGN8u1E","H5454TEh9wc","4CF9LqcnJGI","XMP6BI6mVNg","J1tGSkOJw7c","w3NK3LomkQk","hjvH9urPM24","BQ_z48aJD5o","GF9B-9PH4qQ","LnOzMj7v-64","B3t_Phob6Gs","tD5_In8XhLo","WKGhYrbrlzo","nsycuxfou6Q","6NW72oH38ZE","mWEor6Kgjto","5138EcLCoLI","sVnI_2JgXGY","swa2ni6DjlA","oM-7h5I9yyA","DyUrqZBs2XA","At3xcj-pTjg","omoM8Xypiwk","NI4SV0U613E","JkrmR3dr8ow","hQa4GouJYA4","l-yrXB95qDo","7QpJ_VDbIPA","lJAwaLNnVBs","mXwQbrstb38","tFH6zuT-yPI","ylCGoCcJxvA","zFTe5yeWYy4","pP1Yg43FREU","NQTA9E06AgA","yy9o2ImWtm0","Nd5RcsJJ8x4","ANhiokzErU4","fEjCfOgq9bc","AEsXr9X5siU","V4PsrOonXic","-8NM2o90oMM","S7HxFg3HWOg","gx3fH2-FiCo","RBDkx_qgxFw","Zlu5tkeTg9Y","PzDLVx-5HSM","I0clN1RPRQY","wR1sdVbrnDg","Wl0PPn_TYLw","Qw09aQRMAyk","1FQ4NAfNyRA","naSpQukPsb4","qVb1bGbu3ow","rut6FhCS0a8","IZfNygh__NU","ae0DpMRmuhI","MMInxg1Omv4","iJrwY2MYFDU","uyrQszZckkw","IrU1-wUY2nw","Gj2nOk8af-o","UqADuUBMoZ4","nELmgVd0dWw","sw4jDjYnR0U","iPG1Xa5Uqwo","jZemn2KV7mI","gHo-78mnsQE","Pr2XpaNLJhU","EXcZUvgfzCs","TKOdMA97FGM","nMaMjLT_DdQ","G4hdoFpRHFY","Cf16mp6Nbh8","YzunI-n23ec","84WIaK3bl_s","zzhOzI-npQs","LudIVLul1tY","57R1mVPsQ9U","NsPpqn4rWuo","QpZ7KD7X-Ow","T4L-7S0-mc0","Vq7JG-2as_o","-vxvYwVu9DA","RNYiCu1N2wk","imoXaaDStmE","MbctWNKF6cg","DPjOQTOkK4Q","0DYfqADyt_8","Pw07OzQG4Nc","z5NVOHZpYK0","V2JbfugMGP4","t1Fk686VdQ0","1dY7yOA4cwE","d2tIWiiIDXU","ozqCzV6NMmM","hDDIId3f_Q0","LAYYDjaPsOQ","FUYI4f4v_iw","fabg8xwqpDM","o8n7gZ61Nrs","7a20s9HjKw4","68TLWXekX7Q","B6NFTno59zw","eZdGGtjBKQU","ctahjN3y_Gc","UosTresiIUI","fr_6qMM_kU8","x9iwMrmLmCg","h0G3xFfhb94","CGocP_TUYuo","ahwV3JCDMzE","r2viPot-o2s","ZVf1uq1DaQo","DD7-zNC10GY","6c_CpEfqa5Q","5DcOQvynoWw","j5o2Gg3cEoQ","bAYOhRVZDZI","4iLvQ-XTOX8","0PsXppNVENA","w-A-4ckmFJo","U8TiGWkoStI","COSDU0CB0yE","Vt9ROJ4H82g","wSBavOVX_Zg","pztYwjIUREk","204jhiEgw30","Gbj7gJFqCvg","IysKSFi1KQU","hS0V7rSLXCE","FRcGD-TCFrs","GXMHIkzfIp4","GjOeZ2xk96Y","4EQYXH9qT2o","xmhtV4270NU","5kjNdPGTpfI","z0SmeXerHMg","Wpb-gQDkzyo","fftGsCpJBKw","Vp2NnN_5qSQ","jOeZBW9Lwos","ocdj6JEG5aw","PhBQjGKJjcs","vGO8HiQj82E","C3YgRUX97jI","jy3za99nWog","5cuxPmmrlv4","4rBrQKtGICU","xFbJoXJBIIA","Nv_4Ht7Mk2I","oMy9NgZArEM","jSpT_v8hz5Q","IUJncOzJgSs","DQmlsaME2-4","5np_k6wgNoo","g5yVEgZDt64","9K170z6c04s","pLXFvkNPVBc","nhsDBqK6bAg","szNm9Gt2gxo","RygLVGaabf4","NDY08A72RGk","mtvnvh4Lmdg","0Uw6G1OjEuE","qJE_0I10nnQ","SIT8EhUkPxI","mbGO6WoRFrk","AAmrIVa7UyA","mtTGYXj3htE","cSiQveOwyVs","6FvjUQQOoL0","rdNWP6sBgCk","5PodHBCXV8U","n5-t53bHx8E","0EB7-Cu9EgA","NL6C6YsgooU","psP1Z9XeUl8","eQAuqHet0ac","sseUvxEGS-0","E-MTkeK4eN8","NSXruTOJDEk","8wbo83Jpkq8","gvg8Fh3JbDk","tk_0oJyq3i8","I897Lk4bJkE","s7M1ioDiQwc","gnxRcV583Ns","n45VdBd1Xns","r3fpokUaUOk","_XPSc6xhZss","LVcvur_OOEs","GPlawEwMpBA","J7AtKJFrsW4","hPkoDc8WqtM","PjhX22BWET8","e5Q-fbxA-tM","mv-LcLrIyHE","_a2GpAq8q8g","iyZ2_Z933-8","8sqY6QXtTsI","hM1CNRq2byU","JRpMVBVXfEI","vGDu42bj0jc","MHBI8OU7mq8","n8R5hPMqlEw","VIJjgqAfuWk","ykQ_7qbJEjQ","GyBGL4Ag33A","f-yhrMFD1YM","MtZchxzcMoE","-YfVRbGccLc","UCWfCrfLTc8","Ct3ifVB_uEk","CNDaMyLo20A","GRHWK4ZFPhc","NJXPFz9mxVo","yGtza5cGgK0","bL9de3wEMg8","TSW4ef6A-lw","lNZccD6xLXQ","IdB7xynPwNc","Pg727Z7l3xI","ZDb9GtAZAlo","5x3vuslV2ZU","9nWoYtsv82Y","nUhq9Mw68B0","zRUqM-vzDOQ","NGStMwh0-TA","Rdd9DlA1sJQ","1irFXrUJNOM","XjSa8juMyJ0","9p1qSL9_nnI","3MyVk-17haI","eziSmP-ThWI","LVpy7fRYhsY","uy6MzxJSnWM","WDsis_5AiqI","sUPHMTbeGms","V7vnj55LRtk","z1ywUmzOvQo","Ur9yIzUYZso","wC9BsAPdj8I","ALLvROmC-uE","VBEqKYYF0-A","30NY6-11IWk","4ESy8WRyVcs","NnqKnsAA9_Y","sEUwY6eQfgw","CyIN3fIiMpU","qR871N8fN4I","qCEE89m8RE8","gsSoBLyzQLA","I5_JhetdHJw","E1mnleeD5pI","XQJ0iCSREsA","CKp7q2licQM","BUVCrWIDpt8","-lDQc1mGAvY","gBdLBCZdnqA","XRyAl7RWRhs","k5mF56PO6vE","_rDtZgLolHQ","7JjSB3GBHt8","j-wTgA6AQuw","fKFSNa-CKkw","BmjQm5MAq00","D-fQ9xQL12c","zHBSrvE1Tns","s5wtG7miYaQ","0c5Rw6BgRxk","4eLBAlJq1cg","G2aKOd25DVc","mosrO7zSeTQ","wOhj0TuTZYs","9bc0tPYxlak","LabXsJ99_yY","M3A7fuYXddQ","ie2yJSCogKY","_I5w5jUboQU","n35E-EpFhyk","88N-811loAo","d9-dAKtckGQ","_PMb8bfAXtE","x_XfqCkeXbE","gqpCbl1k-bU","xmR-Dyu0uXM","fK322OI8vYc","yRWaFJKNpZU
+        // ОБОВ'ЯЗКОВО встав сюди свій повний масив ID відео замість коментаря
+        const newestToOldestIds = [
+            /* ТУТ ТВІЙ МАСИВ З 1000+ ID ВІДЕО */
+        ];
+        
+        const videoIds = newestToOldestIds.reverse();
+        let isNavigating = false;
+
+        function playNextVideo() {
+            if (isNavigating) return;
+            
+            let savedIndex = localStorage.getItem('caseyAppIndex');
+            let currentIndex = savedIndex ? parseInt(savedIndex) : 0;
+
+            if (currentIndex < videoIds.length) {
+                isNavigating = true;
+                let nextVideoId = videoIds[currentIndex];
+                
+                // Оновлюємо інтерфейс
+                document.getElementById('status-text').innerText = `Готуємо відео #${currentIndex + 1}`;
+                document.getElementById('hint').innerText = "";
+                document.getElementById('loader').style.display = "block";
+
+                // Спроба автоматичного переходу
+                setTimeout(() => {
+                    window.location.href = `youtube://watch?v=${nextVideoId}`;
+                    
+                    // Захист від блокування iOS: якщо через 1 секунду ми ще тут, просимо торкнутися екрана
+                    setTimeout(() => {
+                        isNavigating = false;
+                        document.getElementById('status-text').innerText = "iOS заблокувала автозапуск";
+                        document.getElementById('hint').innerHTML = "<span style='color:#ff0000; font-size:20px;'>Тапни будь-де на екрані</span>";
+                        document.getElementById('loader').style.display = "none";
+                        
+                        // Робимо весь екран клікабельним для запуску
+                        document.getElementById('main-body').onclick = () => {
+                            localStorage.setItem('caseyAppIndex', currentIndex + 1);
+                            window.location.href = `youtube://watch?v=${nextVideoId}`;
+                            
+                            // Скидаємо інтерфейс для наступного разу
+                            setTimeout(() => { document.getElementById('status-text').innerText = "Очікування..."; }, 1000);
+                        };
+                    }, 1000);
+                }, 300);
+                
+                // Якщо автозапуск вдався (ми перейшли в YouTube), зберігаємо індекс
+                // Це виконується майже одночасно з редіректом
+                localStorage.setItem('caseyAppIndex', currentIndex + 1);
+
+            } else {
+                document.getElementById('content').innerHTML = 
+                    "<div class='status'>Всі відео переглянуто!</div>" + 
+                    "<button style='margin-top:20px; padding:15px; font-size:16px;' onclick='localStorage.removeItem(\"caseyAppIndex\"); window.location.reload();'>Почати спочатку</button>";
+            }
+        }
+
+        // Запуск при відкритті
+        document.addEventListener("DOMContentLoaded", playNextVideo);
+        
+        // Запуск при поверненні в програму (зняття з паузи)
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === 'visible') {
+                isNavigating = false; // скидаємо блокування
+                playNextVideo();
+            }
+        });
+        
+        // Альтернативна подія для Safari (коли сторінка відновлюється з кешу)
+        window.addEventListener("pageshow", (e) => {
+            if (e.persisted) {
+                isNavigating = false;
+                playNextVideo();
+            }
+        });
+    </script>
+</body>
+</html>
+
