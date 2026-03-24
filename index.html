@@ -6,7 +6,7 @@
     <title>Кіноархів Тараса Максимʼяка</title>
     
     <meta property="og:title" content="Кіноархів Тараса Максимʼяка">
-    <meta property="og:description" content="Один день — одне відео. Каталог мого щоденного кіночеленджу.">
+    <meta property="og:description" content="Особистий кіноархів.">
     <meta property="og:image" content="image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
@@ -33,7 +33,7 @@
         .insta-link svg{margin-bottom:2px}
         .insta-link:hover{color:#e62117}
         
-        .progress-bar-wrap{width:100%;height:3px;background:var(--divider-color);border-radius:2px;overflow:hidden;margin-bottom:30px}
+        .progress-bar-wrap{width:100%;height:3px;background:var(--divider-color);border-radius:2px;overflow:hidden;margin-bottom:30px;transform:translateZ(0)}
         .progress-bar-fill{height:100%;background:var(--accent-gold);width:0%;transition:width 1.5s cubic-bezier(0.22, 1, 0.36, 1)}
 
         .season-header{font-size:14px;font-weight:700;color:#e62117;text-transform:uppercase;letter-spacing:4px;margin:40px 0 15px}
@@ -61,7 +61,7 @@
         .video-link{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
         .videos-container.multiple .video-link:not(:last-child){border-right:2px solid #fff}
         
-        .video-thumb{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;background-color:var(--thumb-bg)}
+        .video-thumb{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;background-color:var(--thumb-bg);will-change:transform}
         .video-link:hover .video-thumb{transform:scale(1.03)}
         .video-link::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.6) 0%,transparent 30%,transparent 60%,rgba(0,0,0,.9) 100%);pointer-events:none}
         
@@ -80,7 +80,7 @@
         .close-btn{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10;text-shadow:0 2px 4px rgba(0,0,0,.5);font-weight:300}
         .close-btn:hover{color:#e62117}
 
-        .floating-nav{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);background:var(--nav-glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:4px;display:flex;align-items:center;z-index:100;border:1px solid var(--nav-border);box-shadow:0 4px 15px rgba(0,0,0,0.05);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;opacity:1}
+        .floating-nav{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);background:var(--nav-glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:4px;display:flex;align-items:center;z-index:100;border:1px solid var(--nav-border);box-shadow:0 4px 15px rgba(0,0,0,0.05);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;opacity:1;will-change:transform,opacity}
         .floating-nav.hidden{transform:translate(-50%,100px);opacity:0}
         .month-select{appearance:none;-webkit-appearance:none;background:transparent;border:none;outline:none;padding:12px 35px 12px 20px;font-size:13px;font-weight:600;color:var(--text-color);cursor:pointer;font-family:inherit;text-align:center;text-transform:uppercase;letter-spacing:1px}
         .month-select option{background:var(--bg-color);color:var(--text-color);text-transform:none}
@@ -109,7 +109,7 @@
     <div class="site-footer">© 2026 ТАРАС МАКСИМʼЯК</div>
 </div>
 
-<div class="floating-nav" id="floatingNav">
+<div class="floating-nav" id="floatingNav" style="display:none;">
     <select id="monthSelect" class="month-select" onchange="jumpTo(this.value)">
         <option value="" disabled selected>ОБРАТИ МІСЯЦЬ</option>
     </select>
@@ -166,31 +166,32 @@
         var now = Date.now();
         var cachedData = safeGetStorage(CACHE_KEY);
         var cachedTime = safeGetStorage(CACHE_TIME_KEY);
+        var isCacheValid = cachedData && cachedTime && (now - parseInt(cachedTime, 10)) < CACHE_TTL;
 
-        if (cachedData && cachedTime && (now - parseInt(cachedTime, 10)) < CACHE_TTL) {
+        // Миттєвий рендер, якщо є кеш (навіть прострочений, для швидкості інтерфейсу)
+        if (cachedData) {
             try { 
                 videosMap = JSON.parse(cachedData); 
                 if (typeof videosMap !== 'object' || videosMap === null) videosMap = {};
                 render(); 
-                return; 
             } catch(e) { 
                 videosMap = {}; 
             }
         }
 
-        fetchAPI('', {})
-            .then(function(resultMap) {
-                videosMap = resultMap;
-                safeSetStorage(CACHE_KEY, JSON.stringify(videosMap));
-                safeSetStorage(CACHE_TIME_KEY, now.toString());
-                render();
-            })
-            .catch(function(error) {
-                if (cachedData) {
-                    try { videosMap = JSON.parse(cachedData) || {}; } catch(e) { videosMap = {}; }
-                }
-                render();
-            });
+        // Якщо кешу немає АБО він прострочений - тягнемо нові дані у фоні
+        if (!isCacheValid) {
+            fetchAPI('', {})
+                .then(function(resultMap) {
+                    videosMap = resultMap;
+                    safeSetStorage(CACHE_KEY, JSON.stringify(videosMap));
+                    safeSetStorage(CACHE_TIME_KEY, now.toString());
+                    render(); // Перемальовуємо з новими даними
+                })
+                .catch(function(error) {
+                    if (!cachedData) render(); // Рендер порожнього, якщо нічого немає
+                });
+        }
     }
 
     function fetchAPI(pageToken, currentMap) {
@@ -210,7 +211,8 @@
                     if (!currentMap[dateKey]) currentMap[dateKey] = [];
                     
                     var t = item.snippet.thumbnails || {};
-                    var thumb = (t.maxres && t.maxres.url) || (t.standard && t.standard.url) || (t.high && t.high.url) || (t.medium && t.medium.url) || (t.default && t.default.url) || '';
+                    // ОПТИМІЗАЦІЯ ВАГИ: Спочатку high (480x360), потім standard, maxres залишаємо як останній варіант.
+                    var thumb = (t.high && t.high.url) || (t.standard && t.standard.url) || (t.maxres && t.maxres.url) || (t.medium && t.medium.url) || (t.default && t.default.url) || '';
 
                     currentMap[dateKey].push({ 
                         id: item.snippet.resourceId.videoId, 
@@ -247,7 +249,8 @@
                 return;
             }
 
-            // ПІДРАХУНОК ВІДЕО ТІЛЬКИ З 26 БЕРЕЗНЯ 2026 РОКУ
+            DOM.nav.style.display = 'flex'; // Показуємо меню тільки коли є контент
+
             var totalVideos = 0;
             if (videosMap) {
                 var keys = Object.keys(videosMap);
@@ -272,7 +275,7 @@
                     html += '<h2 class="year-header">' + y + '</h2>'; 
                     if (curYear === 0) {
                         var instaIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>';
-                        html += '<div class="header-subinfo"><span>' + totalVideos + ' / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
+                        html += '<div class="header-subinfo"><span>' + totalVideos + ' / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener noreferrer" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
                         html += '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + progressPercent + '%"></div></div>';
                     }
                     curYear = y; lastSeason = ""; 
@@ -294,14 +297,14 @@
             DOM.monthSelect.innerHTML = navHtml; 
 
             if (!initialScrollDone) {
-                setTimeout(function() {
+                requestAnimationFrame(function() {
                     var watchedElements = document.querySelectorAll('.video-link.watched');
                     if (watchedElements.length > 0) {
                         var lastWatched = watchedElements[watchedElements.length - 1];
                         lastWatched.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                     initialScrollDone = true;
-                }, 600); 
+                }); 
             }
 
         } catch (e) {
@@ -336,7 +339,6 @@
             var dateBlock = '<div class="date-container"><span class="date-num">' + d + '</span><span class="day-name">' + dayName + '</span></div>';
             var cellClass = 'day-cell empty-day';
 
-            // Маркер стоїть на 25 березня
             if (y === 2026 && m === 2 && d === 25) {
                 var thinArrowSVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
                 html += '<div class="day-cell season-marker"><div class="season-marker-content"><div class="season-marker-text">СЕЗОН 1</div><div class="season-marker-arrow">' + thinArrowSVG + '</div></div></div>';
@@ -427,7 +429,8 @@
         else modalContent.style.transform = 'translateY(0)';
     }, {passive: true});
 
-    init();
+    // Запуск відкладено на мілісекунду, щоб браузер встиг намалювати базовий HTML
+    setTimeout(init, 0);
 
 </script>
 </body>
