@@ -27,14 +27,10 @@
         .year-header{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px}
         .year-header:first-child{margin-top:10px}
         
-        .header-subinfo{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--month-color);font-weight:600;letter-spacing:2px;margin-top:0px;margin-bottom:15px;text-transform:uppercase}
-        .header-subinfo .dot-separator{font-size:10px;opacity:0.5}
+        .header-subinfo{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--month-color);font-weight:600;letter-spacing:2px;margin-top:0px;margin-bottom:30px;text-transform:uppercase}
         .insta-link{color:var(--month-color);text-decoration:none;transition:color .3s;display:flex;align-items:center;gap:5px}
         .insta-link svg{margin-bottom:2px}
         .insta-link:hover{color:#e62117}
-        
-        .progress-bar-wrap{width:100%;height:3px;background:var(--divider-color);border-radius:2px;overflow:hidden;margin-bottom:30px;transform:translateZ(0)}
-        .progress-bar-fill{height:100%;background:var(--accent-gold);width:0%;transition:width 1.5s cubic-bezier(0.22, 1, 0.36, 1)}
 
         .season-header{font-size:14px;font-weight:700;color:#e62117;text-transform:uppercase;letter-spacing:4px;margin:40px 0 15px}
         
@@ -168,7 +164,6 @@
         var cachedTime = safeGetStorage(CACHE_TIME_KEY);
         var isCacheValid = cachedData && cachedTime && (now - parseInt(cachedTime, 10)) < CACHE_TTL;
 
-        // Миттєвий рендер, якщо є кеш (навіть прострочений, для швидкості інтерфейсу)
         if (cachedData) {
             try { 
                 videosMap = JSON.parse(cachedData); 
@@ -179,17 +174,16 @@
             }
         }
 
-        // Якщо кешу немає АБО він прострочений - тягнемо нові дані у фоні
         if (!isCacheValid) {
             fetchAPI('', {})
                 .then(function(resultMap) {
                     videosMap = resultMap;
                     safeSetStorage(CACHE_KEY, JSON.stringify(videosMap));
                     safeSetStorage(CACHE_TIME_KEY, now.toString());
-                    render(); // Перемальовуємо з новими даними
+                    render(); 
                 })
                 .catch(function(error) {
-                    if (!cachedData) render(); // Рендер порожнього, якщо нічого немає
+                    if (!cachedData) render(); 
                 });
         }
     }
@@ -211,7 +205,6 @@
                     if (!currentMap[dateKey]) currentMap[dateKey] = [];
                     
                     var t = item.snippet.thumbnails || {};
-                    // ОПТИМІЗАЦІЯ ВАГИ: Спочатку high (480x360), потім standard, maxres залишаємо як останній варіант.
                     var thumb = (t.high && t.high.url) || (t.standard && t.standard.url) || (t.maxres && t.maxres.url) || (t.medium && t.medium.url) || (t.default && t.default.url) || '';
 
                     currentMap[dateKey].push({ 
@@ -249,22 +242,7 @@
                 return;
             }
 
-            DOM.nav.style.display = 'flex'; // Показуємо меню тільки коли є контент
-
-            var totalVideos = 0;
-            if (videosMap) {
-                var keys = Object.keys(videosMap);
-                for (var i = 0; i < keys.length; i++) {
-                    if (keys[i] >= "2026-03-26") {
-                        if (Array.isArray(videosMap[keys[i]])) {
-                            totalVideos += videosMap[keys[i]].length;
-                        }
-                    }
-                }
-            }
-            
-            var progressPercent = (totalVideos / 365) * 100;
-            if (progressPercent > 100) progressPercent = 100;
+            DOM.nav.style.display = 'flex'; 
 
             while (loop <= today) {
                 var y = loop.getFullYear();
@@ -275,8 +253,7 @@
                     html += '<h2 class="year-header">' + y + '</h2>'; 
                     if (curYear === 0) {
                         var instaIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>';
-                        html += '<div class="header-subinfo"><span>' + totalVideos + ' / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener noreferrer" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
-                        html += '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + progressPercent + '%"></div></div>';
+                        html += '<div class="header-subinfo"><a href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener noreferrer" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
                     }
                     curYear = y; lastSeason = ""; 
                 }
@@ -429,7 +406,6 @@
         else modalContent.style.transform = 'translateY(0)';
     }, {passive: true});
 
-    // Запуск відкладено на мілісекунду, щоб браузер встиг намалювати базовий HTML
     setTimeout(init, 0);
 
 </script>
