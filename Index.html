@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>taras.kyiv.ua</title>
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #d4d4d4;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .terminal {
+            max-width: 650px;
+            width: 100%;
+            line-height: 1.8;
+            font-size: 15px;
+        }
+        .command {
+            color: #4af626; 
+        }
+        .quote {
+            color: #888;
+            font-style: italic;
+            margin: 30px 0;
+            display: block;
+            border-left: 2px solid #333;
+            padding-left: 15px;
+        }
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: #4af626;
+            vertical-align: text-bottom;
+            animation: blink 1s step-end infinite;
+            margin-left: 5px;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        @media (max-width: 600px) {
+            .terminal { font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="terminal">
+        <span class="command">> system.init("evolution_project");</span><br>
+        <span class="command">> status: digitizing reality...</span><br>
+        
+        <span class="quote">"Цифрові технології — це каталізатор. Ми фіксуємо сьогодення, щоб зрозуміти, ким станемо завтра."</span>
+        
+        <span class="command">> days_in_process: <span id="counter">0</span></span><span class="cursor"></span>
+    </div>
+
+    <script>
+        // Дата старту: 27 березня 2026 року
+        var startDate = new Date('2026-03-27T00:00:00');
+        
+        function updateCounter() {
+            var now = new Date();
+            var diffTime = now - startDate;
+            
+            if (diffTime < 0) {
+                document.getElementById('counter').innerText = "0";
+                return;
+            }
+            
+            var diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            document.getElementById('counter').innerText = diffDays;
+        }
+
+        updateCounter();
+        setInterval(updateCounter, 1000 * 60 * 60); 
+    </script>
+
+</body>
+</html>
