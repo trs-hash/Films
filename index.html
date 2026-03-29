@@ -115,7 +115,8 @@
 <script>
     var API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
     var UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
-    var START_YEAR = 2026, START_MONTH = 2, START_DAY = 30; 
+    // НОВА ТОЧКА ВІДЛІКУ: 1 КВІТНЯ 2026
+    var START_YEAR = 2026, START_MONTH = 3, START_DAY = 1; 
     var CACHE_KEY = 'yt_videos_data', CACHE_TIME_KEY = 'yt_videos_time', CACHE_TTL = 21600000; 
     
     var DOM = {
@@ -221,7 +222,6 @@
             var today = new Date();
             var startDate = new Date(START_YEAR, START_MONTH, START_DAY);
             
-            // Якщо зараз дата ДО старту челенджу - ми все одно відмальовуємо макет
             if (today < startDate) {
                 today = startDate; 
             }
@@ -234,7 +234,7 @@
             if (videosMap) {
                 var keys = Object.keys(videosMap);
                 for (var i = 0; i < keys.length; i++) {
-                    if (keys[i] >= "2026-03-30") {
+                    if (keys[i] >= "2026-04-01") {
                         if (Array.isArray(videosMap[keys[i]])) {
                             totalVideos += videosMap[keys[i]].length;
                         }
@@ -256,10 +256,11 @@
                         var instaIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>';
                         html += '<div class="header-subinfo"><span>' + totalVideos + ' / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener noreferrer" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
                         
-                        var timelineAbbr = ['БЕР', 'КВІ', 'ТРА', 'ЧЕР', 'ЛИП', 'СЕР', 'ВЕР', 'ЖОВ', 'ЛИС', 'ГРУ'];
+                        // Таймлінія починається з КВІТНЯ
+                        var timelineAbbr = ['КВІ', 'ТРА', 'ЧЕР', 'ЛИП', 'СЕР', 'ВЕР', 'ЖОВ', 'ЛИС', 'ГРУ'];
                         var topTimelineHTML = '<div class="top-timeline-wrapper"><div class="top-timeline-base"><div class="top-timeline-fill" style="width:' + progressPercent + '%"></div><div class="top-timeline-segments">';
-                        for(var tm=2; tm<=11; tm++){
-                            topTimelineHTML += '<div class="top-timeline-segment" onclick="jumpTo(\'month-2026-' + tm + '\')">' + timelineAbbr[tm-2] + '</div>';
+                        for(var tm=3; tm<=11; tm++){
+                            topTimelineHTML += '<div class="top-timeline-segment" onclick="jumpTo(\'month-2026-' + tm + '\')">' + timelineAbbr[tm-3] + '</div>';
                         }
                         topTimelineHTML += '</div></div></div>';
                         
