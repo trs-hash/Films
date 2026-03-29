@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
     <title>Кіноархів Тараса Максимʼяка</title>
     
     <meta property="og:title" content="Кіноархів Тараса Максимʼяка">
-    <meta property="og:description" content="Один день — одне відео.">
+    <meta property="og:description" content="Один день — одне відео. Реаліті-влог у постлюдському світі.">
     <meta property="og:image" content="image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
@@ -17,8 +18,8 @@
     <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.googleapis.com">
     <style>
-        :root{--bg-color:#fff;--text-color:#222;--cell-bg:#f8f8f8;--month-color:#888;--date-color:#ccc;--divider-color:#eaeaea;--nav-border:#ddd;--nav-glass:rgba(255,255,255,0.85);--thumb-bg:#e0e0e0;--accent-red:#e62117}
-        @media (prefers-color-scheme:dark){:root{--bg-color:#121212;--text-color:#e0e0e0;--cell-bg:#1e1e1e;--month-color:#aaa;--date-color:#555;--divider-color:#333;--nav-border:#444;--nav-glass:rgba(30,30,30,0.85);--thumb-bg:#2a2a2a;--accent-red:#e62117}}
+        :root{--bg-color:#fff;--text-color:#222;--cell-bg:#f8f8f8;--month-color:#888;--date-color:#ccc;--divider-color:#eaeaea;--nav-border:#ddd;--thumb-bg:#e0e0e0;--accent-red:#e62117}
+        @media (prefers-color-scheme:dark){:root{--bg-color:#121212;--text-color:#e0e0e0;--cell-bg:#1e1e1e;--month-color:#aaa;--date-color:#555;--divider-color:#333;--nav-border:#444;--thumb-bg:#2a2a2a;--accent-red:#e62117}}
         
         body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg-color);color:var(--text-color);margin:0;padding:20px 20px 0px;overflow-x:hidden;scroll-behavior:smooth;transition:background .3s,color .3s}
         .main-wrapper{max-width:1400px;margin:0 auto;display:block;min-height:100vh;display:flex;flex-direction:column}
@@ -27,19 +28,19 @@
         .year-header{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px}
         .year-header:first-child{margin-top:10px}
         
-        .header-subinfo { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--month-color); font-weight: 600; letter-spacing: 2px; margin-top: 0px; margin-bottom: 30px; text-transform: uppercase; }
+        .header-subinfo { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--month-color); font-weight: 600; letter-spacing: 2px; margin-top: 0px; margin-bottom: 25px; text-transform: uppercase; }
         .header-subinfo .dot-separator { font-size: 10px; opacity: 0.5; }
         .insta-link { color: var(--month-color); text-decoration: none; transition: color .3s; display: flex; align-items: center; gap: 5px; }
         .insta-link svg { margin-bottom: 2px; }
         .insta-link:hover { color: var(--accent-red); }
 
-        .progress-timeline-wrapper { width: 100%; margin-bottom: 30px; position: relative; height: 10px; will-change: width, transform; transform: translateZ(0); }
-        .progress-timeline-base { width: 100%; height: 100%; background: var(--divider-color); border-radius: 5px; overflow: hidden; position: relative; display: flex; }
-        .progress-timeline-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--accent-red); width: 0%; transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1); z-index: 1; }
-        .progress-timeline-segments { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: flex; z-index: 2; }
-        .progress-timeline-segment { flex: 1; height: 100%; position: relative; cursor: pointer; text-decoration: none; color: inherit; }
-        .progress-timeline-segment-label { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--month-color); opacity: 0; transition: opacity .3s; white-space: nowrap; }
-        .progress-timeline-segment:hover .progress-timeline-segment-label { opacity: 1; }
+        /* Новий дизайн інтегрованої таймлінії/прогрес-бару */
+        .top-timeline-wrapper { width: 100%; margin-bottom: 40px; position: relative; height: 36px; transform: translateZ(0); }
+        .top-timeline-base { width: 100%; height: 100%; background: var(--cell-bg); border-radius: 8px; overflow: hidden; position: relative; display: flex; border: 1px solid var(--divider-color); box-sizing: border-box; }
+        .top-timeline-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(230, 33, 23, 0.15); border-right: 2px solid var(--accent-red); width: 0%; transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1); z-index: 1; }
+        .top-timeline-segments { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: flex; z-index: 2; justify-content: space-between; padding: 0 15px; align-items: center; box-sizing: border-box; }
+        .top-timeline-segment { font-size: 11px; font-weight: 700; color: var(--month-color); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: color 0.2s; padding: 10px 5px; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .top-timeline-segment:hover { color: var(--accent-red); }
 
         .season-header{font-size:14px;font-weight:700;color:var(--accent-red);text-transform:uppercase;letter-spacing: 4px;margin: 40px 0 15px}
         
@@ -56,9 +57,6 @@
         .day-name{font-size:10px;font-weight:500;text-transform:uppercase;color:var(--date-color);opacity:.6;transition:color .3s}
         .has-video .date-num,.has-video .day-name{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
         .has-video .day-name{opacity:.7;text-shadow:0 1px 2px rgba(0,0,0,.9)}
-
-        .season-text-label { display: flex; align-items: center; gap: 6px; color: var(--accent-red); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 8px; margin-left: 5px; }
-        .season-text-label svg { margin-bottom: 1px; }
 
         .videos-container{position:absolute;inset:0;display:flex;z-index:5}
         .video-link{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
@@ -83,14 +81,7 @@
         .close-btn{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10;text-shadow:0 2px 4px rgba(0,0,0,.5);font-weight:300}
         .close-btn:hover{color:var(--accent-red)}
 
-        .floating-timeline { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: var(--nav-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 40px; border: 1px solid var(--nav-border); box-shadow: 0 8px 20px rgba(0,0,0,0.08); display: flex; align-items: center; width: 90%; max-width: 480px; height: 38px; z-index: 100; overflow: hidden; transition: transform .3s cubic-bezier(.4,0,.2,1), opacity .3s; }
-        .floating-timeline.hidden { transform: translate(-50%, 100px); opacity: 0; }
-        .timeline-fill { position: absolute; top: 0; left: 0; bottom: 0; background: rgba(230, 33, 23, 0.15); border-right: 1px solid rgba(230, 33, 23, 0.4); transition: width 1s ease-out; pointer-events: none; z-index: 1; }
-        .timeline-months { position: relative; z-index: 2; display: flex; width: 100%; justify-content: space-between; padding: 0 15px; }
-        .timeline-month { font-size: 11px; font-weight: 700; color: var(--month-color); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: color 0.2s; padding: 10px 0; }
-        .timeline-month:hover { color: var(--accent-red); }
-
-        .site-footer{text-align:center;padding:60px 0 30px;font-size:11px;color:var(--date-color);text-transform:uppercase;letter-spacing:2px}
+        .site-footer{text-align:center;padding:60px 0 60px;font-size:11px;color:var(--date-color);text-transform:uppercase;letter-spacing:2px}
 
         @media (max-width:1024px){.calendar-grid{grid-template-columns:repeat(4,1fr)}}
         @media (max-width:600px){
@@ -101,10 +92,12 @@
             .day-name{font-size:9px}
             .modal-content{padding:10px}
             .close-btn{right:10px;top:-25px}
-            .site-footer{padding:50px 0 90px} 
-            .floating-timeline { bottom: 15px; height: 36px; padding: 0; max-width: 340px; }
-            .timeline-months { padding: 0 12px; }
-            .timeline-month { font-size: 9px; letter-spacing: 0; }
+            .site-footer{padding:50px 0 50px} 
+            
+            /* Адаптація верхньої таймлінії для мобільних */
+            .top-timeline-wrapper { height: 32px; margin-bottom: 30px; }
+            .top-timeline-segments { padding: 0 8px; }
+            .top-timeline-segment { font-size: 9px; letter-spacing: 0; padding: 5px 3px; }
         }
     </style>
 </head>
@@ -113,8 +106,6 @@
     <div class="content-flex" id="app"></div>
     <div class="site-footer">© 2026 ТАРАС МАКСИМʼЯК</div>
 </div>
-
-<nav class="floating-timeline" id="floatingTimeline" style="display:none;"></nav>
 
 <div id="videoModal" class="modal" onclick="closeModal()">
     <div class="modal-content" id="modalContent" onclick="event.stopPropagation()">
@@ -133,7 +124,6 @@
     
     var DOM = {
         app: document.getElementById('app'),
-        timeline: document.getElementById('floatingTimeline'),
         modal: document.getElementById('videoModal'),
         modalContent: document.getElementById('modalContent'),
         iframe: document.getElementById('ytIframe')
@@ -141,7 +131,6 @@
 
     var videosMap = {};
     var watchedVideos = [];
-    var lastScrollY = window.scrollY;
     var initialScrollDone = false; 
 
     function safeGetStorage(key) {
@@ -234,12 +223,16 @@
     function render() {
         try {
             var today = new Date();
+            var startDate = new Date(START_YEAR, START_MONTH, START_DAY);
+            
             var loop = new Date(START_YEAR, START_MONTH, 1);
             var curYear = 0, lastSeason = "";
             var html = '';
 
-            DOM.nav = document.getElementById('floatingTimeline');
-            DOM.nav.style.display = 'flex'; 
+            if (today < startDate) {
+                DOM.app.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--month-color);">Календар розпочнеться 30 березня 2026 року.</div>';
+                return;
+            }
 
             var totalVideos = 0;
             if (videosMap) {
@@ -256,14 +249,6 @@
             var progressPercent = (totalVideos / 365) * 100;
             if (progressPercent > 100) progressPercent = 100;
 
-            var timelineAbbr = ['БЕР', 'КВІ', 'ТРА', 'ЧЕР', 'ЛИП', 'СЕР', 'ВЕР', 'ЖОВ', 'ЛИС', 'ГРУ'];
-            var timelineHTML = '<div class="timeline-fill" style="width:' + progressPercent + '%"></div><div class="timeline-months">';
-            for(var tm=2; tm<=11; tm++){
-                timelineHTML += '<div class="timeline-month" onclick="jumpTo(\'month-2026-' + tm + '\')">' + timelineAbbr[tm-2] + '</div>';
-            }
-            timelineHTML += '</div>';
-            DOM.timeline.innerHTML = timelineHTML;
-
             while (loop <= today) {
                 var y = loop.getFullYear();
                 var m = loop.getMonth();
@@ -275,13 +260,15 @@
                         var instaIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>';
                         html += '<div class="header-subinfo"><span>' + totalVideos + ' / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener noreferrer" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
                         
-                        var monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
-                        html += '<div class="progress-timeline-wrapper"><div class="progress-timeline-base"><div class="progress-timeline-fill" style="width:' + progressPercent + '%"></div><div class="progress-timeline-segments">';
-                        for (var monthIdx = START_MONTH; monthIdx < 12; monthIdx++) {
-                            var mName = monthsNames[monthIdx];
-                            html += '<a href="#month-' + y + '-' + monthIdx + '" class="progress-timeline-segment" title="' + mName + '"><span class="progress-timeline-segment-label">' + mName + '</span></a>';
+                        // Інтегрована таймлінія / прогрес-бар
+                        var timelineAbbr = ['БЕР', 'КВІ', 'ТРА', 'ЧЕР', 'ЛИП', 'СЕР', 'ВЕР', 'ЖОВ', 'ЛИС', 'ГРУ'];
+                        var topTimelineHTML = '<div class="top-timeline-wrapper"><div class="top-timeline-base"><div class="top-timeline-fill" style="width:' + progressPercent + '%"></div><div class="top-timeline-segments">';
+                        for(var tm=2; tm<=11; tm++){
+                            topTimelineHTML += '<div class="top-timeline-segment" onclick="jumpTo(\'month-2026-' + tm + '\')">' + timelineAbbr[tm-2] + '</div>';
                         }
-                        html += '</div></div></div>';
+                        topTimelineHTML += '</div></div></div>';
+                        
+                        html += topTimelineHTML;
                     }
                     curYear = y; lastSeason = ""; 
                 }
@@ -323,6 +310,10 @@
         var daysInMonth = new Date(y, m + 1, 0).getDate();
 
         for (var d = firstDay; d <= daysInMonth; d++) {
+            if (y === 2026 && m === 2 && d >= 16 && d <= 29) {
+                continue;
+            }
+
             var currentDow = new Date(y, m, d).getDay();
             var dayName = weekDays[currentDow];
             var isSunday = (currentDow === 0);
@@ -335,24 +326,7 @@
             var dateBlock = '<div class="date-container"><span class="date-num">' + d + '</span><span class="day-name">' + dayName + '</span></div>';
             var cellClass = 'day-cell empty-day';
 
-            if (y === 2026 && m === 2 && d === 30) {
-                var thinArrowSVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
-                var seasonTextMarker = '<div class="season-text-label"><span>СЕЗОН 1</span>' + thinArrowSVG + '</div>';
-                
-                if (vids && vids.length > 0) {
-                    cellClass = cellClass.replace('empty-day', 'has-video');
-                    var linksHTML = seasonTextMarker;
-                    for (var v = 0; v < vids.length; v++) {
-                        var vid = vids[v];
-                        var watchedClass = watchedVideos.indexOf(vid.id) !== -1 ? 'watched' : ''; 
-                        linksHTML += '<a href="https://www.youtube.com/watch?v=' + vid.id + '" class="video-link ' + watchedClass + '" onclick="openModal(event, \'' + vid.id + '\', this)"><img src="' + vid.thumb + '" class="video-thumb" loading="lazy" decoding="async" alt=""><div class="overlay-title">' + vid.title + '</div></a>';
-                    }
-                    var multiClass = vids.length > 1 ? 'multiple' : '';
-                    html += '<div class="' + cellClass + '"><div class="videos-container ' + multiClass + '">' + linksHTML + '</div>' + dateBlock + '</div>';
-                } else {
-                    html += '<div class="' + cellClass + '">' + seasonTextMarker + dateBlock + '</div>';
-                }
-            } else if (vids && vids.length > 0) {
+            if (vids && vids.length > 0) {
                 cellClass = cellClass.replace('empty-day', 'has-video');
                 var linksHTML = '';
                 for (var v = 0; v < vids.length; v++) {
@@ -376,7 +350,7 @@
     window.jumpTo = function(targetId) {
         if (!targetId) return;
         var el = document.getElementById(targetId);
-        if (el) window.scrollTo({top: el.getBoundingClientRect().top + window.pageYOffset - 60, behavior: 'smooth'});
+        if (el) window.scrollTo({top: el.getBoundingClientRect().top + window.pageYOffset - 20, behavior: 'smooth'});
     }
 
     window.mark = function(id, el) {
@@ -408,14 +382,6 @@
         modal.classList.remove('show');
         document.body.style.overflow = 'auto'; 
     }
-
-    window.addEventListener('scroll', function() {
-        if (!DOM.timeline) return;
-        var currentScrollY = window.scrollY;
-        if (currentScrollY > lastScrollY && currentScrollY > 150) DOM.timeline.classList.add('hidden');
-        else DOM.timeline.classList.remove('hidden');
-        lastScrollY = currentScrollY;
-    }, { passive: true });
 
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
 
