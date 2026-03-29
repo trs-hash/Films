@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
     <title>Кіноархів Тараса Максимʼяка</title>
     
     <meta property="og:title" content="Кіноархів Тараса Максимʼяка">
-    <meta property="og:description" content="Особистий кіноархів.">
+    <meta property="og:description" content="Один день — одне відео. Реаліті-влог у постлюдському світі.">
     <meta property="og:image" content="image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
@@ -17,8 +18,8 @@
     <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
     <link rel="dns-prefetch" href="https://www.googleapis.com">
     <style>
-        :root{--bg-color:#fff;--text-color:#222;--cell-bg:#f8f8f8;--month-color:#888;--date-color:#ccc;--divider-color:#eaeaea;--nav-border:#ddd;--nav-glass:rgba(255,255,255,0.85);--thumb-bg:#e0e0e0;--accent-gold:#D4AF37}
-        @media (prefers-color-scheme:dark){:root{--bg-color:#121212;--text-color:#e0e0e0;--cell-bg:#1e1e1e;--month-color:#aaa;--date-color:#555;--divider-color:#333;--nav-border:#444;--nav-glass:rgba(30,30,30,0.85);--thumb-bg:#2a2a2a;--accent-gold:#C59B27}}
+        :root{--bg-color:#fff;--text-color:#222;--cell-bg:#f8f8f8;--month-color:#888;--date-color:#ccc;--divider-color:#eaeaea;--nav-border:#ddd;--nav-glass:rgba(255,255,255,0.85);--thumb-bg:#e0e0e0;--accent-red:#e62117}
+        @media (prefers-color-scheme:dark){:root{--bg-color:#121212;--text-color:#e0e0e0;--cell-bg:#1e1e1e;--month-color:#aaa;--date-color:#555;--divider-color:#333;--nav-border:#444;--nav-glass:rgba(30,30,30,0.85);--thumb-bg:#2a2a2a;--accent-red:#e62117}}
         
         body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg-color);color:var(--text-color);margin:0;padding:20px 20px 0px;overflow-x:hidden;scroll-behavior:smooth;transition:background .3s,color .3s}
         .main-wrapper{max-width:1400px;margin:0 auto;display:block;min-height:100vh;display:flex;flex-direction:column}
@@ -27,12 +28,21 @@
         .year-header{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px}
         .year-header:first-child{margin-top:10px}
         
-        .header-subinfo{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--month-color);font-weight:600;letter-spacing:2px;margin-top:0px;margin-bottom:30px;text-transform:uppercase}
-        .insta-link{color:var(--month-color);text-decoration:none;transition:color .3s;display:flex;align-items:center;gap:5px}
-        .insta-link svg{margin-bottom:2px}
-        .insta-link:hover{color:#e62117}
+        .header-subinfo { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--month-color); font-weight: 600; letter-spacing: 2px; margin-top: 0px; margin-bottom: 30px; text-transform: uppercase; }
+        .header-subinfo .dot-separator { font-size: 10px; opacity: 0.5; }
+        .insta-link { color: var(--month-color); text-decoration: none; transition: color .3s; display: flex; align-items: center; gap: 5px; }
+        .insta-link svg { margin-bottom: 2px; }
+        .insta-link:hover { color: var(--accent-red); }
 
-        .season-header{font-size:14px;font-weight:700;color:#e62117;text-transform:uppercase;letter-spacing:4px;margin:40px 0 15px}
+        .progress-timeline-wrapper { width: 100%; margin-bottom: 30px; position: relative; height: 10px; will-change: width, transform; transform: translateZ(0); }
+        .progress-timeline-base { width: 100%; height: 100%; background: var(--divider-color); border-radius: 5px; overflow: hidden; position: relative; display: flex; }
+        .progress-timeline-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--accent-red); width: 0%; transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1); z-index: 1; }
+        .progress-timeline-segments { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: flex; z-index: 2; }
+        .progress-timeline-segment { flex: 1; height: 100%; position: relative; cursor: pointer; text-decoration: none; color: inherit; }
+        .progress-timeline-segment-label { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--month-color); opacity: 0; transition: opacity .3s; white-space: nowrap; }
+        .progress-timeline-segment:hover .progress-timeline-segment-label { opacity: 1; }
+
+        .season-header{font-size:14px;font-weight:700;color:var(--accent-red);text-transform:uppercase;letter-spacing: 4px;margin: 40px 0 15px}
         
         .month-wrapper{content-visibility:auto;contain-intrinsic-size:500px;margin-bottom:40px;scroll-margin-top:20px}
         .month-header{color:var(--month-color);font-size:22px;font-weight:500;text-transform:uppercase;margin:0 0 20px;letter-spacing:1px;transition:color .3s}
@@ -48,10 +58,8 @@
         .has-video .date-num,.has-video .day-name{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
         .has-video .day-name{opacity:.7;text-shadow:0 1px 2px rgba(0,0,0,.9)}
 
-        .season-marker{background:#e62117!important;display:flex;align-items:center;justify-content:center;text-align:center;box-shadow:inset 0 0 20px rgba(0,0,0,0.1)}
-        .season-marker-content{display:flex;flex-direction:column;align-items:center;margin-top:4px}
-        .season-marker-text{color:#fff;font-size:16px;font-weight:800;letter-spacing:6px;text-transform:uppercase;margin-left:6px;line-height:1.1}
-        .season-marker-arrow{display:flex;align-items:center;justify-content:center;margin-top:2px;opacity:0.9}
+        .season-text-label { display: flex; align-items: center; gap: 6px; color: var(--accent-red); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 8px; margin-left: 5px; }
+        .season-text-label svg { margin-bottom: 1px; }
 
         .videos-container{position:absolute;inset:0;display:flex;z-index:5}
         .video-link{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
@@ -64,7 +72,7 @@
         .overlay-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
         
         .video-link.watched .video-thumb{filter:none;opacity:.8}
-        .video-link.watched::before,.video-link.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:#e62117;z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
+        .video-link.watched::before,.video-link.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:var(--accent-red);z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
         .video-link.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
         .video-link.watched::after{transform:translate(-50%,-50%) rotate(-45deg)}
         
@@ -74,13 +82,14 @@
         .iframe-wrapper{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;background:#000;box-shadow:0 10px 30px rgba(0,0,0,.5)}
         .iframe-wrapper iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
         .close-btn{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10;text-shadow:0 2px 4px rgba(0,0,0,.5);font-weight:300}
-        .close-btn:hover{color:#e62117}
+        .close-btn:hover{color:var(--accent-red)}
 
-        .floating-nav{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);background:var(--nav-glass);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:4px;display:flex;align-items:center;z-index:100;border:1px solid var(--nav-border);box-shadow:0 4px 15px rgba(0,0,0,0.05);transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;opacity:1;will-change:transform,opacity}
-        .floating-nav.hidden{transform:translate(-50%,100px);opacity:0}
-        .month-select{appearance:none;-webkit-appearance:none;background:transparent;border:none;outline:none;padding:12px 35px 12px 20px;font-size:13px;font-weight:600;color:var(--text-color);cursor:pointer;font-family:inherit;text-align:center;text-transform:uppercase;letter-spacing:1px}
-        .month-select option{background:var(--bg-color);color:var(--text-color);text-transform:none}
-        .select-icon{position:absolute;right:15px;pointer-events:none;font-size:10px;color:var(--month-color)}
+        .floating-timeline { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: var(--nav-glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 40px; border: 1px solid var(--nav-border); box-shadow: 0 8px 20px rgba(0,0,0,0.08); display: flex; align-items: center; width: 90%; max-width: 480px; height: 38px; z-index: 100; overflow: hidden; transition: transform .3s cubic-bezier(.4,0,.2,1), opacity .3s; }
+        .floating-timeline.hidden { transform: translate(-50%, 100px); opacity: 0; }
+        .timeline-fill { position: absolute; top: 0; left: 0; bottom: 0; background: rgba(230, 33, 23, 0.15); border-right: 1px solid rgba(230, 33, 23, 0.4); transition: width 1s ease-out; pointer-events: none; z-index: 1; }
+        .timeline-months { position: relative; z-index: 2; display: flex; width: 100%; justify-content: space-between; padding: 0 15px; }
+        .timeline-month { font-size: 11px; font-weight: 700; color: var(--month-color); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: color 0.2s; padding: 10px 0; }
+        .timeline-month:hover { color: var(--accent-red); }
 
         .site-footer{text-align:center;padding:60px 0 30px;font-size:11px;color:var(--date-color);text-transform:uppercase;letter-spacing:2px}
 
@@ -93,9 +102,10 @@
             .day-name{font-size:9px}
             .modal-content{padding:10px}
             .close-btn{right:10px;top:-25px}
-            .floating-nav{bottom:15px;width:auto;max-width:300px}
-            .season-marker-text{font-size:14px;letter-spacing:4px}
             .site-footer{padding:50px 0 90px} 
+            .floating-timeline { bottom: 15px; height: 36px; padding: 0; max-width: 340px; }
+            .timeline-months { padding: 0 12px; }
+            .timeline-month { font-size: 9px; letter-spacing: 0; }
         }
     </style>
 </head>
@@ -105,12 +115,7 @@
     <div class="site-footer">© 2026 ТАРАС МАКСИМʼЯК</div>
 </div>
 
-<div class="floating-nav" id="floatingNav" style="display:none;">
-    <select id="monthSelect" class="month-select" onchange="jumpTo(this.value)">
-        <option value="" disabled selected>ОБРАТИ МІСЯЦЬ</option>
-    </select>
-    <span class="select-icon">▼</span>
-</div>
+<nav class="floating-timeline" id="floatingTimeline" style="display:none;"></nav>
 
 <div id="videoModal" class="modal" onclick="closeModal()">
     <div class="modal-content" id="modalContent" onclick="event.stopPropagation()">
@@ -124,13 +129,13 @@
 <script>
     var API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
     var UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
-    var START_YEAR = 2026, START_MONTH = 2, START_DAY = 14; 
+    // ТОЧКА ВІДЛІКУ КАЛЕНДАРЯ: ТЕПЕР ОДРАЗУ 30 БЕРЕЗНЯ
+    var START_YEAR = 2026, START_MONTH = 2, START_DAY = 30; 
     var CACHE_KEY = 'yt_videos_data', CACHE_TIME_KEY = 'yt_videos_time', CACHE_TTL = 21600000; 
     
     var DOM = {
         app: document.getElementById('app'),
-        monthSelect: document.getElementById('monthSelect'),
-        nav: document.getElementById('floatingNav'),
+        timeline: document.getElementById('floatingTimeline'),
         modal: document.getElementById('videoModal'),
         modalContent: document.getElementById('modalContent'),
         iframe: document.getElementById('ytIframe')
@@ -235,14 +240,38 @@
             
             var loop = new Date(START_YEAR, START_MONTH, 1);
             var curYear = 0, lastSeason = "";
-            var html = '', navHtml = '<option value="" disabled selected>ОБРАТИ МІСЯЦЬ</option>';
+            var html = '';
 
             if (today < startDate) {
-                DOM.app.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--month-color);">Календар розпочнеться 14 березня 2026 року.</div>';
+                DOM.app.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--month-color);">Календар розпочнеться 30 березня 2026 року.</div>';
                 return;
             }
 
-            DOM.nav.style.display = 'flex'; 
+            // ПІДРАХУНОК ВІДЕО ТІЛЬКИ З 30 БЕРЕЗНЯ 2026 РОКУ
+            var totalVideos = 0;
+            if (videosMap) {
+                var keys = Object.keys(videosMap);
+                for (var i = 0; i < keys.length; i++) {
+                    if (keys[i] >= "2026-03-30") {
+                        if (Array.isArray(videosMap[keys[i]])) {
+                            totalVideos += videosMap[keys[i]].length;
+                        }
+                    }
+                }
+            }
+            
+            var progressPercent = (totalVideos / 365) * 100;
+            if (progressPercent > 100) progressPercent = 100;
+
+            // ГЕНЕРАЦІЯ ІНТЕРАКТИВНОЇ КАПСУЛИ
+            var timelineAbbr = ['БЕР', 'КВІ', 'ТРА', 'ЧЕР', 'ЛИП', 'СЕР', 'ВЕР', 'ЖОВ', 'ЛИС', 'ГРУ'];
+            var timelineHTML = '<div class="timeline-fill" style="width:' + progressPercent + '%"></div><div class="timeline-months">';
+            for(var tm=2; tm<=11; tm++){
+                timelineHTML += '<div class="timeline-month" onclick="jumpTo(\'month-2026-' + tm + '\')">' + timelineAbbr[tm-2] + '</div>';
+            }
+            timelineHTML += '</div>';
+            DOM.timeline.innerHTML = timelineHTML;
+            DOM.timeline.style.display = 'flex';
 
             while (loop <= today) {
                 var y = loop.getFullYear();
@@ -253,7 +282,15 @@
                     html += '<h2 class="year-header">' + y + '</h2>'; 
                     if (curYear === 0) {
                         var instaIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>';
-                        html += '<div class="header-subinfo"><a href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener noreferrer" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
+                        html += '<div class="header-subinfo"><span>' + totalVideos + ' / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener noreferrer" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
+                        
+                        var monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+                        html += '<div class="progress-timeline-wrapper"><div class="progress-timeline-base"><div class="progress-timeline-fill" style="width:' + progressPercent + '%"></div><div class="progress-timeline-segments">';
+                        for (var monthIdx = START_MONTH; monthIdx < 12; monthIdx++) {
+                            var mName = monthsNames[monthIdx];
+                            html += '<a href="#month-' + y + '-' + monthIdx + '" class="progress-timeline-segment" title="' + mName + '"><span class="progress-timeline-segment-label">' + mName + '</span></a>';
+                        }
+                        html += '</div></div></div>';
                     }
                     curYear = y; lastSeason = ""; 
                 }
@@ -264,14 +301,10 @@
                 }
                 
                 html += createMonthHTML(y, m);
-                
-                var monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
-                navHtml += '<option value="month-' + y + '-' + m + '">' + monthsNames[m] + ' ' + y + '</option>';
                 loop.setMonth(m + 1);
             }
             
             DOM.app.innerHTML = html; 
-            DOM.monthSelect.innerHTML = navHtml; 
 
             if (!initialScrollDone) {
                 requestAnimationFrame(function() {
@@ -295,15 +328,11 @@
         
         var html = '<div class="month-wrapper" id="month-' + y + '-' + m + '"><div class="month-header">' + monthsNames[m] + '</div><div class="calendar-grid">';
         
+        // Перший день генерується згідно з налаштуваннями START_DAY
         var firstDay = (y === START_YEAR && m === START_MONTH) ? START_DAY : 1;
         var daysInMonth = new Date(y, m + 1, 0).getDate();
 
         for (var d = firstDay; d <= daysInMonth; d++) {
-            // Приховуємо з 16 по 24 березня
-            if (y === 2026 && m === 2 && d >= 16 && d <= 24) {
-                continue;
-            }
-
             var currentDow = new Date(y, m, d).getDay();
             var dayName = weekDays[currentDow];
             var isSunday = (currentDow === 0);
@@ -316,9 +345,24 @@
             var dateBlock = '<div class="date-container"><span class="date-num">' + d + '</span><span class="day-name">' + dayName + '</span></div>';
             var cellClass = 'day-cell empty-day';
 
-            if (y === 2026 && m === 2 && d === 25) {
-                var thinArrowSVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
-                html += '<div class="day-cell season-marker"><div class="season-marker-content"><div class="season-marker-text">СЕЗОН 1</div><div class="season-marker-arrow">' + thinArrowSVG + '</div></div></div>';
+            // На 30 березня вставляємо тонкий текстовий маркер "СЕЗОН 1"
+            if (y === 2026 && m === 2 && d === 30) {
+                var thinArrowSVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+                var seasonTextMarker = '<div class="season-text-label"><span>СЕЗОН 1</span>' + thinArrowSVG + '</div>';
+                
+                if (vids && vids.length > 0) {
+                    cellClass = cellClass.replace('empty-day', 'has-video');
+                    var linksHTML = seasonTextMarker;
+                    for (var v = 0; v < vids.length; v++) {
+                        var vid = vids[v];
+                        var watchedClass = watchedVideos.indexOf(vid.id) !== -1 ? 'watched' : ''; 
+                        linksHTML += '<a href="https://www.youtube.com/watch?v=' + vid.id + '" class="video-link ' + watchedClass + '" onclick="openModal(event, \'' + vid.id + '\', this)"><img src="' + vid.thumb + '" class="video-thumb" loading="lazy" decoding="async" alt=""><div class="overlay-title">' + vid.title + '</div></a>';
+                    }
+                    var multiClass = vids.length > 1 ? 'multiple' : '';
+                    html += '<div class="' + cellClass + '"><div class="videos-container ' + multiClass + '">' + linksHTML + '</div>' + dateBlock + '</div>';
+                } else {
+                    html += '<div class="' + cellClass + '">' + seasonTextMarker + dateBlock + '</div>';
+                }
             } else if (vids && vids.length > 0) {
                 cellClass = cellClass.replace('empty-day', 'has-video');
                 var linksHTML = '';
@@ -344,7 +388,6 @@
         if (!targetId) return;
         var el = document.getElementById(targetId);
         if (el) window.scrollTo({top: el.getBoundingClientRect().top + window.pageYOffset - 20, behavior: 'smooth'});
-        document.getElementById('monthSelect').selectedIndex = 0;
     }
 
     window.mark = function(id, el) {
@@ -378,11 +421,10 @@
     }
 
     window.addEventListener('scroll', function() {
-        var nav = document.getElementById('floatingNav');
-        if (!nav) return;
+        if (!DOM.timeline) return;
         var currentScrollY = window.scrollY;
-        if (currentScrollY > lastScrollY && currentScrollY > 150) nav.classList.add('hidden');
-        else nav.classList.remove('hidden');
+        if (currentScrollY > lastScrollY && currentScrollY > 150) DOM.timeline.classList.add('hidden');
+        else DOM.timeline.classList.remove('hidden');
         lastScrollY = currentScrollY;
     }, { passive: true });
 
