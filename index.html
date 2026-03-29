@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex, nofollow">
     <title>Кіноархів Тараса Максимʼяка</title>
     
     <meta property="og:title" content="Кіноархів Тараса Максимʼяка">
@@ -34,7 +33,6 @@
         .insta-link svg { margin-bottom: 2px; }
         .insta-link:hover { color: var(--accent-red); }
 
-        /* Новий дизайн інтегрованої таймлінії/прогрес-бару */
         .top-timeline-wrapper { width: 100%; margin-bottom: 40px; position: relative; height: 36px; transform: translateZ(0); }
         .top-timeline-base { width: 100%; height: 100%; background: var(--cell-bg); border-radius: 8px; overflow: hidden; position: relative; display: flex; border: 1px solid var(--divider-color); box-sizing: border-box; }
         .top-timeline-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(230, 33, 23, 0.15); border-right: 2px solid var(--accent-red); width: 0%; transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1); z-index: 1; }
@@ -93,8 +91,6 @@
             .modal-content{padding:10px}
             .close-btn{right:10px;top:-25px}
             .site-footer{padding:50px 0 50px} 
-            
-            /* Адаптація верхньої таймлінії для мобільних */
             .top-timeline-wrapper { height: 32px; margin-bottom: 30px; }
             .top-timeline-segments { padding: 0 8px; }
             .top-timeline-segment { font-size: 9px; letter-spacing: 0; padding: 5px 3px; }
@@ -225,14 +221,14 @@
             var today = new Date();
             var startDate = new Date(START_YEAR, START_MONTH, START_DAY);
             
+            // Якщо зараз дата ДО старту челенджу - ми все одно відмальовуємо макет
+            if (today < startDate) {
+                today = startDate; 
+            }
+
             var loop = new Date(START_YEAR, START_MONTH, 1);
             var curYear = 0, lastSeason = "";
             var html = '';
-
-            if (today < startDate) {
-                DOM.app.innerHTML = '<div style="text-align:center; padding: 40px; color:var(--month-color);">Календар розпочнеться 30 березня 2026 року.</div>';
-                return;
-            }
 
             var totalVideos = 0;
             if (videosMap) {
@@ -260,7 +256,6 @@
                         var instaIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>';
                         html += '<div class="header-subinfo"><span>' + totalVideos + ' / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener noreferrer" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
                         
-                        // Інтегрована таймлінія / прогрес-бар
                         var timelineAbbr = ['БЕР', 'КВІ', 'ТРА', 'ЧЕР', 'ЛИП', 'СЕР', 'ВЕР', 'ЖОВ', 'ЛИС', 'ГРУ'];
                         var topTimelineHTML = '<div class="top-timeline-wrapper"><div class="top-timeline-base"><div class="top-timeline-fill" style="width:' + progressPercent + '%"></div><div class="top-timeline-segments">';
                         for(var tm=2; tm<=11; tm++){
@@ -310,10 +305,6 @@
         var daysInMonth = new Date(y, m + 1, 0).getDate();
 
         for (var d = firstDay; d <= daysInMonth; d++) {
-            if (y === 2026 && m === 2 && d >= 16 && d <= 29) {
-                continue;
-            }
-
             var currentDow = new Date(y, m, d).getDay();
             var dayName = weekDays[currentDow];
             var isSunday = (currentDow === 0);
@@ -350,7 +341,7 @@
     window.jumpTo = function(targetId) {
         if (!targetId) return;
         var el = document.getElementById(targetId);
-        if (el) window.scrollTo({top: el.getBoundingClientRect().top + window.pageYOffset - 20, behavior: 'smooth'});
+        if (el) window.scrollTo({top: el.getBoundingClientRect().top - 20, behavior: 'smooth'});
     }
 
     window.mark = function(id, el) {
