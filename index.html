@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Кіноархів Тараса Максимʼяка</title>
+    <meta name="robots" content="noindex, nofollow">
+    <title>Лови День</title>
     
-    <meta property="og:title" content="Кіноархів Тараса Максимʼяка">
-    <meta property="og:description" content="Один день — одне відео. Реаліті-влог у постлюдському світі.">
+    <meta property="og:title" content="Лови День">
+    <meta property="og:description" content="Особистий відеощоденник.">
     <meta property="og:image" content="image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
@@ -28,14 +29,12 @@
         .year-header:first-child{margin-top:10px}
         
         .header-subinfo { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--month-color); font-weight: 600; letter-spacing: 2px; margin-top: 0px; margin-bottom: 25px; text-transform: uppercase; }
-        .header-subinfo .dot-separator { font-size: 10px; opacity: 0.5; }
         .insta-link { color: var(--month-color); text-decoration: none; transition: color .3s; display: flex; align-items: center; gap: 5px; }
         .insta-link svg { margin-bottom: 2px; }
         .insta-link:hover { color: var(--accent-red); }
 
         .top-timeline-wrapper { width: 100%; margin-bottom: 40px; position: relative; height: 36px; transform: translateZ(0); }
         .top-timeline-base { width: 100%; height: 100%; background: var(--cell-bg); border-radius: 8px; overflow: hidden; position: relative; display: flex; border: 1px solid var(--divider-color); box-sizing: border-box; }
-        .top-timeline-fill { position: absolute; left: 0; top: 0; height: 100%; background: rgba(230, 33, 23, 0.15); border-right: 2px solid var(--accent-red); width: 0%; transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1); z-index: 1; }
         .top-timeline-segments { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: flex; z-index: 2; justify-content: space-between; padding: 0 15px; align-items: center; box-sizing: border-box; }
         .top-timeline-segment { font-size: 11px; font-weight: 700; color: var(--month-color); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: color 0.2s; padding: 10px 5px; user-select: none; -webkit-tap-highlight-color: transparent; }
         .top-timeline-segment:hover { color: var(--accent-red); }
@@ -115,8 +114,7 @@
 <script>
     var API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
     var UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
-    // НОВА ТОЧКА ВІДЛІКУ: 1 КВІТНЯ 2026
-    var START_YEAR = 2026, START_MONTH = 3, START_DAY = 1; 
+    var START_YEAR = 2026, START_MONTH = 3, START_DAY = 16; 
     var CACHE_KEY = 'yt_videos_data', CACHE_TIME_KEY = 'yt_videos_time', CACHE_TTL = 21600000; 
     
     var DOM = {
@@ -227,38 +225,21 @@
             }
 
             var loop = new Date(START_YEAR, START_MONTH, 1);
-            var curYear = 0, lastSeason = "";
+            var curYear = 0;
             var html = '';
-
-            var totalVideos = 0;
-            if (videosMap) {
-                var keys = Object.keys(videosMap);
-                for (var i = 0; i < keys.length; i++) {
-                    if (keys[i] >= "2026-04-01") {
-                        if (Array.isArray(videosMap[keys[i]])) {
-                            totalVideos += videosMap[keys[i]].length;
-                        }
-                    }
-                }
-            }
-            
-            var progressPercent = (totalVideos / 365) * 100;
-            if (progressPercent > 100) progressPercent = 100;
 
             while (loop <= today) {
                 var y = loop.getFullYear();
                 var m = loop.getMonth();
-                var seas = getSeason(m);
                 
                 if (y !== curYear) { 
                     html += '<h2 class="year-header">' + y + '</h2>'; 
                     if (curYear === 0) {
                         var instaIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>';
-                        html += '<div class="header-subinfo"><span>' + totalVideos + ' / 365 ВІДЕО</span><span class="dot-separator">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener noreferrer" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
+                        html += '<div class="header-subinfo"><a href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener noreferrer" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
                         
-                        // Таймлінія починається з КВІТНЯ
                         var timelineAbbr = ['КВІ', 'ТРА', 'ЧЕР', 'ЛИП', 'СЕР', 'ВЕР', 'ЖОВ', 'ЛИС', 'ГРУ'];
-                        var topTimelineHTML = '<div class="top-timeline-wrapper"><div class="top-timeline-base"><div class="top-timeline-fill" style="width:' + progressPercent + '%"></div><div class="top-timeline-segments">';
+                        var topTimelineHTML = '<div class="top-timeline-wrapper"><div class="top-timeline-base"><div class="top-timeline-segments">';
                         for(var tm=3; tm<=11; tm++){
                             topTimelineHTML += '<div class="top-timeline-segment" onclick="jumpTo(\'month-2026-' + tm + '\')">' + timelineAbbr[tm-3] + '</div>';
                         }
@@ -266,12 +247,7 @@
                         
                         html += topTimelineHTML;
                     }
-                    curYear = y; lastSeason = ""; 
-                }
-                
-                if (seas !== lastSeason) { 
-                    html += '<div class="season-header">' + seas + '</div>'; 
-                    lastSeason = seas; 
+                    curYear = y; 
                 }
                 
                 html += createMonthHTML(y, m);
