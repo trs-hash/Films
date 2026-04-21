@@ -3,376 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex, nofollow">
-    <title>Лови День</title>
+    <title>Taras Maksymiak</title>
     
-    <meta property="og:title" content="Лови День">
-    <meta property="og:description" content="Особистий відеощоденник.">
+    <meta property="og:title" content="Taras Maksymiak">
     <meta property="og:image" content="image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
     <link rel="preconnect" href="https://i.ytimg.com" crossorigin>
-    <link rel="dns-prefetch" href="https://i.ytimg.com">
     <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
-    <link rel="dns-prefetch" href="https://www.googleapis.com">
     <style>
-        :root{--bg-color:#fff;--text-color:#222;--cell-bg:#f8f8f8;--month-color:#888;--date-color:#ccc;--divider-color:#eaeaea;--nav-border:#ddd;--thumb-bg:#e0e0e0;--accent-red:#e62117}
-        @media (prefers-color-scheme:dark){:root{--bg-color:#121212;--text-color:#e0e0e0;--cell-bg:#1e1e1e;--month-color:#aaa;--date-color:#555;--divider-color:#333;--nav-border:#444;--thumb-bg:#2a2a2a;--accent-red:#e62117}}
+        :root{--bg:#fff;--txt:#222;--cell:#f8f8f8;--mut:#888;--div:#eaeaea;--red:#e62117}
+        @media (prefers-color-scheme:dark){:root{--bg:#121212;--txt:#e0e0e0;--cell:#1e1e1e;--mut:#aaa;--div:#333}}
+        body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--txt);margin:0;padding:20px 20px 0;overflow-x:hidden;scroll-behavior:smooth}
+        .wrap{max-width:1400px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+        .main{flex:1}
         
-        body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;background:var(--bg-color);color:var(--text-color);margin:0;padding:20px 20px 0px;overflow-x:hidden;scroll-behavior:smooth;transition:background .3s,color .3s}
-        .main-wrapper{max-width:1400px;margin:0 auto;display:block;min-height:100vh;display:flex;flex-direction:column}
-        .content-flex{flex:1}
+        h2{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px}
+        h2:first-child{margin-top:10px}
         
-        .year-header{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px}
-        .year-header:first-child{margin-top:10px}
-        
-        .header-subinfo { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--month-color); font-weight: 600; letter-spacing: 2px; margin-top: 0px; margin-bottom: 25px; text-transform: uppercase; }
-        .insta-link { color: var(--month-color); text-decoration: none; transition: color .3s; display: flex; align-items: center; gap: 5px; }
-        .insta-link svg { margin-bottom: 2px; }
-        .insta-link:hover { color: var(--accent-red); }
+        .info{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--mut);font-weight:600;letter-spacing:2px;margin-bottom:25px}
+        .info a{color:var(--mut);text-decoration:none;display:flex;align-items:center;gap:5px;transition:.2s}
+        .info a:hover{color:var(--red)}
 
-        .top-timeline-wrapper { width: 100%; margin-bottom: 40px; position: relative; height: 36px; transform: translateZ(0); }
-        .top-timeline-base { width: 100%; height: 100%; background: var(--cell-bg); border-radius: 8px; overflow: hidden; position: relative; display: flex; border: 1px solid var(--divider-color); box-sizing: border-box; }
-        .top-timeline-segments { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: flex; z-index: 2; justify-content: space-between; padding: 0 15px; align-items: center; box-sizing: border-box; }
-        .top-timeline-segment { font-size: 11px; font-weight: 700; color: var(--month-color); cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: color 0.2s; padding: 10px 5px; user-select: none; -webkit-tap-highlight-color: transparent; }
-        .top-timeline-segment:hover { color: var(--accent-red); }
+        .nav-base{background:var(--cell);border-radius:8px;display:flex;border:1px solid var(--div);margin-bottom:40px}
+        .nav-seg{flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--mut);cursor:pointer;text-transform:uppercase;letter-spacing:1px;padding:12px 5px;transition:.2s;user-select:none;-webkit-tap-highlight-color:transparent}
+        .nav-seg:hover{color:var(--red)}
+        
+        .mo-wrap{margin-bottom:40px;scroll-margin-top:20px}
+        .mo-hdr{color:var(--mut);font-size:22px;font-weight:500;text-transform:uppercase;margin:0 0 20px;letter-spacing:1px}
+        
+        .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+        .cell{aspect-ratio:16/9;position:relative;background:var(--cell);border-radius:6px;overflow:hidden;transform:translateZ(0)}
+        .cell.empty{background:transparent}
+        
+        .dt{position:absolute;top:8px;left:10px;display:flex;align-items:baseline;gap:6px;z-index:10;pointer-events:none}
+        .dt-n{font-size:18px;font-weight:800;line-height:1;color:var(--date-color,#ccc)}
+        .dt-d{font-size:10px;font-weight:500;text-transform:uppercase;color:var(--date-color,#ccc);opacity:.6}
+        .has-vid .dt-n,.has-vid .dt-d{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
+        .has-vid .dt-d{opacity:.7;text-shadow:0 1px 2px rgba(0,0,0,.9)}
 
-        .season-header{font-size:14px;font-weight:700;color:var(--accent-red);text-transform:uppercase;letter-spacing: 4px;margin: 40px 0 15px}
+        .v-cont{position:absolute;inset:0;display:flex;z-index:5}
+        .v-lnk{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
+        .v-cont.mult .v-lnk:not(:last-child){border-right:2px solid #fff}
         
-        .month-wrapper{content-visibility:auto;contain-intrinsic-size:500px;margin-bottom:40px;scroll-margin-top:20px}
-        .month-header{color:var(--month-color);font-size:22px;font-weight:500;text-transform:uppercase;margin:0 0 20px;letter-spacing:1px;transition:color .3s}
+        .v-thumb{width:100%;height:100%;object-fit:cover;transition:transform .4s;background:#e0e0e0}
+        @media (prefers-color-scheme:dark){.v-thumb{background:#2a2a2a}}
+        .v-lnk:hover .v-thumb{transform:scale(1.03)}
+        .v-lnk::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4) 0%,transparent 40%,rgba(0,0,0,.9) 100%);pointer-events:none}
         
-        .week-divider{grid-column:1/-1;height:1px;background:linear-gradient(90deg,transparent,var(--divider-color) 10%,var(--divider-color) 90%,transparent);margin:8px 0;transition:background .3s}
-        .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
-        .day-cell{aspect-ratio:16/9;position:relative;background:var(--cell-bg);border-radius:6px;overflow:hidden;transform:translateZ(0);box-sizing:border-box;transition:background .3s}
-        .day-cell.empty-day{background:transparent}
+        .v-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         
-        .date-container{position:absolute;top:8px;left:10px;right:10px;display:flex;align-items:baseline;gap:6px;z-index:10;pointer-events:none}
-        .date-num{font-size:18px;font-weight:800;line-height:1;color:var(--date-color);transition:color .3s}
-        .day-name{font-size:10px;font-weight:500;text-transform:uppercase;color:var(--date-color);opacity:.6;transition:color .3s}
-        .has-video .date-num,.has-video .day-name{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
-        .has-video .day-name{opacity:.7;text-shadow:0 1px 2px rgba(0,0,0,.9)}
+        .v-lnk.watched .v-thumb{filter:grayscale(1) opacity(0.8)}
+        .v-lnk.watched::before,.v-lnk.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:var(--red);z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
+        .v-lnk.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
+        .v-lnk.watched::after{transform:translate(-50%,-50%) rotate(-45deg)}
+        
+        .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:1000;align-items:center;justify-content:center}
+        .modal.show{display:flex}
+        .mod-in{width:100%;max-width:1000px;padding:20px;position:relative;transition:transform .2s ease-out}
+        .iframe-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;background:#000}
+        .iframe-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
+        .close{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10}
+        .close:hover{color:var(--red)}
 
-        .videos-container{position:absolute;inset:0;display:flex;z-index:5}
-        .video-link{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
-        .videos-container.multiple .video-link:not(:last-child){border-right:2px solid #fff}
-        
-        .video-thumb{width:100%;height:100%;object-fit:cover;transition:transform .4s ease;background-color:var(--thumb-bg);will-change:transform}
-        .video-link:hover .video-thumb{transform:scale(1.03)}
-        .video-link::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.6) 0%,transparent 30%,transparent 60%,rgba(0,0,0,.9) 100%);pointer-events:none}
-        
-        .overlay-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
-        
-        .video-link.watched .video-thumb{filter:none;opacity:.8}
-        .video-link.watched::before,.video-link.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:var(--accent-red);z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
-        .video-link.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
-        .video-link.watched::after{transform:translate(-50%,-50%) rotate(-45deg)}
-        
-        .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(4px);opacity:0;transition:opacity .3s ease}
-        .modal.show{display:flex;opacity:1}
-        .modal-content{width:100%;max-width:1000px;padding:20px;position:relative;transition:transform .2s ease-out}
-        .iframe-wrapper{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;background:#000;box-shadow:0 10px 30px rgba(0,0,0,.5)}
-        .iframe-wrapper iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
-        .close-btn{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10;text-shadow:0 2px 4px rgba(0,0,0,.5);font-weight:300}
-        .close-btn:hover{color:var(--accent-red)}
+        .footer{text-align:center;padding:60px 0;font-size:11px;color:var(--mut);letter-spacing:2px}
 
-        .site-footer{text-align:center;padding:60px 0 60px;font-size:11px;color:var(--date-color);text-transform:uppercase;letter-spacing:2px}
-
-        @media (max-width:1024px){.calendar-grid{grid-template-columns:repeat(4,1fr)}}
-        @media (max-width:600px){
-            body{padding:15px 15px 0px}
-            .calendar-grid{grid-template-columns:repeat(2,1fr);gap:6px}
-            .year-header{font-size:38px}
-            .date-num{font-size:16px}
-            .day-name{font-size:9px}
-            .modal-content{padding:10px}
-            .close-btn{right:10px;top:-25px}
-            .site-footer{padding:50px 0 50px} 
-            .top-timeline-wrapper { height: 32px; margin-bottom: 30px; }
-            .top-timeline-segments { padding: 0 8px; }
-            .top-timeline-segment { font-size: 9px; letter-spacing: 0; padding: 5px 3px; }
+        @media(max-width:1024px){.grid{grid-template-columns:repeat(4,1fr)}}
+        @media(max-width:600px){
+            body{padding:15px 15px 0}
+            .grid{grid-template-columns:repeat(2,1fr)}
+            h2{font-size:38px}
+            .dt-n{font-size:16px}
+            .dt-d{font-size:9px}
+            .mod-in{padding:10px}
+            .close{right:10px;top:-25px}
+            .nav-seg{font-size:9px;letter-spacing:0;padding:10px 2px}
+            .footer{padding:50px 0}
         }
     </style>
 </head>
 <body>
-<div class="main-wrapper" id="main">
-    <div class="content-flex" id="app"></div>
-    <div class="site-footer">© 2026 ТАРАС МАКСИМʼЯК</div>
+<div class="wrap">
+    <div class="main" id="app"></div>
+    <div class="footer">© 2026 ТАРАС МАКСИМʼЯК</div>
 </div>
 
-<div id="videoModal" class="modal" onclick="closeModal()">
-    <div class="modal-content" id="modalContent" onclick="event.stopPropagation()">
-        <div class="close-btn" onclick="closeModal()">&times;</div>
-        <div class="iframe-wrapper">
-            <iframe id="ytIframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-        </div>
+<div id="vidModal" class="modal" onclick="closeModal()">
+    <div class="mod-in" id="modIn" onclick="event.stopPropagation()">
+        <div class="close" onclick="closeModal()">&times;</div>
+        <div class="iframe-wrap"><iframe id="ytIframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>
     </div>
 </div>
 
 <script>
-    var API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
-    var UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
-    var START_YEAR = 2026, START_MONTH = 3, START_DAY = 16; 
-    var CACHE_KEY = 'yt_videos_data', CACHE_TIME_KEY = 'yt_videos_time', CACHE_TTL = 21600000; 
-    
-    var DOM = {
-        app: document.getElementById('app'),
-        modal: document.getElementById('videoModal'),
-        modalContent: document.getElementById('modalContent'),
-        iframe: document.getElementById('ytIframe')
-    };
+    const API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
+    const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
+    let videosMap = {};
+    let watched = JSON.parse(localStorage.getItem('vw') || '[]');
 
-    var videosMap = {};
-    var watchedVideos = [];
-    var initialScrollDone = false; 
-
-    function safeGetStorage(key) {
-        try { return localStorage.getItem(key); } catch(e) { return null; }
-    }
-    function safeSetStorage(key, value) {
-        try { localStorage.setItem(key, value); } catch(e) {}
-    }
-
-    try {
-        var storedWatched = safeGetStorage('my_watched_videos');
-        if (storedWatched) {
-            watchedVideos = JSON.parse(storedWatched);
-            if (!Array.isArray(watchedVideos)) watchedVideos = [];
+    async function init() {
+        let cached = localStorage.getItem('yt_data'), time = localStorage.getItem('yt_time'), now = Date.now();
+        if (cached && time && (now - time) < 21600000) {
+            videosMap = JSON.parse(cached);
+            render();
         }
-    } catch(e) {
-        watchedVideos = [];
+        await fetchAPI();
+        localStorage.setItem('yt_data', JSON.stringify(videosMap));
+        localStorage.setItem('yt_time', now);
+        render();
     }
 
-    function init() {
-        var now = Date.now();
-        var cachedData = safeGetStorage(CACHE_KEY);
-        var cachedTime = safeGetStorage(CACHE_TIME_KEY);
-        var isCacheValid = cachedData && cachedTime && (now - parseInt(cachedTime, 10)) < CACHE_TTL;
-
-        if (cachedData) {
-            try { 
-                videosMap = JSON.parse(cachedData); 
-                if (typeof videosMap !== 'object' || videosMap === null) videosMap = {};
-                render(); 
-            } catch(e) { 
-                videosMap = {}; 
-            }
-        }
-
-        if (!isCacheValid) {
-            fetchAPI('', {})
-                .then(function(resultMap) {
-                    videosMap = resultMap;
-                    safeSetStorage(CACHE_KEY, JSON.stringify(videosMap));
-                    safeSetStorage(CACHE_TIME_KEY, now.toString());
-                    render(); 
-                })
-                .catch(function(error) {
-                    if (!cachedData) render(); 
-                });
-        }
-    }
-
-    function fetchAPI(pageToken, currentMap) {
-        var url = 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=' + UPLOADS_ID + '&maxResults=50&key=' + API_KEY;
-        if (pageToken) url += '&pageToken=' + pageToken;
-
-        return fetch(url).then(function(res) {
-            if (!res.ok) throw new Error('API Error');
-            return res.json();
-        }).then(function(data) {
-            if (data && data.items) {
-                for (var i = 0; i < data.items.length; i++) {
-                    var item = data.items[i];
-                    if (!item.snippet || !item.snippet.publishedAt || !item.snippet.resourceId) continue;
-                    
-                    var dateKey = item.snippet.publishedAt.split('T')[0];
-                    if (!currentMap[dateKey]) currentMap[dateKey] = [];
-                    
-                    var t = item.snippet.thumbnails || {};
-                    var thumb = (t.high && t.high.url) || (t.standard && t.standard.url) || (t.maxres && t.maxres.url) || (t.medium && t.medium.url) || (t.default && t.default.url) || '';
-
-                    currentMap[dateKey].push({ 
-                        id: item.snippet.resourceId.videoId, 
-                        title: item.snippet.title, 
-                        thumb: thumb 
-                    });
-                }
-            }
-            if (data.nextPageToken) {
-                return fetchAPI(data.nextPageToken, currentMap);
-            }
-            return currentMap;
-        });
-    }
-
-    function getSeason(m) {
-        if (m === 11 || m <= 1) return "ЗИМА";
-        if (m >= 2 && m <= 4) return "ВЕСНА";
-        if (m >= 5 && m <= 7) return "ЛІТО";
-        return "ОСІНЬ";
+    async function fetchAPI(token = '') {
+        try {
+            let res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}${token ? '&pageToken='+token : ''}`);
+            let data = await res.json();
+            (data.items || []).forEach(i => {
+                let s = i.snippet;
+                if (!s || !s.publishedAt) return;
+                let date = s.publishedAt.split('T')[0];
+                if (!videosMap[date]) videosMap[date] = [];
+                let t = s.thumbnails || {};
+                videosMap[date].push({ id: s.resourceId.videoId, title: s.title, thumb: (t.high || t.standard || t.default || {}).url || '' });
+            });
+            if (data.nextPageToken) await fetchAPI(data.nextPageToken);
+        } catch(e) {}
     }
 
     function render() {
-        try {
-            var today = new Date();
-            var startDate = new Date(START_YEAR, START_MONTH, START_DAY);
-            
-            if (today < startDate) {
-                today = startDate; 
-            }
-
-            var loop = new Date(START_YEAR, START_MONTH, 1);
-            var curYear = 0;
-            var html = '';
-
-            while (loop <= today) {
-                var y = loop.getFullYear();
-                var m = loop.getMonth();
-                
-                if (y !== curYear) { 
-                    html += '<h2 class="year-header">' + y + '</h2>'; 
-                    if (curYear === 0) {
-                        var instaIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>';
-                        html += '<div class="header-subinfo"><a href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener noreferrer" class="insta-link">' + instaIcon + 'INSTAGRAM</a></div>';
-                        
-                        var timelineAbbr = ['КВІ', 'ТРА', 'ЧЕР', 'ЛИП', 'СЕР', 'ВЕР', 'ЖОВ', 'ЛИС', 'ГРУ'];
-                        var topTimelineHTML = '<div class="top-timeline-wrapper"><div class="top-timeline-base"><div class="top-timeline-segments">';
-                        for(var tm=3; tm<=11; tm++){
-                            topTimelineHTML += '<div class="top-timeline-segment" onclick="jumpTo(\'month-2026-' + tm + '\')">' + timelineAbbr[tm-3] + '</div>';
-                        }
-                        topTimelineHTML += '</div></div></div>';
-                        
-                        html += topTimelineHTML;
-                    }
-                    curYear = y; 
-                }
-                
-                html += createMonthHTML(y, m);
-                loop.setMonth(m + 1);
-            }
-            
-            DOM.app.innerHTML = html; 
-
-            if (!initialScrollDone) {
-                requestAnimationFrame(function() {
-                    var watchedElements = document.querySelectorAll('.video-link.watched');
-                    if (watchedElements.length > 0) {
-                        var lastWatched = watchedElements[watchedElements.length - 1];
-                        lastWatched.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                    initialScrollDone = true;
-                }); 
-            }
-
-        } catch (e) {
-            document.getElementById('app').innerHTML = '<div style="padding:40px; text-align:center; color:red;">Сталася помилка відображення сторінки. Спробуйте оновити.</div>';
-        }
-    }
-
-    function createMonthHTML(y, m) {
-        var weekDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
-        var monthsNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+        let today = new Date(), start = new Date(2026, 3, 23);
+        if (today < start) today = start;
         
-        var html = '<div class="month-wrapper" id="month-' + y + '-' + m + '"><div class="month-header">' + monthsNames[m] + '</div><div class="calendar-grid">';
-        
-        var firstDay = (y === START_YEAR && m === START_MONTH) ? START_DAY : 1;
-        var daysInMonth = new Date(y, m + 1, 0).getDate();
+        let html = '';
+        let total = Object.keys(videosMap).reduce((sum, key) => key >= "2026-04-23" ? sum + videosMap[key].length : sum, 0);
 
-        for (var d = firstDay; d <= daysInMonth; d++) {
-            var currentDow = new Date(y, m, d).getDay();
-            var dayName = weekDays[currentDow];
-            var isSunday = (currentDow === 0);
-            
-            var mStr = (m + 1) < 10 ? '0' + (m + 1) : (m + 1);
-            var dStr = d < 10 ? '0' + d : d;
-            var key = y + '-' + mStr + '-' + dStr;
-            
-            var vids = videosMap ? videosMap[key] : null;
-            var dateBlock = '<div class="date-container"><span class="date-num">' + d + '</span><span class="day-name">' + dayName + '</span></div>';
-            var cellClass = 'day-cell empty-day';
+        let loop = new Date(2026, 3, 1);
+        let curY = 0;
+        let wDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
+        let mNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
+        let abbr = ['КВІ', 'ТРА', 'ЧЕР', 'ЛИП', 'СЕР', 'ВЕР', 'ЖОВ', 'ЛИС', 'ГРУ'];
 
-            if (vids && vids.length > 0) {
-                cellClass = cellClass.replace('empty-day', 'has-video');
-                var linksHTML = '';
-                for (var v = 0; v < vids.length; v++) {
-                    var vid = vids[v];
-                    var watchedClass = watchedVideos.indexOf(vid.id) !== -1 ? 'watched' : ''; 
-                    linksHTML += '<a href="https://www.youtube.com/watch?v=' + vid.id + '" class="video-link ' + watchedClass + '" onclick="openModal(event, \'' + vid.id + '\', this)"><img src="' + vid.thumb + '" class="video-thumb" loading="lazy" decoding="async" alt=""><div class="overlay-title">' + vid.title + '</div></a>';
+        while (loop <= today) {
+            let y = loop.getFullYear(), m = loop.getMonth();
+            if (y !== curY) {
+                html += `<h2>${y}</h2>`;
+                if (curY === 0) {
+                    html += `<div class="info"><span>${total} ВІДЕО</span><span style="opacity:.5">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>INSTAGRAM</a></div>`;
+                    html += `<div class="nav-base">`;
+                    for(let i=3; i<=11; i++) html += `<div class="nav-seg" onclick="document.getElementById('m-${y}-${i}').scrollIntoView({behavior:'smooth', block:'start'})">${abbr[i-3]}</div>`;
+                    html += `</div>`;
                 }
-                var multiClass = vids.length > 1 ? 'multiple' : '';
-                html += '<div class="' + cellClass + '"><div class="videos-container ' + multiClass + '">' + linksHTML + '</div>' + dateBlock + '</div>';
-            } else {
-                html += '<div class="' + cellClass + '">' + dateBlock + '</div>';
+                curY = y;
             }
+            
+            html += `<div class="mo-wrap" id="m-${y}-${m}"><div class="mo-hdr">${mNames[m]}</div><div class="grid">`;
+            
+            let dMax = new Date(y, m + 1, 0).getDate();
+            let dStart = (y === 2026 && m === 3) ? 23 : 1;
 
-            if (isSunday && d !== daysInMonth) {
-                html += '<div class="week-divider"></div>';
+            for (let d = dStart; d <= dMax; d++) {
+                let dw = new Date(y, m, d).getDay();
+                let key = `${y}-${(m+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
+                let v = videosMap[key];
+                
+                let cCls = (v && v.length) ? 'cell has-vid' : 'cell empty';
+                let cIn = '';
+
+                if (v && v.length) {
+                    v.forEach(vid => {
+                        let wCls = watched.includes(vid.id) ? ' watched' : '';
+                        cIn += `<a href="#" class="v-lnk${wCls}" onclick="openVid(event, '${vid.id}', this)"><img src="${vid.thumb}" class="v-thumb"><div class="v-title">${vid.title}</div></a>`;
+                    });
+                }
+                html += `<div class="${cCls}"><div class="v-cont ${v && v.length>1?'mult':''}">${cIn}</div><div class="dt"><span class="dt-n">${d}</span><span class="dt-d">${wDays[dw]}</span></div></div>`;
             }
+            html += `</div></div>`;
+            loop.setMonth(m + 1);
         }
-        return html + '</div></div>';
+        document.getElementById('app').innerHTML = html;
     }
 
-    window.jumpTo = function(targetId) {
-        if (!targetId) return;
-        var el = document.getElementById(targetId);
-        if (el) window.scrollTo({top: el.getBoundingClientRect().top - 20, behavior: 'smooth'});
-    }
-
-    window.mark = function(id, el) {
-        if (watchedVideos.indexOf(id) === -1) {
-            watchedVideos.push(id);
-            safeSetStorage('my_watched_videos', JSON.stringify(watchedVideos));
-        }
-        if(el) el.classList.add('watched');
-    }
-
-    window.openModal = function(e, id, el) {
+    window.openVid = function(e, id, el) {
         e.preventDefault();
-        mark(id, el); 
-        
-        var iframe = document.getElementById('ytIframe');
-        var modal = document.getElementById('videoModal');
-        iframe.src = 'https://www.youtube.com/embed/' + id + '?autoplay=1';
-        modal.classList.add('show');
-        document.body.style.overflow = 'hidden'; 
+        if (!watched.includes(id)) {
+            watched.push(id);
+            localStorage.setItem('vw', JSON.stringify(watched));
+        }
+        el.classList.add('watched');
+        document.getElementById('ytIframe').src = 'https://www.youtube.com/embed/' + id + '?autoplay=1';
+        document.getElementById('vidModal').classList.add('show');
+        document.body.style.overflow = 'hidden';
     }
 
     window.closeModal = function() {
-        var modalContent = document.getElementById('modalContent');
-        var iframe = document.getElementById('ytIframe');
-        var modal = document.getElementById('videoModal');
-        
-        modalContent.style.transform = ''; 
-        iframe.src = '';
-        modal.classList.remove('show');
-        document.body.style.overflow = 'auto'; 
+        document.getElementById('ytIframe').src = '';
+        document.getElementById('vidModal').classList.remove('show');
+        document.body.style.overflow = 'auto';
+        document.getElementById('modIn').style.transform = '';
     }
 
-    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
-    var touchStartY = 0;
-    var modalElement = document.getElementById('videoModal');
-    var modalContent = document.getElementById('modalContent');
-    
-    modalElement.addEventListener('touchstart', function(e) { 
-        touchStartY = e.touches[0].clientY; 
-    }, {passive: true});
-    
-    modalElement.addEventListener('touchmove', function(e) {
-        var deltaY = e.touches[0].clientY - touchStartY;
-        if (deltaY > 0) modalContent.style.transform = 'translateY(' + deltaY + 'px)';
-    }, {passive: true});
-    
-    modalElement.addEventListener('touchend', function(e) {
-        if (e.changedTouches[0].clientY - touchStartY > 100) closeModal();
-        else modalContent.style.transform = 'translateY(0)';
-    }, {passive: true});
+    let tY = 0, mod = document.getElementById('vidModal'), mIn = document.getElementById('modIn');
+    mod.addEventListener('touchstart', e => tY = e.touches[0].clientY, {passive:true});
+    mod.addEventListener('touchmove', e => { let dY = e.touches[0].clientY - tY; if(dY>0) mIn.style.transform = `translateY(${dY}px)`; }, {passive:true});
+    mod.addEventListener('touchend', e => { if(e.changedTouches[0].clientY - tY > 100) closeModal(); else mIn.style.transform = ''; }, {passive:true});
 
     setTimeout(init, 0);
-
 </script>
 </body>
 </html>
