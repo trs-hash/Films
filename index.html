@@ -38,7 +38,11 @@
         .cell{aspect-ratio:16/9;position:relative;background:var(--cell);border-radius:6px;overflow:hidden;transform:translateZ(0)}
         .cell.empty{background:transparent}
         
-        .dt{position:absolute;top:8px;left:10px;display:flex;align-items:baseline;gap:6px;z-index:10;pointer-events:none}
+        /* Маркер початку тижня (Понеділок) */
+        .is-monday::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--red); z-index:25; border-radius: 6px 0 0 6px;}
+        
+        .dt{position:absolute;top:8px;left:12px;display:flex;align-items:baseline;gap:6px;z-index:10;pointer-events:none}
+        .is-monday .dt{left: 14px;} /* Легкий зсув дати від червоної лінії */
         .dt-n{font-size:18px;font-weight:800;line-height:1;color:var(--date-color,#ccc)}
         .dt-d{font-size:10px;font-weight:500;text-transform:uppercase;color:var(--date-color,#ccc);opacity:.6}
         .has-vid .dt-n,.has-vid .dt-d{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
@@ -53,7 +57,8 @@
         .v-lnk:hover .v-thumb{transform:scale(1.03)}
         .v-lnk::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4) 0%,transparent 40%,rgba(0,0,0,.9) 100%);pointer-events:none}
         
-        .v-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .v-title{position:absolute;bottom:10px;left:12px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .is-monday .v-title{left: 14px;}
         
         .v-lnk.watched .v-thumb{filter:grayscale(1) opacity(0.8)}
         .v-lnk.watched::before,.v-lnk.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:var(--red);z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
@@ -136,8 +141,6 @@
         if (today < start) today = start;
         
         let html = '';
-        let total = Object.keys(videosMap).reduce((sum, key) => key >= "2026-04-23" ? sum + videosMap[key].length : sum, 0);
-
         let loop = new Date(2026, 3, 1);
         let curY = 0;
         let wDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
@@ -149,7 +152,7 @@
             if (y !== curY) {
                 html += `<h2>${y}</h2>`;
                 if (curY === 0) {
-                    html += `<div class="info"><span>${total} ВІДЕО</span><span style="opacity:.5">•</span><a href="https://instagram.com/taras.maksymiak/" target="_blank"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>INSTAGRAM</a></div>`;
+                    html += `<div class="info"><a href="https://instagram.com/taras.maksymiak/" target="_blank"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>INSTAGRAM</a></div>`;
                     html += `<div class="nav-base">`;
                     for(let i=3; i<=11; i++) html += `<div class="nav-seg" onclick="document.getElementById('m-${y}-${i}').scrollIntoView({behavior:'smooth', block:'start'})">${abbr[i-3]}</div>`;
                     html += `</div>`;
@@ -168,8 +171,10 @@
                 let v = videosMap[key];
                 
                 let cCls = (v && v.length) ? 'cell has-vid' : 'cell empty';
-                let cIn = '';
+                // Додаємо клас для понеділків
+                if (dw === 1) cCls += ' is-monday';
 
+                let cIn = '';
                 if (v && v.length) {
                     v.forEach(vid => {
                         let wCls = watched.includes(vid.id) ? ' watched' : '';
