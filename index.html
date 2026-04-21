@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Тарас Максимʼяк</title>
+    <title>Taras Maksymiak</title>
     
     <meta property="og:title" content="Taras Maksymiak">
     <meta property="og:image" content="image.png">
@@ -23,11 +23,11 @@
         h2{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px}
         h2:first-child{margin-top:10px}
         
-        .info{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--mut);font-weight:600;letter-spacing:2px;margin-bottom:25px}
-        .info a{color:var(--mut);text-decoration:none;display:flex;align-items:center;gap:5px;transition:.2s}
+        .info{margin-bottom:25px}
+        .info a{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--mut);font-weight:600;letter-spacing:2px;text-decoration:none;transition:.2s}
         .info a:hover{color:var(--red)}
 
-        .nav-base{background:var(--cell);border-radius:8px;display:flex;border:1px solid var(--div);margin-bottom:40px}
+        .nav-base{background:var(--cell);border-radius:8px;display:flex;border:1px solid var(--div);margin-bottom:40px;overflow:hidden}
         .nav-seg{flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--mut);cursor:pointer;text-transform:uppercase;letter-spacing:1px;padding:12px 5px;transition:.2s;user-select:none;-webkit-tap-highlight-color:transparent}
         .nav-seg:hover{color:var(--red)}
         
@@ -38,11 +38,10 @@
         .cell{aspect-ratio:16/9;position:relative;background:var(--cell);border-radius:6px;overflow:hidden;transform:translateZ(0)}
         .cell.empty{background:transparent}
         
-        /* Маркер початку тижня (Понеділок) */
-        .is-monday::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--red); z-index:25; border-radius: 6px 0 0 6px;}
+        /* Розділювач тижнів */
+        .week-divider{grid-column:1/-1;height:2px;background:var(--div);border-radius:2px;margin:8px 0}
         
-        .dt{position:absolute;top:8px;left:12px;display:flex;align-items:baseline;gap:6px;z-index:10;pointer-events:none}
-        .is-monday .dt{left: 14px;} /* Легкий зсув дати від червоної лінії */
+        .dt{position:absolute;top:8px;left:10px;display:flex;align-items:baseline;gap:6px;z-index:10;pointer-events:none}
         .dt-n{font-size:18px;font-weight:800;line-height:1;color:var(--date-color,#ccc)}
         .dt-d{font-size:10px;font-weight:500;text-transform:uppercase;color:var(--date-color,#ccc);opacity:.6}
         .has-vid .dt-n,.has-vid .dt-d{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
@@ -57,8 +56,7 @@
         .v-lnk:hover .v-thumb{transform:scale(1.03)}
         .v-lnk::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4) 0%,transparent 40%,rgba(0,0,0,.9) 100%);pointer-events:none}
         
-        .v-title{position:absolute;bottom:10px;left:12px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .is-monday .v-title{left: 14px;}
+        .v-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         
         .v-lnk.watched .v-thumb{filter:grayscale(1) opacity(0.8)}
         .v-lnk.watched::before,.v-lnk.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:var(--red);z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
@@ -153,9 +151,16 @@
                 html += `<h2>${y}</h2>`;
                 if (curY === 0) {
                     html += `<div class="info"><a href="https://instagram.com/taras.maksymiak/" target="_blank"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>INSTAGRAM</a></div>`;
-                    html += `<div class="nav-base">`;
-                    for(let i=3; i<=11; i++) html += `<div class="nav-seg" onclick="document.getElementById('m-${y}-${i}').scrollIntoView({behavior:'smooth', block:'start'})">${abbr[i-3]}</div>`;
-                    html += `</div>`;
+                    
+                    // Панель місяців: з'являються лише ті, де є відео, або поточний/минулий місяць
+                    let navHtml = '';
+                    for(let i=3; i<=11; i++) {
+                        let hasVid = Object.keys(videosMap).some(k => k.startsWith(`${y}-${String(i+1).padStart(2,'0')}`) && videosMap[k].length > 0);
+                        if (hasVid || i <= today.getMonth()) {
+                            navHtml += `<div class="nav-seg" onclick="document.getElementById('m-${y}-${i}').scrollIntoView({behavior:'smooth', block:'start'})">${abbr[i-3]}</div>`;
+                        }
+                    }
+                    if (navHtml) html += `<div class="nav-base">${navHtml}</div>`;
                 }
                 curY = y;
             }
@@ -167,14 +172,18 @@
 
             for (let d = dStart; d <= dMax; d++) {
                 let dw = new Date(y, m, d).getDay();
+                
+                // Вставляємо розділювач тижня перед кожним понеділком (окрім самого першого дня відмальовки)
+                if (dw === 1 && d !== dStart) {
+                    html += `<div class="week-divider"></div>`;
+                }
+
                 let key = `${y}-${(m+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
                 let v = videosMap[key];
                 
                 let cCls = (v && v.length) ? 'cell has-vid' : 'cell empty';
-                // Додаємо клас для понеділків
-                if (dw === 1) cCls += ' is-monday';
-
                 let cIn = '';
+
                 if (v && v.length) {
                     v.forEach(vid => {
                         let wCls = watched.includes(vid.id) ? ' watched' : '';
