@@ -38,7 +38,6 @@
         .cell{aspect-ratio:16/9;position:relative;background:var(--cell);border-radius:6px;overflow:hidden;transform:translateZ(0)}
         .cell.empty{background:transparent}
         
-        /* Розділювач тижнів */
         .week-divider{grid-column:1/-1;height:2px;background:var(--div);border-radius:2px;margin:8px 0}
         
         .dt{position:absolute;top:8px;left:10px;display:flex;align-items:baseline;gap:6px;z-index:10;pointer-events:none}
@@ -135,15 +134,24 @@
     }
 
     function render() {
-        let today = new Date(), start = new Date(2026, 3, 23);
-        if (today < start) today = start;
+        let keys = Object.keys(videosMap).sort();
+        let today = new Date();
+        let startY = today.getFullYear(), startM = today.getMonth(), startD = today.getDate();
+
+        // Автоматично беремо дату першого відео. Якщо його ще немає - залишаємо поточний день.
+        if (keys.length > 0) {
+            let p = keys[0].split('-');
+            startY = parseInt(p[0], 10);
+            startM = parseInt(p[1], 10) - 1;
+            startD = parseInt(p[2], 10);
+        }
         
         let html = '';
-        let loop = new Date(2026, 3, 1);
+        let loop = new Date(startY, startM, 1);
         let curY = 0;
         let wDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
         let mNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
-        let abbr = ['КВІ', 'ТРА', 'ЧЕР', 'ЛИП', 'СЕР', 'ВЕР', 'ЖОВ', 'ЛИС', 'ГРУ'];
+        let abbr = ['СІЧ', 'ЛЮТ', 'БЕР', 'КВІ', 'ТРА', 'ЧЕР', 'ЛИП', 'СЕР', 'ВЕР', 'ЖОВ', 'ЛИС', 'ГРУ'];
 
         while (loop <= today) {
             let y = loop.getFullYear(), m = loop.getMonth();
@@ -152,13 +160,13 @@
                 if (curY === 0) {
                     html += `<div class="info"><a href="https://instagram.com/taras.maksymiak/" target="_blank"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>INSTAGRAM</a></div>`;
                     
-                    // Панель місяців: з'являються лише ті, де є відео, або поточний/минулий місяць
                     let navHtml = '';
-                    for(let i=3; i<=11; i++) {
-                        let hasVid = Object.keys(videosMap).some(k => k.startsWith(`${y}-${String(i+1).padStart(2,'0')}`) && videosMap[k].length > 0);
-                        if (hasVid || i <= today.getMonth()) {
-                            navHtml += `<div class="nav-seg" onclick="document.getElementById('m-${y}-${i}').scrollIntoView({behavior:'smooth', block:'start'})">${abbr[i-3]}</div>`;
-                        }
+                    for(let i = 0; i <= 11; i++) {
+                        // Показуємо в навігації лише місяці від старту і до сьогодні
+                        if (y === startY && i < startM) continue;
+                        if (y === today.getFullYear() && i > today.getMonth()) continue;
+                        
+                        navHtml += `<div class="nav-seg" onclick="document.getElementById('m-${y}-${i}').scrollIntoView({behavior:'smooth', block:'start'})">${abbr[i]}</div>`;
                     }
                     if (navHtml) html += `<div class="nav-base">${navHtml}</div>`;
                 }
@@ -168,13 +176,12 @@
             html += `<div class="mo-wrap" id="m-${y}-${m}"><div class="mo-hdr">${mNames[m]}</div><div class="grid">`;
             
             let dMax = new Date(y, m + 1, 0).getDate();
-            let dStart = (y === 2026 && m === 3) ? 23 : 1;
+            let dStartRender = (y === startY && m === startM) ? startD : 1;
 
-            for (let d = dStart; d <= dMax; d++) {
+            for (let d = dStartRender; d <= dMax; d++) {
                 let dw = new Date(y, m, d).getDay();
                 
-                // Вставляємо розділювач тижня перед кожним понеділком (окрім самого першого дня відмальовки)
-                if (dw === 1 && d !== dStart) {
+                if (dw === 1 && d !== dStartRender) {
                     html += `<div class="week-divider"></div>`;
                 }
 
