@@ -5,54 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Casey Neistat - Latest Vlog</title>
     <style>
-        body { 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            margin: 0; 
-            background-color: #111; 
-            color: white; 
-            font-family: sans-serif; 
-        }
-        .video-container { 
-            width: 100%; 
-            max-width: 1000px; 
-            aspect-ratio: 16 / 9; 
-        }
-        iframe { 
-            width: 100%; 
-            height: 100%; 
-            border: none; 
-        }
+        body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #111; color: white; font-family: sans-serif; }
+        .video-container { width: 100%; max-width: 1000px; aspect-ratio: 16 / 9; }
+        iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
     <div class="video-container" id="videoContainer">
-        <p>Завантаження...</p>
+        <p id="status">Завантаження...</p>
     </div>
 
     <script>
         const channelId = 'UCtinbF-Q-fVthA0qrYQTgXQ';
-        const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-        const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
-
-        fetch(apiUrl)
+        const rssUrl = encodeURIComponent(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`);
+        
+        fetch(`https://api.allorigins.win/get?url=${rssUrl}`)
             .then(response => response.json())
             .then(data => {
-                if (data.items && data.items.length > 0) {
-                    const latestVideo = data.items[0];
-                    const videoId = latestVideo.link.split('v=')[1];
-                    // Використовуємо альтернативний домен для вбудовування
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(data.contents, "text/xml");
+                const entry = xmlDoc.getElementsByTagName("entry")[0];
+                
+                if (entry) {
+                    const videoId = entry.getElementsByTagName("yt:videoId")[0].textContent;
+                    
+                    // Якщо системне блокування iOS "Вміст і приватність" блокує навіть youtube-nocookie.com, 
+                    // закоментуйте рядок нижче і розкоментуйте альтернативний Invidious-плеєр:
                     const iframeSrc = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0`;
+                    // const iframeSrc = `https://invidious.fdn.fr/embed/${videoId}`;
                     
                     document.getElementById('videoContainer').innerHTML = `
                         <iframe src="${iframeSrc}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                     `;
+                } else {
+                    document.getElementById('status').innerText = 'Не вдалося знайти відео у стрічці.';
                 }
             })
             .catch(error => {
-                document.getElementById('videoContainer').innerHTML = '<p>Помилка завантаження відео.</p>';
+                document.getElementById('status').innerText = `Помилка: ${error.message}`;
             });
     </script>
 </body>
