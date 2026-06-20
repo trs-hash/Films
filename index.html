@@ -19,8 +19,6 @@
         body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--txt);margin:0;padding:20px 20px 0;overflow-x:hidden;scroll-behavior:smooth}
         .wrap{max-width:1400px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
         .main{flex:1}
-
-        /* --- Шапка-інтро: мотто + концепція + посилання --- */
         .intro{margin:10px 0 50px}
         .intro .name{font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:18px}
         .intro .motto{font-size:42px;font-weight:800;line-height:1.05;letter-spacing:-1px;margin:0 0 18px}
@@ -31,49 +29,37 @@
         .intro .links a.primary:hover{background:var(--red)}
         .intro .links a.ghost{color:var(--mut);border:1px solid var(--div)}
         .intro .links a.ghost:hover{color:var(--red);border-color:var(--red)}
-        
         h2{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px}
         h2:first-child{margin-top:10px}
-        
         .info{margin-bottom:25px}
         .info a{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--mut);font-weight:600;letter-spacing:2px;text-decoration:none;transition:.2s}
         .info a:hover{color:var(--red)}
-
         .nav-base{background:var(--cell);border-radius:8px;display:flex;border:1px solid var(--div);margin-bottom:40px;overflow:hidden}
         .nav-seg{flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--mut);cursor:pointer;text-transform:uppercase;letter-spacing:1px;padding:12px 5px;transition:.2s;user-select:none;-webkit-tap-highlight-color:transparent}
         .nav-seg:hover{color:var(--red)}
-        
         .mo-wrap{margin-bottom:40px;scroll-margin-top:20px}
         .mo-hdr{color:var(--mut);font-size:22px;font-weight:500;text-transform:uppercase;margin:0 0 20px;letter-spacing:1px}
-        
         .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
         .cell{aspect-ratio:16/9;position:relative;background:var(--cell);border-radius:6px;overflow:hidden;transform:translateZ(0)}
         .cell.empty{background:transparent}
-        
         .week-divider{grid-column:1/-1;height:2px;background:var(--div);border-radius:2px;margin:8px 0}
-        
         .dt{position:absolute;top:8px;left:10px;display:flex;align-items:baseline;gap:6px;z-index:10;pointer-events:none}
         .dt-n{font-size:18px;font-weight:800;line-height:1;color:var(--date-color,#ccc)}
         .dt-d{font-size:10px;font-weight:500;text-transform:uppercase;color:var(--date-color,#ccc);opacity:.6}
         .has-vid .dt-n,.has-vid .dt-d{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
         .has-vid .dt-d{opacity:.7;text-shadow:0 1px 2px rgba(0,0,0,.9)}
-
         .v-cont{position:absolute;inset:0;display:flex;z-index:5}
         .v-lnk{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
         .v-cont.mult .v-lnk:not(:last-child){border-right:2px solid #fff}
-        
         .v-thumb{width:100%;height:100%;object-fit:cover;transition:transform .4s;background:#e0e0e0}
         @media (prefers-color-scheme:dark){.v-thumb{background:#2a2a2a}}
         .v-lnk:hover .v-thumb{transform:scale(1.03)}
         .v-lnk::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4) 0%,transparent 40%,rgba(0,0,0,.9) 100%);pointer-events:none}
-        
         .v-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        
         .v-lnk.watched .v-thumb{filter:grayscale(1) opacity(0.8)}
         .v-lnk.watched::before,.v-lnk.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:var(--red);z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
         .v-lnk.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
         .v-lnk.watched::after{transform:translate(-50%,-50%) rotate(-45deg)}
-        
         .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:1000;align-items:center;justify-content:center}
         .modal.show{display:flex}
         .mod-in{width:100%;max-width:1000px;padding:20px;position:relative;transition:transform .2s ease-out}
@@ -81,9 +67,7 @@
         .iframe-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
         .close{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10}
         .close:hover{color:var(--red)}
-
         .footer{text-align:center;padding:60px 0;font-size:11px;color:var(--mut);letter-spacing:2px}
-
         @media(max-width:1024px){.grid{grid-template-columns:repeat(4,1fr)}}
         @media(max-width:600px){
             body{padding:15px 15px 0}
@@ -103,7 +87,6 @@
 </head>
 <body>
 <div class="wrap">
-    <!-- Інтро: видно одразу, дає контекст порожнім клітинкам -->
     <header class="intro">
         <div class="name">Тарас Максимʼяк</div>
         <h1 class="motto">Колекціонер днів</h1>
@@ -139,20 +122,31 @@
 
     async function init() {
         let cached = localStorage.getItem('yt_data'), time = localStorage.getItem('yt_time'), now = Date.now();
+        let hadCache = false;
         if (cached && time && (now - time) < 21600000) {
             videosMap = JSON.parse(cached);
+            hadCache = true;
             render();
         }
-        await fetchAPI();
-        localStorage.setItem('yt_data', JSON.stringify(videosMap));
-        localStorage.setItem('yt_time', now);
-        render();
+        let ok = await fetchAPI();
+        if (ok) {
+            localStorage.setItem('yt_data', JSON.stringify(videosMap));
+            localStorage.setItem('yt_time', now);
+            render();
+        } else if (!hadCache) {
+            document.getElementById('app').innerHTML =
+                '<div style="text-align:center;padding:60px 20px;color:var(--mut);font-family:-apple-system,sans-serif">' +
+                'Не вдалось завантажити відео. Спробуйте оновити сторінку.' +
+                '</div>';
+        }
     }
 
     async function fetchAPI(token = '') {
         try {
             let res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}${token ? '&pageToken='+token : ''}`);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
             let data = await res.json();
+            if (data.error) throw new Error(data.error.message || 'API error');
             (data.items || []).forEach(i => {
                 let s = i.snippet;
                 if (!s || !s.publishedAt) return;
@@ -162,7 +156,11 @@
                 videosMap[date].push({ id: s.resourceId.videoId, title: s.title, thumb: (t.high || t.standard || t.default || {}).url || '' });
             });
             if (data.nextPageToken) await fetchAPI(data.nextPageToken);
-        } catch(e) {}
+            return true;
+        } catch(e) {
+            console.error('YouTube API error:', e.message);
+            return false;
+        }
     }
 
     function render() {
@@ -170,7 +168,6 @@
         let today = new Date();
         let startY = today.getFullYear(), startM = today.getMonth(), startD = today.getDate();
 
-        // Автоматично беремо дату першого відео. Якщо його ще немає - залишаємо поточний день.
         if (keys.length > 0) {
             let p = keys[0].split('-');
             startY = parseInt(p[0], 10);
@@ -192,10 +189,8 @@
                 if (curY === 0) {
                     let navHtml = '';
                     for(let i = 0; i <= 11; i++) {
-                        // Показуємо в навігації лише місяці від старту і до сьогодні
                         if (y === startY && i < startM) continue;
                         if (y === today.getFullYear() && i > today.getMonth()) continue;
-                        
                         navHtml += `<div class="nav-seg" onclick="document.getElementById('m-${y}-${i}').scrollIntoView({behavior:'smooth', block:'start'})">${abbr[i]}</div>`;
                     }
                     if (navHtml) html += `<div class="nav-base">${navHtml}</div>`;
