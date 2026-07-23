@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарас Максимʼяк</title>
-    <meta name="description" content="Колекціонер днів — щоденні стрічки Тараса Максимʼяка. Одне відео про кожен день, який більше не повториться.">
+    <meta name="description" content="Щоденні стрічки Тараса Максимʼяка. Одне відео про кожен день, який більше не повториться.">
 
-    <meta property="og:title" content="Taras Maksymiak — Колекціонер днів">
+    <meta property="og:title" content="Taras Maksymiak">
     <meta property="og:description" content="Щодня — одна стрічка про день, який більше не повториться.">
     <meta property="og:image" content="https://taras.kyiv.ua/image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
@@ -96,16 +96,14 @@
 <div class="wrap">
     <header class="intro">
         <div class="name">Тарас Максимʼяк</div>
-        <h1 class="motto">Колекціонер днів</h1>
-        <p class="lede">Щодня знімаю одну стрічку про день, який більше не повториться.</p>
         <div class="links">
-            <a class="primary" href="https://www.youtube.com/@Taras.maksymiak" target="_blank" rel="noopener">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.5 15.5v-7l6.5 3.5z"/></svg>
-                YouTube — стрічки
-            </a>
-            <a class="ghost" href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener">
+            <a class="primary" href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
                 Instagram
+            </a>
+            <a class="ghost" href="https://www.youtube.com/@Taras.maksymiak" target="_blank" rel="noopener">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.5 15.5v-7l6.5 3.5z"/></svg>
+                YouTube
             </a>
         </div>
     </header>
@@ -125,9 +123,9 @@
     // TODO: заміни на НОВИЙ ключ з окремого проєкту "taras-site" (крок 2 інструкції).
     // Старий ключ після заміни регенеруй у консолі — опублікована копія помре.
     const API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
-    // Uploads-плейлист каналу. Перевір командою з Едема (крок 1 інструкції),
-    // що це саме канал @Taras.maksymiak, і за потреби заміни значення.
-    const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA';
+    // Uploads-плейлист каналу UCRSKTGA5a2hLrai_MXNaoUQ (@Taras.maksymiak).
+    // Виводиться з ID каналу: UC... -> UU...
+    const UPLOADS_ID = 'UURSKTGA5a2hLrai_MXNaoUQ';
     // День перший. Календар починається тут — раніші дати не існують.
     const CHALLENGE_START = new Date(2026, 6, 26);
     let videosMap = {};
