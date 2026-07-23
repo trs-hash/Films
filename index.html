@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарас Максимʼяк</title>
-    
+    <meta name="description" content="Колекціонер днів — щоденні стрічки Тараса Максимʼяка. Одне відео про кожен день, який більше не повториться.">
+
     <meta property="og:title" content="Taras Maksymiak — Колекціонер днів">
-    <meta property="og:image" content="image.png">
+    <meta property="og:description" content="Щодня — одна стрічка про день, який більше не повториться.">
+    <meta property="og:image" content="https://taras.kyiv.ua/image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
 
@@ -60,6 +62,10 @@
         .v-lnk.watched::before,.v-lnk.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:var(--red);z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
         .v-lnk.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
         .v-lnk.watched::after{transform:translate(-50%,-50%) rotate(-45deg)}
+        .count{margin:30px 0 70px}
+        .count .cd-lbl{font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:12px}
+        .count .cd-num{font-size:120px;font-weight:800;letter-spacing:-4px;line-height:1}
+        .count .cd-sub{font-size:15px;color:var(--mut);margin-top:12px}
         .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:1000;align-items:center;justify-content:center}
         .modal.show{display:flex}
         .mod-in{width:100%;max-width:1000px;padding:20px;position:relative;transition:transform .2s ease-out}
@@ -78,6 +84,7 @@
             .intro .lede{font-size:15px}
             .dt-n{font-size:16px}
             .dt-d{font-size:9px}
+            .count .cd-num{font-size:80px;letter-spacing:-3px}
             .mod-in{padding:10px}
             .close{right:10px;top:-25px}
             .nav-seg{font-size:9px;letter-spacing:0;padding:10px 2px}
@@ -116,9 +123,22 @@
 
 <script>
     const API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
-    const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA'; 
+    const UPLOADS_ID = 'UUhN1_4a8atyqkFcNIJx6MlA';
+    // День перший. Календар починається тут — раніші дати не існують.
+    const CHALLENGE_START = new Date(2026, 6, 26);
     let videosMap = {};
     let watched = JSON.parse(localStorage.getItem('vw') || '[]');
+
+    function esc(s) {
+        return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function daysWord(n) {
+        let m10 = n % 10, m100 = n % 100;
+        if (m10 === 1 && m100 !== 11) return 'день';
+        if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return 'дні';
+        return 'днів';
+    }
 
     async function init() {
         let cached = localStorage.getItem('yt_data'), time = localStorage.getItem('yt_time'), now = Date.now();
@@ -164,17 +184,20 @@
     }
 
     function render() {
-        let keys = Object.keys(videosMap).sort();
         let today = new Date();
-        let startY = today.getFullYear(), startM = today.getMonth(), startD = today.getDate();
 
-        if (keys.length > 0) {
-            let p = keys[0].split('-');
-            startY = parseInt(p[0], 10);
-            startM = parseInt(p[1], 10) - 1;
-            startD = parseInt(p[2], 10);
+        // До старту — лише відлік. Жодних порожніх клітинок наперед.
+        if (today < CHALLENGE_START) {
+            let days = Math.ceil((CHALLENGE_START - today) / 86400000);
+            document.getElementById('app').innerHTML =
+                `<div class="count"><div class="cd-lbl">До першої стрічки</div>` +
+                `<div class="cd-num">${days}</div>` +
+                `<div class="cd-sub">${daysWord(days)} · старт 26 липня 2026</div></div>`;
+            return;
         }
-        
+
+        let startY = CHALLENGE_START.getFullYear(), startM = CHALLENGE_START.getMonth(), startD = CHALLENGE_START.getDate();
+
         let html = '';
         let loop = new Date(startY, startM, 1);
         let curY = 0;
@@ -197,29 +220,31 @@
                 }
                 curY = y;
             }
-            
+
             html += `<div class="mo-wrap" id="m-${y}-${m}"><div class="mo-hdr">${mNames[m]}</div><div class="grid">`;
-            
+
             let dMax = new Date(y, m + 1, 0).getDate();
             let dStartRender = (y === startY && m === startM) ? startD : 1;
+            // Стіна тримає лише прожиті дні: майбутні клітинки не малюємо.
+            let dEnd = (y === today.getFullYear() && m === today.getMonth()) ? today.getDate() : dMax;
 
-            for (let d = dStartRender; d <= dMax; d++) {
+            for (let d = dStartRender; d <= dEnd; d++) {
                 let dw = new Date(y, m, d).getDay();
-                
+
                 if (dw === 1 && d !== dStartRender) {
                     html += `<div class="week-divider"></div>`;
                 }
 
                 let key = `${y}-${(m+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
                 let v = videosMap[key];
-                
+
                 let cCls = (v && v.length) ? 'cell has-vid' : 'cell empty';
                 let cIn = '';
 
                 if (v && v.length) {
                     v.forEach(vid => {
                         let wCls = watched.includes(vid.id) ? ' watched' : '';
-                        cIn += `<a href="#" class="v-lnk${wCls}" onclick="openVid(event, '${vid.id}', this)"><img src="${vid.thumb}" class="v-thumb"><div class="v-title">${vid.title}</div></a>`;
+                        cIn += `<a href="#" class="v-lnk${wCls}" onclick="openVid(event, '${vid.id}', this)"><img src="${vid.thumb}" class="v-thumb" loading="lazy" decoding="async" alt=""><div class="v-title">${esc(vid.title)}</div></a>`;
                     });
                 }
                 html += `<div class="${cCls}"><div class="v-cont ${v && v.length>1?'mult':''}">${cIn}</div><div class="dt"><span class="dt-n">${d}</span><span class="dt-d">${wDays[dw]}</span></div></div>`;
