@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autoposter101</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1c1b19;--muted:#6b6864;--rule:#dcd8d2;--page:#fbfaf8;--card:#fff;--grey:#efece7;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:4rem 1.5rem 6rem;background:var(--page);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  main{max-width:44rem;margin:0 auto}
+  h1{font-family:Lora,Georgia,serif;font-weight:600;font-size:2.1rem;line-height:1.15;margin:0 0 .3rem}
+  .lede{color:var(--muted);font-size:1.05rem;margin:0 0 2.5rem}
+  h2{font-family:Lora,Georgia,serif;font-weight:500;font-size:1.2rem;margin:2.6rem 0 .6rem;
+    padding-top:1.4rem;border-top:1px solid var(--rule)}
+  p,li{margin:0 0 1rem}
+  ul{padding-left:1.2rem}
+  li{margin-bottom:.5rem}
+  a{color:var(--ink);text-decoration-thickness:1px;text-underline-offset:3px}
+  .shot{border:1px solid var(--rule);border-radius:10px;background:var(--card);padding:14px;margin:1.5rem 0}
+  .shot .cap{color:var(--muted);font-size:.85rem;margin:0 0 10px}
+  .mock{display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:.8rem}
+  .mock .pane{border:1px solid var(--rule);border-radius:7px;padding:11px}
+  .mock .vid{background:#111;border-radius:5px;height:150px}
+  .mock .r{display:flex;align-items:center;gap:7px;margin:6px 0;color:var(--ink)}
+  .mock .r .dot{width:11px;height:11px;border:1px solid var(--muted);border-radius:50%}
+  .mock .r.dis{color:var(--muted)}
+  .mock .lbl{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:8px 0 4px}
+  .mock .btn{display:inline-block;background:var(--ink);color:#fff;border-radius:5px;padding:6px 14px;margin-top:8px}
+  .mock .consent{border-top:1px solid var(--rule);margin-top:10px;padding-top:8px;color:var(--muted);font-size:.72rem}
+  footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--rule);color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+
+  <h1>Autoposter101</h1>
+  <p class="lede">A private tool that publishes the operator's own short videos to their own TikTok account — one video at a time, always confirmed by a person.</p>
+
+  <p>Autoposter101 runs on its operator's own home server. It takes short vertical videos that the operator has already made, and helps publish them to the operator's own TikTok account through TikTok's Content Posting API. Nothing is posted automatically: every video passes through a confirmation screen where a human sets the caption, chooses who can see it, and presses Publish.</p>
+
+  <h2>What it does</h2>
+  <ul>
+    <li>Shows the connected account's nickname and avatar so the operator can confirm the right account.</li>
+    <li>Presents a confirmation screen with caption, privacy level, comment / Duet / Stitch settings and commercial-content disclosure.</li>
+    <li>Uploads the video and creates the post only after the operator presses Publish, then tracks the publish status.</li>
+  </ul>
+
+  <h2>What it does not do</h2>
+  <ul>
+    <li>It does not read, download, or repost anyone else's content.</li>
+    <li>It does not browse, like, follow, comment, or message on TikTok.</li>
+    <li>It is not offered to other people and has no sign-up — it serves a single operator's own account.</li>
+  </ul>
+
+  <div class="shot">
+    <p class="cap">The confirmation screen shown before every post (illustration):</p>
+    <div class="mock">
+      <div class="pane">
+        <div class="vid"></div>
+        <div class="lbl">Caption</div>
+        <div style="border:1px solid var(--rule);border-radius:4px;padding:6px;color:var(--muted)">A quiet morning in Kyiv…</div>
+      </div>
+      <div class="pane">
+        <div class="lbl">Who can view this video</div>
+        <div class="r"><span class="dot"></span> Everyone</div>
+        <div class="r"><span class="dot"></span> Followers</div>
+        <div class="r"><span class="dot"></span> Only me</div>
+        <div class="lbl">Interaction</div>
+        <div class="r"><span class="dot"></span> Allow comments</div>
+        <div class="r dis"><span class="dot"></span> Allow Duet (off for account)</div>
+        <div class="consent">By posting, you agree to TikTok's Music Usage Confirmation.</div>
+        <span class="btn">Publish</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>Legal</h2>
+  <p>By using this tool the operator agrees to the <a href="/service">Terms of Service</a>. Data handling is described in the <a href="/policy">Privacy Policy</a>.</p>
+
+  <p style="color:var(--muted);font-size:.85rem">TikTok is a trademark of its respective owner. Autoposter101 is an independent tool and is not affiliated with, endorsed by, or sponsored by TikTok.</p>
+
+  <footer>
+    <p><a href="/">taras.kyiv.ua</a> · <a href="/service">Terms of Service</a> · <a href="/policy">Privacy Policy</a></p>
+  </footer>
+
+</main>
+</body>
+</html>

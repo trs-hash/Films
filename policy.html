@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — Autoposter101</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1c1b19;--muted:#6b6864;--rule:#dcd8d2;--page:#fbfaf8;}
+  *{box-sizing:border-box}
+  body{margin:0;padding:4rem 1.5rem 6rem;background:var(--page);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
+  main{max-width:40rem;margin:0 auto}
+  h1{font-family:Lora,Georgia,serif;font-weight:600;font-size:2rem;line-height:1.2;margin:0 0 .4rem}
+  h2{font-family:Lora,Georgia,serif;font-weight:500;font-size:1.2rem;margin:2.75rem 0 .6rem;
+    padding-top:1.5rem;border-top:1px solid var(--rule)}
+  .updated{color:var(--muted);font-size:.9rem;letter-spacing:.02em;margin:0 0 2.5rem}
+  p,li{margin:0 0 1rem}
+  ul{padding-left:1.2rem}
+  li{margin-bottom:.5rem}
+  a{color:var(--ink);text-decoration-thickness:1px;text-underline-offset:3px}
+  code{background:#efece7;padding:1px 5px;border-radius:3px;font-size:.9em}
+  footer{margin-top:4rem;padding-top:1.5rem;border-top:1px solid var(--rule);color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+
+  <h1>Privacy Policy</h1>
+  <p class="updated">Autoposter101 · Last updated 30 July 2026</p>
+
+  <p>Autoposter101 is a private, single-user tool operated by Taras Maksymiak. It publishes short videos to one TikTok account — the account of the operator. It is not offered to the public, has no user registration, and serves no other people's accounts.</p>
+
+  <h2>What this tool accesses</h2>
+  <p>After you authorise the app through TikTok's standard login screen, it receives and uses:</p>
+  <ul>
+    <li><strong>An access token and a refresh token</strong> for the authorised TikTok account, used to upload and publish videos.</li>
+    <li><strong>Basic account information</strong> — TikTok open ID, display name (nickname), and avatar URL — returned by the <code>user.info.basic</code> scope, used only to confirm that the correct account is connected.</li>
+    <li><strong>Video files and their captions</strong>, prepared on the operator's own server and sent to TikTok for publication under the <code>video.publish</code> and <code>video.upload</code> scopes.</li>
+  </ul>
+
+  <h2>Where the data is stored</h2>
+  <p>Tokens are stored in a configuration file on a private home server owned by the operator and located in Ukraine. The server is not publicly reachable; access is restricted to the operator. Video files are stored on the same server and in the operator's own private cloud storage before upload. Data is not shared with any third party.</p>
+
+  <h2>What is never done with the data</h2>
+  <ul>
+    <li>TikTok data is never sold, rented, or shared with advertisers or data brokers.</li>
+    <li><strong>TikTok data is never used to train, fine-tune, or evaluate any AI or machine-learning model.</strong></li>
+    <li>No analytics, tracking pixels, or third-party trackers are used.</li>
+    <li>No data belonging to any other TikTok user is collected, requested, or processed.</li>
+  </ul>
+
+  <h2>Third-party services</h2>
+  <p>To prepare its own videos before publication, the operator's server may use speech transcription and text-processing services. These services only ever receive audio and text from the operator's own videos being prepared; they never receive TikTok tokens, TikTok account information, or any other TikTok data. Amazon S3 is used as temporary storage for the operator's own video files during upload.</p>
+
+  <h2>Retention and deletion</h2>
+  <p>Tokens are kept only while the integration is in use. Authorisation can be withdrawn at any time from TikTok under Settings and privacy → Security and permissions → Apps and services, which immediately invalidates the tokens. On withdrawal, the stored tokens are deleted from the server. To request deletion of any data held about the connected account, contact the address below.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this policy, or data-deletion requests: <a href="mailto:__CONTACT_EMAIL__">__CONTACT_EMAIL__</a></p>
+
+  <footer>
+    <p>Ця сторінка описує обробку даних застосунком Autoposter101 — приватним інструментом публікації власних відео в один акаунт TikTok.</p>
+    <p><a href="/">taras.kyiv.ua</a> · <a href="/service">Terms of Service</a></p>
+  </footer>
+
+</main>
+</body>
+</html>
