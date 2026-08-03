@@ -58,6 +58,12 @@
         .v-lnk:hover .v-thumb{transform:scale(1.03)}
         .v-lnk::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4) 0%,transparent 40%,rgba(0,0,0,.9) 100%);pointer-events:none}
         .v-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        /* Уривок нотатки на плитці — лише на desktop (наведення); стіна в спокої чиста */
+        .v-excerpt{position:absolute;left:10px;right:10px;bottom:30px;color:#fff;font-family:Georgia,'Times New Roman',serif;font-size:10.5px;line-height:1.4;z-index:9;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.95);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+        @media (hover:hover) and (pointer:fine){
+            .v-lnk:hover .v-excerpt{opacity:1;transform:translateY(0)}
+            .v-lnk:hover::after{background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 28%,rgba(0,0,0,.92) 82%)}
+        }
         .v-lnk.watched .v-thumb{filter:grayscale(1) opacity(0.8)}
         .v-lnk.watched::before,.v-lnk.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:var(--red);z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
         .v-lnk.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
@@ -68,7 +74,7 @@
         .count .cd-sub{font-size:15px;color:var(--mut);margin-top:12px}
         .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:1000;align-items:center;justify-content:center}
         .modal.show{display:flex}
-        .mod-in{width:100%;max-width:1000px;padding:20px;position:relative;transition:transform .2s ease-out}
+        .mod-in{width:100%;max-width:1000px;padding:20px;position:relative;transition:transform .2s ease-out;max-height:94vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
         .iframe-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;background:#000}
         .iframe-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
         .close{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10}
@@ -90,6 +96,15 @@
             .nav-seg{font-size:9px;letter-spacing:0;padding:10px 2px}
             .footer{padding:50px 0}
         }
+        /* ── Записка дня (щоденник) + маркер важливого (Трек C) ── */
+        .cell .star{position:absolute;top:2px;right:3px;width:26px;height:26px;z-index:16;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));transform:rotate(-8deg)}
+        .note{margin-top:14px}
+        .note-card{position:relative;background:var(--note-bg,#faf9f4);border:1px solid var(--div);border-left:3px solid var(--red);border-radius:10px;padding:20px 22px 22px}
+        .note-foot{margin-top:18px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-variant-numeric:tabular-nums}
+        .note-body{font-family:Georgia,'Iowan Old Style','Times New Roman',serif;font-size:16.5px;line-height:1.75;color:var(--txt);white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;max-width:66ch}
+        .note-card .star{position:absolute;top:16px;right:16px;width:30px;height:30px;transform:rotate(-8deg)}
+        .note-card.imp{padding-right:52px}
+        @media (prefers-color-scheme:dark){.note-card{--note-bg:#191919}}
     </style>
 </head>
 <body>
@@ -116,6 +131,7 @@
     <div class="mod-in" id="modIn" onclick="event.stopPropagation()">
         <div class="close" onclick="closeModal()">&times;</div>
         <div class="iframe-wrap"><iframe id="ytIframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>
+        <div id="modNote" class="note"></div>
     </div>
 </div>
 
@@ -135,6 +151,29 @@
         return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
+    // Записка дня (Трек C): опис відео = щоденник. Штамп часу з Треку B — шапка; текст — тіло.
+    // Маркер важливого дня — символ № (Shift+3, укр. розкладка), який НЕ є нумерацією («№5»).
+    let metaById = {};
+    const IMPORTANT_RE = /№(?!\d)/;                                 // важливий день (самостійний №)
+    const TS_RE = /🕒\s*(\d{2}:\d{2}\s+\d{2}\/\d{2}\/\d{4})/;        // штамп часу з опису (Трек B, у кінці)
+    // Червона зірочка-асстериск «наче від руки» — три хвилясті штрихи через центр.
+    const STAR_SVG = '<svg class="star" viewBox="0 0 40 40" aria-hidden="true">' +
+        '<g stroke="#e62117" stroke-width="3.4" stroke-linecap="round" fill="none">' +
+        '<path d="M20 5 Q18.6 20 20.2 35"/>' +
+        '<path d="M7 12.5 Q20 20 33.4 26.5"/>' +
+        '<path d="M33 12 Q19.6 21 7.2 27.2"/></g></svg>';
+
+    function parseDesc(raw) {
+        let desc = (raw || '').replace(/\r/g, '');
+        let important = IMPORTANT_RE.test(desc);
+        let clean = desc.replace(/№(?!\d)/g, '');                     // прибрати маркер важливого
+        let time = '';
+        let m = clean.match(TS_RE);
+        if (m) { time = m[1]; clean = clean.replace(m[0], ''); }       // прибрати штамп із тексту щоденника
+        let body = clean.replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+        return { important, time, body };
+    }
+
     function daysWord(n) {
         let m10 = n % 10, m100 = n % 100;
         if (m10 === 1 && m100 !== 11) return 'день';
@@ -143,17 +182,20 @@
     }
 
     async function init() {
-        let cached = localStorage.getItem('yt_data'), time = localStorage.getItem('yt_time'), now = Date.now();
+        let cached = localStorage.getItem('yt_data2'), cmeta = localStorage.getItem('yt_meta2'),
+            time = localStorage.getItem('yt_time2'), now = Date.now();
         let hadCache = false;
         if (cached && time && (now - time) < 21600000) {
             videosMap = JSON.parse(cached);
+            if (cmeta) { try { metaById = JSON.parse(cmeta); } catch(e) {} }
             hadCache = true;
             render();
         }
         let ok = await fetchAPI();
         if (ok) {
-            localStorage.setItem('yt_data', JSON.stringify(videosMap));
-            localStorage.setItem('yt_time', now);
+            localStorage.setItem('yt_data2', JSON.stringify(videosMap));
+            localStorage.setItem('yt_meta2', JSON.stringify(metaById));
+            localStorage.setItem('yt_time2', now);
             render();
         } else if (!hadCache) {
             document.getElementById('app').innerHTML =
@@ -163,7 +205,8 @@
         }
     }
 
-    async function fetchAPI(token = '') {
+    async function fetchAPI(token = '', acc) {
+        acc = acc || { map: {}, meta: {} };
         try {
             let res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}${token ? '&pageToken='+token : ''}`);
             if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -173,11 +216,16 @@
                 let s = i.snippet;
                 if (!s || !s.publishedAt) return;
                 let date = s.publishedAt.split('T')[0];
-                if (!videosMap[date]) videosMap[date] = [];
                 let t = s.thumbnails || {};
-                videosMap[date].push({ id: s.resourceId.videoId, title: s.title, thumb: (t.high || t.standard || t.default || {}).url || '' });
+                let vid = s.resourceId.videoId;
+                let pd = parseDesc(s.description);
+                if (!acc.map[date]) acc.map[date] = [];
+                acc.map[date].push({ id: vid, title: s.title,
+                    thumb: (t.high || t.standard || t.default || {}).url || '', imp: pd.important });
+                acc.meta[vid] = { title: s.title, time: pd.time, body: pd.body, important: pd.important };
             });
-            if (data.nextPageToken) await fetchAPI(data.nextPageToken);
+            if (data.nextPageToken) return await fetchAPI(data.nextPageToken, acc);
+            videosMap = acc.map; metaById = acc.meta;      // коміт лише за повного успіху (без дублів кешу)
             return true;
         } catch(e) {
             console.error('YouTube API error:', e.message);
@@ -246,10 +294,13 @@
                 if (v && v.length) {
                     v.forEach(vid => {
                         let wCls = watched.includes(vid.id) ? ' watched' : '';
-                        cIn += `<a href="#" class="v-lnk${wCls}" onclick="openVid(event, '${vid.id}', this)"><img src="${vid.thumb}" class="v-thumb" loading="lazy" decoding="async" alt=""><div class="v-title">${esc(vid.title)}</div></a>`;
+                        let mb = (metaById[vid.id] || {}).body || '';
+                        let exc = mb ? `<div class="v-excerpt">${esc(mb.slice(0, 160))}</div>` : '';
+                        cIn += `<a href="#" class="v-lnk${wCls}" onclick="openVid(event, '${vid.id}', this)"><img src="${vid.thumb}" class="v-thumb" loading="lazy" decoding="async" alt="">${exc}<div class="v-title">${esc(vid.title)}</div></a>`;
                     });
                 }
-                html += `<div class="${cCls}"><div class="v-cont ${v && v.length>1?'mult':''}">${cIn}</div><div class="dt"><span class="dt-n">${d}</span><span class="dt-d">${wDays[dw]}</span></div></div>`;
+                let starHtml = (v && v.some(x => x.imp)) ? STAR_SVG : '';
+                html += `<div class="${cCls}"><div class="v-cont ${v && v.length>1?'mult':''}">${cIn}</div><div class="dt"><span class="dt-n">${d}</span><span class="dt-d">${wDays[dw]}</span></div>${starHtml}</div>`;
             }
             html += `</div></div>`;
             loop.setMonth(m + 1);
@@ -264,8 +315,20 @@
             localStorage.setItem('vw', JSON.stringify(watched));
         }
         el.classList.add('watched');
+        // Записка дня під плеєром (щоденник): штамп часу + текст; зірка, якщо день важливий.
+        let meta = metaById[id] || {};
+        let note = document.getElementById('modNote');
+        if (meta.time || meta.body) {
+            note.innerHTML = `<div class="note-card${meta.important ? ' imp' : ''}">` +
+                (meta.important ? STAR_SVG : '') +
+                (meta.body ? `<div class="note-body">${esc(meta.body)}</div>` : '') +
+                (meta.time ? `<div class="note-foot">🕒 ${esc(meta.time)}</div>` : '') + `</div>`;
+        } else {
+            note.innerHTML = '';
+        }
         document.getElementById('ytIframe').src = 'https://www.youtube.com/embed/' + id + '?autoplay=1';
         document.getElementById('vidModal').classList.add('show');
+        document.getElementById('modIn').scrollTop = 0;
         document.body.style.overflow = 'hidden';
     }
 
@@ -280,7 +343,7 @@
 
     let tY = 0, mod = document.getElementById('vidModal'), mIn = document.getElementById('modIn');
     mod.addEventListener('touchstart', e => tY = e.touches[0].clientY, {passive:true});
-    mod.addEventListener('touchmove', e => { let dY = e.touches[0].clientY - tY; if(dY>0) mIn.style.transform = `translateY(${dY}px)`; }, {passive:true});
+    mod.addEventListener('touchmove', e => { let dY = e.touches[0].clientY - tY; if(dY>0 && mIn.scrollTop<=0) mIn.style.transform = `translateY(${dY}px)`; }, {passive:true});
     mod.addEventListener('touchend', e => { if(e.changedTouches[0].clientY - tY > 100) closeModal(); else mIn.style.transform = ''; }, {passive:true});
 
     setTimeout(init, 0);
