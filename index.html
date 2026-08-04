@@ -76,7 +76,8 @@
         .modal.show{display:flex}
         .mod-in{width:100%;max-width:1000px;padding:20px;position:relative;transition:transform .2s ease-out;max-height:94vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
         .iframe-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;background:#000}
-        .iframe-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
+        .iframe-wrap iframe,.iframe-wrap video{position:absolute;top:0;left:0;width:100%;height:100%;border:0;background:#000}
+        .iframe-wrap video{display:none}
         .close{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10}
         .close:hover{color:var(--red)}
         .footer{text-align:center;padding:60px 0;font-size:11px;color:var(--mut);letter-spacing:2px}
@@ -130,7 +131,10 @@
 <div id="vidModal" class="modal" onclick="closeModal()">
     <div class="mod-in" id="modIn" onclick="event.stopPropagation()">
         <div class="close" onclick="closeModal()">&times;</div>
-        <div class="iframe-wrap"><iframe id="ytIframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>
+        <div class="iframe-wrap">
+            <iframe id="ytIframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            <video id="locVideo" controls playsinline preload="none"></video>
+        </div>
         <div id="modNote" class="note"></div>
     </div>
 </div>
@@ -140,20 +144,25 @@
     // Старий ключ після заміни регенеруй у консолі — опублікована копія помре.
     const API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
     // Uploads-плейлист каналу UCRSKTGA5a2hLrai_MXNaoUQ (@Taras.maksymiak).
-    // Виводиться з ID каналу: UC... -> UU...
     const UPLOADS_ID = 'UURSKTGA5a2hLrai_MXNaoUQ';
-    // День перший. Календар починається тут — раніші дати не існують.
-    const CHALLENGE_START = new Date(2026, 6, 26);
-    let videosMap = {};
+
+    // ── Два режими (Ф3 «судний день») ──────────────────────────────────────────
+    // youtube  — жива стрічка з YouTube API (як було); doomsday — незалежна від YouTube:
+    // читаємо локальний archive.json (постери + проксі + опис-щоденник). Режим задає
+    // state.json {"mode":...}; АВТО-ФОЛБЕК: якщо YouTube мовчить — самі переходимо в doomsday.
+    let MODE = 'youtube';
+    let BASE = '';               // префікс локальних відео (Фаза 5); '' → грає YouTube-плеєр за id
+    let videosMap = {};          // {date: [rec]}, rec = {key,title,thumb,imp,y,v}
+    let metaById = {};           // {key: {title,time,body,important}}
+    let PLAY = [];               // реєстр програвання: PLAY[idx] = {key,y,v} (без крихких inline-id)
     let watched = JSON.parse(localStorage.getItem('vw') || '[]');
 
     function esc(s) {
         return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
-    // Записка дня (Трек C): опис відео = щоденник. Штамп часу з Треку B — шапка; текст — тіло.
+    // Записка дня (Трек C): опис відео = щоденник. Штамп часу з Треку B — підпис у кінці.
     // Маркер важливого дня — символ № (Shift+3, укр. розкладка), який НЕ є нумерацією («№5»).
-    let metaById = {};
     const IMPORTANT_RE = /№(?!\d)/;                                 // важливий день (самостійний №)
     const TS_RE = /🕒\s*(\d{2}:\d{2}\s+\d{2}\/\d{2}\/\d{4})/;        // штамп часу з опису (Трек B, у кінці)
     // Червона зірочка-асстериск «наче від руки» — три хвилясті штрихи через центр.
@@ -181,28 +190,14 @@
         return 'днів';
     }
 
-    async function init() {
-        let cached = localStorage.getItem('yt_data2'), cmeta = localStorage.getItem('yt_meta2'),
-            time = localStorage.getItem('yt_time2'), now = Date.now();
-        let hadCache = false;
-        if (cached && time && (now - time) < 21600000) {
-            videosMap = JSON.parse(cached);
-            if (cmeta) { try { metaById = JSON.parse(cmeta); } catch(e) {} }
-            hadCache = true;
-            render();
-        }
-        let ok = await fetchAPI();
-        if (ok) {
-            localStorage.setItem('yt_data2', JSON.stringify(videosMap));
-            localStorage.setItem('yt_meta2', JSON.stringify(metaById));
-            localStorage.setItem('yt_time2', now);
-            render();
-        } else if (!hadCache) {
-            document.getElementById('app').innerHTML =
-                '<div style="text-align:center;padding:60px 20px;color:var(--mut);font-family:-apple-system,sans-serif">' +
-                'Не вдалось завантажити відео. Спробуйте оновити сторінку.' +
-                '</div>';
-        }
+    // ── Джерела даних ──────────────────────────────────────────────────────────
+    async function loadMode() {
+        try {
+            let r = await fetch('state.json?cb=' + Date.now(), { cache: 'no-store' });
+            if (!r.ok) return 'youtube';
+            let d = await r.json();
+            return (d && d.mode === 'doomsday') ? 'doomsday' : 'youtube';
+        } catch(e) { return 'youtube'; }
     }
 
     async function fetchAPI(token = '', acc) {
@@ -220,7 +215,7 @@
                 let vid = s.resourceId.videoId;
                 let pd = parseDesc(s.description);
                 if (!acc.map[date]) acc.map[date] = [];
-                acc.map[date].push({ id: vid, title: s.title,
+                acc.map[date].push({ key: vid, title: s.title, y: vid, v: '',
                     thumb: (t.high || t.standard || t.default || {}).url || '', imp: pd.important });
                 acc.meta[vid] = { title: s.title, time: pd.time, body: pd.body, important: pd.important };
             });
@@ -233,20 +228,79 @@
         }
     }
 
-    function render() {
-        let today = new Date();
+    // Судний день: читаємо локальний archive.json (незалежно від YouTube).
+    // Форма (site_publisher): {base, days:{date:[{t,p,v,y,d,desc}]}}.
+    async function loadArchive() {
+        try {
+            let res = await fetch('archive.json?cb=' + Date.now(), { cache: 'no-store' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            let data = await res.json();
+            BASE = data.base || '';
+            let map = {}, meta = {}, days = data.days || {};
+            Object.keys(days).forEach(date => {
+                (days[date] || []).forEach((it, n) => {
+                    let key = it.y || it.v || (date + '_' + n);
+                    let pd = parseDesc(it.desc || '');
+                    if (!map[date]) map[date] = [];
+                    map[date].push({ key: key, title: it.t || '', y: it.y || '', v: it.v || '',
+                        thumb: it.p || '', imp: pd.important });
+                    meta[key] = { title: it.t || '', time: pd.time, body: pd.body, important: pd.important };
+                });
+            });
+            videosMap = map; metaById = meta;
+            return true;
+        } catch(e) {
+            console.error('archive.json error:', e.message);
+            return false;
+        }
+    }
 
-        // До старту — лише відлік. Жодних порожніх клітинок наперед.
-        if (today < CHALLENGE_START) {
-            let days = Math.ceil((CHALLENGE_START - today) / 86400000);
+    async function init() {
+        MODE = await loadMode();
+        if (MODE === 'doomsday') {                     // явний судний день зі state.json
+            if (await loadArchive()) { render(); return; }
+            MODE = 'youtube';                          // архів недоступний — пробуємо YouTube
+        }
+        // youtube-режим: спершу кеш (миттєво), потім жива відповідь
+        let cached = localStorage.getItem('yt_data2'), cmeta = localStorage.getItem('yt_meta2'),
+            time = localStorage.getItem('yt_time2'), now = Date.now(), hadCache = false;
+        if (cached && time && (now - time) < 21600000) {
+            try { videosMap = JSON.parse(cached); if (cmeta) metaById = JSON.parse(cmeta); hadCache = true; render(); } catch(e) {}
+        }
+        if (await fetchAPI()) {
+            localStorage.setItem('yt_data2', JSON.stringify(videosMap));
+            localStorage.setItem('yt_meta2', JSON.stringify(metaById));
+            localStorage.setItem('yt_time2', now);
+            render();
+        } else if (await loadArchive()) {              // ⚑ YouTube мовчить → авто-судний-день
+            MODE = 'doomsday';
+            render();
+        } else if (!hadCache) {
             document.getElementById('app').innerHTML =
-                `<div class="count"><div class="cd-lbl">До першої стрічки</div>` +
-                `<div class="cd-num">${days}</div>` +
-                `<div class="cd-sub">${daysWord(days)} · старт 26 липня 2026</div></div>`;
+                '<div style="text-align:center;padding:60px 20px;color:var(--mut);font-family:-apple-system,sans-serif">' +
+                'Не вдалось завантажити відео. Спробуйте оновити сторінку.</div>';
+        }
+    }
+
+    // Найраніша дата з даними — календар стартує звідси (без хардкоду/зворотного відліку).
+    function firstDate() {
+        let ks = Object.keys(videosMap).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k) && videosMap[k] && videosMap[k].length).sort();
+        return ks.length ? ks[0] : null;
+    }
+
+    function render() {
+        PLAY = [];
+        let today = new Date();
+        let fd = firstDate();
+        // Ще нема жодного дня → спокійна заглушка (без відліку/дедлайну — рішення Тараса).
+        if (!fd) {
+            document.getElementById('app').innerHTML =
+                `<div class="count"><div class="cd-lbl">Стіна днів</div>` +
+                `<div class="cd-sub" style="margin-top:22px;font-size:17px">Скоро тут зʼявиться перша стрічка.</div></div>`;
             return;
         }
-
-        let startY = CHALLENGE_START.getFullYear(), startM = CHALLENGE_START.getMonth(), startD = CHALLENGE_START.getDate();
+        let [sy, sm, sd] = fd.split('-').map(Number);
+        let startY = sy, startM = sm - 1, startD = sd;
 
         let html = '';
         let loop = new Date(startY, startM, 1);
@@ -292,11 +346,12 @@
                 let cIn = '';
 
                 if (v && v.length) {
-                    v.forEach(vid => {
-                        let wCls = watched.includes(vid.id) ? ' watched' : '';
-                        let mb = (metaById[vid.id] || {}).body || '';
+                    v.forEach(rec => {
+                        let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '' }) - 1;
+                        let wCls = watched.includes(rec.key) ? ' watched' : '';
+                        let mb = (metaById[rec.key] || {}).body || '';
                         let exc = mb ? `<div class="v-excerpt">${esc(mb.slice(0, 160))}</div>` : '';
-                        cIn += `<a href="#" class="v-lnk${wCls}" onclick="openVid(event, '${vid.id}', this)"><img src="${vid.thumb}" class="v-thumb" loading="lazy" decoding="async" alt="">${exc}<div class="v-title">${esc(vid.title)}</div></a>`;
+                        cIn += `<a href="#" class="v-lnk${wCls}" onclick="openVid(event, ${idx}, this)"><img src="${esc(rec.thumb || '')}" class="v-thumb" loading="lazy" decoding="async" alt="">${exc}<div class="v-title">${esc(rec.title || '')}</div></a>`;
                     });
                 }
                 let starHtml = (v && v.some(x => x.imp)) ? STAR_SVG : '';
@@ -308,32 +363,45 @@
         document.getElementById('app').innerHTML = html;
     }
 
-    window.openVid = function(e, id, el) {
+    window.openVid = function(e, idx, el) {
         e.preventDefault();
-        if (!watched.includes(id)) {
-            watched.push(id);
+        let p = PLAY[idx] || {};
+        if (p.key && !watched.includes(p.key)) {
+            watched.push(p.key);
             localStorage.setItem('vw', JSON.stringify(watched));
         }
-        el.classList.add('watched');
-        // Записка дня під плеєром (щоденник): штамп часу + текст; зірка, якщо день важливий.
-        let meta = metaById[id] || {};
+        if (el) el.classList.add('watched');
+        // Записка дня під плеєром (щоденник): текст веде, штамп часу — підпис знизу; зірка, якщо важливо.
+        let meta = metaById[p.key] || {};
         let note = document.getElementById('modNote');
-        if (meta.time || meta.body) {
-            note.innerHTML = `<div class="note-card${meta.important ? ' imp' : ''}">` +
-                (meta.important ? STAR_SVG : '') +
-                (meta.body ? `<div class="note-body">${esc(meta.body)}</div>` : '') +
-                (meta.time ? `<div class="note-foot">🕒 ${esc(meta.time)}</div>` : '') + `</div>`;
-        } else {
-            note.innerHTML = '';
+        note.innerHTML = (meta.time || meta.body)
+            ? `<div class="note-card${meta.important ? ' imp' : ''}">` +
+              (meta.important ? STAR_SVG : '') +
+              (meta.body ? `<div class="note-body">${esc(meta.body)}</div>` : '') +
+              (meta.time ? `<div class="note-foot">🕒 ${esc(meta.time)}</div>` : '') + `</div>`
+            : '';
+        // Плеєр: локальне відео (судний день, Фаза 5) якщо є base+v, інакше YouTube-ембед за id.
+        let iframe = document.getElementById('ytIframe'), loc = document.getElementById('locVideo');
+        let local = (BASE && p.v) ? (BASE.replace(/\/+$/, '') + '/' + p.v.replace(/^\/+/, '')) : '';
+        if (local) {
+            iframe.src = ''; iframe.style.display = 'none';
+            loc.src = local; loc.style.display = 'block'; try { loc.play(); } catch(_) {}
+        } else if (p.y) {
+            try { loc.pause(); } catch(_) {} loc.removeAttribute('src'); loc.style.display = 'none';
+            iframe.style.display = 'block'; iframe.src = 'https://www.youtube.com/embed/' + p.y + '?autoplay=1';
+        } else {                                        // нема чим грати — постер+записка (Фаза 5 дасть відео)
+            iframe.src = ''; iframe.style.display = 'none';
+            try { loc.pause(); } catch(_) {} loc.removeAttribute('src'); loc.style.display = 'none';
         }
-        document.getElementById('ytIframe').src = 'https://www.youtube.com/embed/' + id + '?autoplay=1';
         document.getElementById('vidModal').classList.add('show');
         document.getElementById('modIn').scrollTop = 0;
         document.body.style.overflow = 'hidden';
     }
 
     window.closeModal = function() {
-        document.getElementById('ytIframe').src = '';
+        let iframe = document.getElementById('ytIframe'), loc = document.getElementById('locVideo');
+        iframe.src = '';
+        try { loc.pause(); } catch(_) {} loc.removeAttribute('src');
         document.getElementById('vidModal').classList.remove('show');
         document.body.style.overflow = 'auto';
         document.getElementById('modIn').style.transform = '';
