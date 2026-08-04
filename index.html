@@ -81,6 +81,10 @@
         .close{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10}
         .close:hover{color:var(--red)}
         .footer{text-align:center;padding:60px 0;font-size:11px;color:var(--mut);letter-spacing:2px}
+        .contact{text-align:center;padding:40px 0 0}
+        .contact a{font-size:12px;letter-spacing:1px;color:#dcdcdc;text-decoration:none;transition:.25s}
+        .contact a:hover{color:var(--mut)}
+        @media(prefers-color-scheme:dark){.contact a{color:#2c2c2c}}
         @media(max-width:1024px){.grid{grid-template-columns:repeat(4,1fr)}}
         @media(max-width:600px){
             body{padding:15px 15px 0}
@@ -125,6 +129,7 @@
     </header>
 
     <div class="main" id="app"></div>
+    <div class="contact"><a href="mailto:hello@taras.kyiv.ua">hello@taras.kyiv.ua</a></div>
     <div class="footer">© 2026 ТАРАС МАКСИМʼЯК · 🌓 ЛОВИ ДЕНЬ</div>
 </div>
 
