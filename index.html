@@ -26,7 +26,8 @@
         .intro .motto{font-size:42px;font-weight:800;line-height:1.05;letter-spacing:-1px;margin:0 0 18px}
         .intro .lede{font-size:16px;line-height:1.5;color:var(--mut);max-width:560px;margin:0 0 28px;font-weight:400}
         .intro .links{display:flex;flex-wrap:wrap;gap:10px}
-        .intro .links a{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-decoration:none;padding:10px 16px;border-radius:8px;transition:.2s}
+        /* Іконки без підписів: символи впізнавані самі по собі (05.08.2026) */
+        .intro .links a{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;padding:10px;border-radius:8px;transition:.2s}
         .intro .links a.primary{background:var(--txt);color:var(--bg)}
         .intro .links a.primary:hover{background:var(--red)}
         .intro .links a.ghost{color:var(--mut);border:1px solid var(--div)}
@@ -81,10 +82,10 @@
         .close{position:absolute;top:-15px;right:20px;color:#fff;font-size:40px;cursor:pointer;line-height:1;z-index:10}
         .close:hover{color:var(--red)}
         .footer{text-align:center;padding:60px 0;font-size:11px;color:var(--mut);letter-spacing:2px}
-        .contact{text-align:center;padding:40px 0 0}
-        .contact a{font-size:12px;letter-spacing:1px;color:#dcdcdc;text-decoration:none;transition:.25s}
-        .contact a:hover{color:var(--mut)}
-        @media(prefers-color-scheme:dark){.contact a{color:#2c2c2c}}
+        /* Пошта під кнопками — ледь помітна: хто шукає, той побачить */
+        .mail{margin-top:12px}
+        .mail a{font-size:11px;letter-spacing:.5px;color:var(--mut);opacity:.45;text-decoration:none;transition:.25s}
+        .mail a:hover{opacity:1;color:var(--red)}
         @media(max-width:1024px){.grid{grid-template-columns:repeat(4,1fr)}}
         @media(max-width:600px){
             body{padding:15px 15px 0}
@@ -117,19 +118,17 @@
     <header class="intro">
         <div class="name">Тарас Максимʼяк</div>
         <div class="links">
-            <a class="primary" href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-                Instagram
+            <a class="primary" href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
             </a>
-            <a class="ghost" href="https://www.youtube.com/@Taras.maksymiak" target="_blank" rel="noopener">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.5 15.5v-7l6.5 3.5z"/></svg>
-                YouTube
+            <a class="ghost" href="https://www.youtube.com/@Taras.maksymiak" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.5 15.5v-7l6.5 3.5z"/></svg>
             </a>
         </div>
+        <div class="mail"><a href="mailto:hello@taras.kyiv.ua">hello@taras.kyiv.ua</a></div>
     </header>
 
     <div class="main" id="app"></div>
-    <div class="contact"><a href="mailto:hello@taras.kyiv.ua">hello@taras.kyiv.ua</a></div>
     <div class="footer">© 2026 ТАРАС МАКСИМʼЯК · 🌓 ЛОВИ ДЕНЬ</div>
 </div>
 
@@ -155,6 +154,9 @@
     // youtube  — жива стрічка з YouTube API (як було); doomsday — незалежна від YouTube:
     // читаємо локальний archive.json (постери + проксі + опис-щоденник). Режим задає
     // state.json {"mode":...}; АВТО-ФОЛБЕК: якщо YouTube мовчить — самі переходимо в doomsday.
+    // Стіна днів починається з першого відео марафону. Усе раніше (довипускові проби
+    // в archive.json / на каналі) на стіну не потрапляє й відлік не зсуває.
+    const SITE_START = '2026-08-06';
     let MODE = 'youtube';
     let BASE = '';               // префікс локальних відео (Фаза 5); '' → грає YouTube-плеєр за id
     let videosMap = {};          // {date: [rec]}, rec = {key,title,thumb,imp,y,v}
@@ -287,16 +289,13 @@
         }
     }
 
-    // Найраніша дата з даними — календар стартує звідси (без хардкоду/зворотного відліку).
-    function firstDate() {
-        let ks = Object.keys(videosMap).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k) && videosMap[k] && videosMap[k].length).sort();
-        return ks.length ? ks[0] : null;
-    }
-
+    // Календар стартує з SITE_START (перше відео марафону) — усе раніше ігноруємо.
     function render() {
         PLAY = [];
         let today = new Date();
-        let fd = firstDate();
+        let ty = today.getFullYear(), tm = today.getMonth(), td = today.getDate();
+        let fd = (ty + '-' + String(tm+1).padStart(2,'0') + '-' + String(td).padStart(2,'0')) >= SITE_START
+            ? SITE_START : null;                       // старт ще попереду → нічого не малюємо
         // Ще нема жодного дня → спокійна заглушка (без відліку/дедлайну — рішення Тараса).
         if (!fd) {
             document.getElementById('app').innerHTML =
