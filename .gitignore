@@ -4,3 +4,6 @@
 *.bak_*
 index.html.bak.*
 sw.js.bak.*
+
+# Скриншоти QA-прогону
+tests/qa-shots/

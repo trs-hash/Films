@@ -30,8 +30,9 @@
         .intro .links a.primary:hover{background:var(--red)}
         .intro .links a.ghost{color:var(--mut);border:1px solid var(--div)}
         .intro .links a.ghost:hover{color:var(--red);border-color:var(--red)}
-        .nav-base{background:var(--cell);border-radius:8px;display:flex;border:1px solid var(--div);margin-bottom:50px;overflow:hidden}
-        .nav-seg{flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--mut);cursor:pointer;text-transform:uppercase;letter-spacing:1px;padding:12px 5px;transition:.2s;user-select:none;-webkit-tap-highlight-color:transparent}
+        .nav-base{background:var(--cell);border-radius:8px;display:flex;border:1px solid var(--div);margin-bottom:50px;overflow-x:auto;scrollbar-width:none}
+        .nav-base::-webkit-scrollbar{display:none}
+        .nav-seg{flex:1 0 auto;white-space:nowrap;text-align:center;font-size:11px;font-weight:700;color:var(--mut);cursor:pointer;text-transform:uppercase;letter-spacing:1px;padding:12px 5px;transition:.2s;user-select:none;-webkit-tap-highlight-color:transparent}
         .nav-seg:hover{color:var(--red)}
 
         /* ── Сезон: одна велика тема, серії щотижня ── */
@@ -75,6 +76,12 @@
         .ep.next .ep-t{color:var(--mut)}
         .ep.next:hover .ep-t{color:var(--mut)}
         .s-msg{font-size:15px;color:var(--mut)}
+        .empty{text-align:center;padding:60px 20px;color:var(--mut)}
+        /* ?check — самоперевірка після правок seasons.json (бачить лише той, хто відкрив з ?check) */
+        .chk{border:2px dashed var(--red);border-radius:10px;padding:16px 20px 6px;margin:0 0 50px;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
+        .chk-h{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);margin:4px 0 8px}
+        .chk ul{margin:0 0 14px;padding-left:20px}
+        .chk p{margin:0 0 12px;color:var(--mut)}
 
         .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:1000;align-items:center;justify-content:center}
         .modal.show{display:flex}
@@ -140,7 +147,7 @@
     <div class="mod-in" id="modIn" onclick="event.stopPropagation()">
         <div class="close" onclick="closeModal()">&times;</div>
         <div class="iframe-wrap">
-            <iframe id="ytIframe" src="" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+            <iframe id="ytIframe" title="Відео" allow="autoplay; encrypted-media" allowfullscreen></iframe>
             <video id="locVideo" controls playsinline preload="none"></video>
         </div>
         <div id="modNote" class="note"></div>
@@ -159,14 +166,28 @@
     // Режими ті самі, що й у календарі (state.json): youtube — жива стрічка з API;
     // doomsday — локальний archive.json, серії розкладаються по сезонах за датами start…end.
     // Стара календарна «стіна днів» збережена в calendar.html.
+    // Самоперевірка після правок: taras.kyiv.ua/?check — що сайт зрозумів і що виправити.
     let MODE = 'youtube';
     let BASE = '';               // префікс локальних відео (Фаза 5); '' → грає YouTube-плеєр за id
-    let SEASONS = [];            // [{n,title,about,start,end,schedule,playlist,episodes,support}]
-    let EPS = {};                // {n: [rec]}, rec = {key,title,thumb,imp,y,v,date,ts}
+    let SEASONS = [];            // нормалізовані сезони: {k,id,n,title,about,start,end,schedule,playlist,episodes,support}
+    let EPS = {};                // {k: [rec]} серії сезону, rec = {key,title,thumb,imp,y,v,date,ts}
     let metaById = {};           // {key: {title,time,body,important}}
+    let HIDDEN = {};             // {playlist: скільки приватних / запланованих / видалених відео пропущено}
+    let ISSUES = [];             // знайдені ручні помилки — у консоль і на ?check
+    let SRC = { seasons: '', eps: '' };   // звідки взялися дані — для ?check
     let LOAD_FAILED = false;     // серії не вдалось отримати ні з YouTube, ні з архіву
     let PLAY = [];               // реєстр програвання: PLAY[idx] = {key,y,v} (без крихких inline-id)
-    let watched = JSON.parse(localStorage.getItem('vw') || '[]');
+    const CHECK = /[?&]check\b/.test(location.search);
+    const pad2 = n => String(n).padStart(2, '0');
+
+    // localStorage буває недоступний (приватний режим, заборона cookies) або зі сміттям — сторінка не має падати
+    function lsGet(k) { try { return localStorage.getItem(k); } catch(e) { return null; } }
+    function lsSet(k, v) { try { localStorage.setItem(k, v); } catch(e) {} }
+    function lsJSON(k, def) { try { let v = JSON.parse(lsGet(k)); return v == null ? def : v; } catch(e) { return def; } }
+    let watched = lsJSON('vw', []);
+    if (!Array.isArray(watched)) watched = [];
+
+    function issue(msg) { ISSUES.push(msg); console.warn('[сезони] ' + msg); }
 
     function esc(s) {
         return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -194,19 +215,20 @@
         return { important, time, body };
     }
 
-    // ── Дати (рядки YYYY-MM-DD, рахуємо в UTC — без стрибків через перехід на літній час) ──
+    // ── Дати (рядки YYYY-MM-DD; різницю днів рахуємо в UTC — без стрибків через літній час) ──
     const MONTHS_GEN = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
     const DAY_MS = 864e5;
-    function todayStr() {
-        let t = new Date();
-        return t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
-    }
+    function ymd(t) { return t.getFullYear() + '-' + pad2(t.getMonth() + 1) + '-' + pad2(t.getDate()); }
+    function todayStr() { return ymd(new Date()); }
+    // Момент публікації → день за місцевим часом глядача (відео о 00:30 за Києвом — це вже новий день, а не вчорашній UTC)
+    function localDay(iso) { let t = new Date(iso); return isNaN(t) ? String(iso).slice(0, 10) : ymd(t); }
     function dayNum(s) { let [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d) / DAY_MS; }
     function fmtDay(s, withYear) {
         let [y, m, d] = s.split('-').map(Number);
         return d + ' ' + MONTHS_GEN[m - 1] + (withYear ? ' ' + y : '');
     }
     function fmtRange(s) {
+        if (!s.start) return s.end ? 'до ' + fmtDay(s.end, true) : '';
         if (!s.end) return 'з ' + fmtDay(s.start, true);
         let sameYear = s.start.slice(0, 4) === s.end.slice(0, 4);
         return fmtDay(s.start, !sameYear) + ' — ' + fmtDay(s.end, true);
@@ -217,12 +239,87 @@
         if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
         return many;
     }
-    const pad2 = n => String(n).padStart(2, '0');
 
     function seasonState(s, today) {
-        if (today < s.start) return 'soon';
+        if (s.start && today < s.start) return 'soon';
         if (s.end && today > s.end) return 'done';
         return 'live';
+    }
+
+    // ── seasons.json: терпимо до типових ручних помилок, але кожну називаємо (консоль і ?check) ──
+    const SEASON_KEYS = ['n', 'title', 'about', 'start', 'end', 'schedule', 'playlist', 'episodes', 'support'];
+    const str = v => v == null ? '' : String(v).trim();
+
+    function parseLoose(text) {
+        try { return JSON.parse(text); }
+        catch(e) {
+            try {                                        // найчастіша помилка — кома після останнього елемента
+                let d = JSON.parse(text.replace(/,(\s*[}\]])/g, '$1'));
+                issue('seasons.json: зайва кома перед } або ] — сайт її пропустив, але прибери у файлі');
+                return d;
+            } catch(_) {}
+            let m = String(e.message).match(/position (\d+)/);
+            let where = m ? ` (рядок ${text.slice(0, +m[1]).split('\n').length})` : '';
+            throw new Error('файл зіпсований, це не коректний JSON' + where + ': ' + e.message);
+        }
+    }
+
+    function normDate(v, what) {
+        let s = str(v), m, y, mo, d;
+        if (!s) return '';
+        if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))) [y, mo, d] = [+m[1], +m[2], +m[3]];
+        else if ((m = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/))) [y, mo, d] = [+m[3], +m[2], +m[1]];
+        else { issue(`${what}: не розумію дату «${s}» — пиши РРРР-ММ-ДД, напр. 2026-09-20`); return ''; }
+        let t = new Date(Date.UTC(y, mo - 1, d));
+        if (t.getUTCFullYear() !== y || t.getUTCMonth() !== mo - 1 || t.getUTCDate() !== d) {
+            issue(`${what}: дати «${s}» не існує`); return '';
+        }
+        let out = y + '-' + pad2(mo) + '-' + pad2(d);
+        if (out !== s) issue(`${what}: «${s}» прочитано як ${out} — краще писати саме так`);
+        return out;
+    }
+
+    function normPlaylist(v, what) {
+        let s = str(v), m = s.match(/[?&]list=([\w-]+)/);
+        if (m) { issue(`${what}: у playlist вставлено посилання — беру з нього ID ${m[1]}`); return m[1]; }
+        if (s && !/^[\w-]+$/.test(s)) { issue(`${what}: «${s}» не схоже на ID плейлиста`); return ''; }
+        return s;
+    }
+
+    function normUrl(v, what) {
+        let s = str(v);
+        if (!s) return '';
+        if (!/^[a-z][\w+.-]*:/i.test(s)) s = 'https://' + s.replace(/^\/+/, '');   // «send.monobank.ua/jar/…» без https://
+        if (!/^https?:\/\/\S+$/i.test(s)) { issue(`${what}: «${str(v)}» не схоже на веб-адресу — кнопку «Підтримати» сховано`); return ''; }
+        return s;
+    }
+
+    function normSeasons(raw) {
+        let list = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.seasons) ? raw.seasons : null);
+        if (!list) { issue('seasons.json: не знайшов список сезонів — очікую {"seasons": [ … ]}'); return []; }
+        let out = [], ids = {}, today = todayStr();
+        list.forEach((s, i) => {
+            let what = `seasons.json, сезон №${i + 1} у списку`;
+            if (!s || typeof s !== 'object' || Array.isArray(s)) { issue(`${what}: це не обʼєкт {…} — пропускаю`); return; }
+            Object.keys(s).forEach(key => {
+                if (!SEASON_KEYS.includes(key)) issue(`${what}: невідоме поле «${key}» — описка? Відомі: ${SEASON_KEYS.join(', ')}`);
+            });
+            let n = parseInt(s.n, 10);
+            if (!Number.isFinite(n)) { n = i + 1; issue(`${what}: нема номера n — показую як «Сезон ${n}»`); }
+            what = `seasons.json, сезон ${n}`;
+            let start = normDate(s.start, what + ', start'), end = normDate(s.end, what + ', end');
+            if (!start) issue(`${what}: нема дати start — вважаю, що сезон уже йде`);
+            if (start && end && end < start) { issue(`${what}: end (${end}) раніше за start (${start}) — end ігнорую`); end = ''; }
+            let id = 's-' + n;
+            if (ids[id]) { issue(`${what}: номер ${n} уже є в іншого сезону`); id += '-' + i; }
+            ids[id] = true;
+            let ep = parseInt(s.episodes, 10);
+            let season = { k: 'k' + i, id, n, title: str(s.title), about: str(s.about), start, end, schedule: str(s.schedule),
+                playlist: normPlaylist(s.playlist, what), episodes: ep > 0 ? ep : 0, support: normUrl(s.support, what) };
+            if (!season.playlist && seasonState(season, today) !== 'soon') issue(`${what}: нема плейлиста — серії з YouTube не зʼявляться`);
+            out.push(season);
+        });
+        return out;
     }
 
     // ── Джерела даних ──────────────────────────────────────────────────────────
@@ -235,53 +332,83 @@
         } catch(e) { return 'youtube'; }
     }
 
+    // Зіпсована правка seasons.json не має класти сайт: беремо останню справну копію з кешу браузера.
     async function loadSeasons() {
+        let raw;
         try {
             let r = await fetch('seasons.json?cb=' + Date.now(), { cache: 'no-store' });
             if (!r.ok) throw new Error('HTTP ' + r.status);
-            let d = await r.json();
-            SEASONS = (d.seasons || []).filter(s => s && Number.isInteger(s.n) && /^\d{4}-\d{2}-\d{2}$/.test(s.start || ''));
-            return SEASONS.length > 0;
+            raw = parseLoose(await r.text());
+            lsSet('ss_seasons', JSON.stringify(raw));
+            SRC.seasons = 'seasons.json';
         } catch(e) {
-            console.error('seasons.json error:', e.message);
-            return false;
+            issue('seasons.json: ' + e.message);
+            raw = lsJSON('ss_seasons', null);
+            if (!raw) return false;
+            SRC.seasons = 'остання справна копія з кешу браузера — сам файл зараз зіпсований!';
         }
+        SEASONS = normSeasons(raw);
+        return true;
     }
 
     async function fetchPlaylist(pid) {
         let items = [], token = '';
         do {
             let res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails,status&playlistId=${encodeURIComponent(pid)}&maxResults=50&key=${API_KEY}${token ? '&pageToken='+token : ''}`);
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            let data = await res.json();
-            if (data.error) throw new Error(data.error.message || 'API error');
+            let data = await res.json().catch(() => ({}));
+            if (!res.ok || data.error) {
+                let reason = ((data.error && data.error.errors && data.error.errors[0]) || {}).reason || '';
+                let err = new Error((data.error && data.error.message) || ('HTTP ' + res.status));
+                // Плейлиста нема / він приватний — це помилка в seasons.json, а не збій YouTube
+                err.badPlaylist = res.status === 404 || reason === 'playlistNotFound' || reason === 'playlistItemsNotAccessible';
+                throw err;
+            }
             items.push(...(data.items || []));
             token = data.nextPageToken || '';
         } while (token);
         return items;
     }
 
+    const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    function applyPlaylists(byPl) {                    // byPl може прийти з кешу браузера — довіряємо лише цілим записам
+        EPS = {};
+        SEASONS.forEach(s => {
+            let list = s.playlist && byPl[s.playlist];
+            EPS[s.k] = Array.isArray(list) ? list.filter(r => r && r.key && DATE_RE.test(r.date)) : [];
+        });
+    }
+
     // Серії сезону = його плейлист. Дата серії — дата публікації відео (videoPublishedAt),
     // а не дата додавання в плейлист. Приватні, заплановані й видалені відео її не мають — пропускаємо.
+    // Кривий ID одного плейлиста гасить лише свій сезон; збій самого YouTube (квота, мережа) → фолбек на архів.
+    let PL_CACHE = {};
     async function loadYouTube() {
         try {
-            let eps = {}, meta = {};
-            await Promise.all(SEASONS.filter(s => s.playlist).map(async s => {
-                let items = await fetchPlaylist(s.playlist);
-                eps[s.n] = [];
+            let byPl = {}, meta = {}, hidden = {};
+            let pls = [...new Set(SEASONS.map(s => s.playlist).filter(Boolean))];
+            await Promise.all(pls.map(async pid => {
+                let items;
+                try { items = await fetchPlaylist(pid); }
+                catch(e) {
+                    if (!e.badPlaylist) throw e;
+                    issue(`плейлист ${pid} не знайдено або він закритий — перевір ID і доступ «Загальнодоступний»`);
+                    byPl[pid] = []; return;
+                }
+                byPl[pid] = []; hidden[pid] = 0;
                 items.forEach(i => {
                     let sn = i.snippet, cd = i.contentDetails || {};
-                    if (!sn || !cd.videoPublishedAt || (i.status || {}).privacyStatus === 'private') return;
-                    let vid = cd.videoId || sn.resourceId.videoId;
+                    if (!sn || !cd.videoPublishedAt || (i.status || {}).privacyStatus === 'private') { hidden[pid]++; return; }
+                    let vid = cd.videoId || (sn.resourceId || {}).videoId;
                     let t = sn.thumbnails || {};
                     let pd = parseDesc(sn.description);
-                    eps[s.n].push({ key: vid, title: sn.title, y: vid, v: '',
+                    byPl[pid].push({ key: vid, title: sn.title, y: vid, v: '',
                         thumb: (t.maxres || t.standard || t.high || t.medium || t.default || {}).url || '',
-                        imp: pd.important, date: cd.videoPublishedAt.split('T')[0], ts: cd.videoPublishedAt });
+                        imp: pd.important, date: localDay(cd.videoPublishedAt), ts: cd.videoPublishedAt });
                     meta[vid] = { title: sn.title, time: pd.time, body: pd.body, important: pd.important };
                 });
             }));
-            EPS = eps; metaById = meta;                  // коміт лише за повного успіху
+            PL_CACHE = byPl; metaById = meta; HIDDEN = hidden;   // коміт лише за повного успіху
+            applyPlaylists(byPl);
             return true;
         } catch(e) {
             console.error('YouTube API error:', e.message);
@@ -299,13 +426,14 @@
             BASE = data.base || '';
             let eps = {}, meta = {}, days = data.days || {};
             Object.keys(days).forEach(date => {
-                let s = SEASONS.find(x => date >= x.start && (!x.end || date <= x.end));
+                if (!DATE_RE.test(date) || !Array.isArray(days[date])) return;
+                let s = SEASONS.find(x => (!x.start || date >= x.start) && (!x.end || date <= x.end));
                 if (!s) return;
                 (days[date] || []).forEach((it, n) => {
                     let key = it.y || it.v || (date + '_' + n);
                     let pd = parseDesc(it.desc || '');
-                    if (!eps[s.n]) eps[s.n] = [];
-                    eps[s.n].push({ key: key, title: it.t || '', y: it.y || '', v: it.v || '',
+                    if (!eps[s.k]) eps[s.k] = [];
+                    eps[s.k].push({ key: key, title: it.t || '', y: it.y || '', v: it.v || '',
                         thumb: it.p || '', imp: pd.important, date: date, ts: date + 'T' + pad2(n) });
                     meta[key] = { title: it.t || '', time: pd.time, body: pd.body, important: pd.important };
                 });
@@ -319,9 +447,8 @@
     }
 
     function showError() {
-        document.getElementById('app').innerHTML =
-            '<div style="text-align:center;padding:60px 20px;color:var(--mut);font-family:-apple-system,sans-serif">' +
-            'Не вдалось завантажити сторінку. Спробуйте оновити.</div>';
+        document.getElementById('app').innerHTML = (CHECK ? checkHtml(todayStr()) : '') +
+            '<div class="empty">Не вдалось завантажити сторінку. Спробуйте оновити.</div>';
     }
 
     async function init() {
@@ -329,25 +456,26 @@
         if (!ok) { showError(); return; }
         MODE = mode;
         if (MODE === 'doomsday') {                     // явний судний день зі state.json
-            if (await loadArchive()) { render(); return; }
+            if (await loadArchive()) { SRC.eps = 'archive.json (режим doomsday)'; render(); return; }
             MODE = 'youtube';                          // архів недоступний — пробуємо YouTube
         }
         // youtube-режим: спершу кеш (миттєво), потім жива відповідь
-        let cached = localStorage.getItem('ss_eps'), cmeta = localStorage.getItem('ss_meta'),
-            time = localStorage.getItem('ss_time'), now = Date.now(), hadCache = false;
-        if (cached && time && (now - time) < 21600000) {
-            try { EPS = JSON.parse(cached); if (cmeta) metaById = JSON.parse(cmeta); hadCache = true; render(); } catch(e) {}
+        let cached = lsJSON('ss_pl', null), time = +lsGet('ss_time') || 0, now = Date.now(), hadCache = false;
+        if (cached && typeof cached === 'object' && now - time < 21600000) {
+            applyPlaylists(cached); metaById = lsJSON('ss_meta', {}) || {};
+            hadCache = true; SRC.eps = 'кеш браузера'; render();
         }
         if (await loadYouTube()) {
-            localStorage.setItem('ss_eps', JSON.stringify(EPS));
-            localStorage.setItem('ss_meta', JSON.stringify(metaById));
-            localStorage.setItem('ss_time', now);
+            lsSet('ss_pl', JSON.stringify(PL_CACHE));
+            lsSet('ss_meta', JSON.stringify(metaById));
+            lsSet('ss_time', String(now));
+            SRC.eps = 'YouTube';
             render();
         } else if (await loadArchive()) {              // ⚑ YouTube мовчить → авто-судний-день
-            MODE = 'doomsday';
+            MODE = 'doomsday'; SRC.eps = 'archive.json (YouTube не відповів)';
             render();
         } else if (!hadCache) {                        // сезон показуємо все одно — без серій
-            LOAD_FAILED = true;
+            LOAD_FAILED = true; SRC.eps = 'нічого — YouTube і архів недоступні';
             render();
         }
     }
@@ -357,27 +485,30 @@
     function render() {
         PLAY = [];
         let today = todayStr(), rank = { live: 0, soon: 1, done: 2 };
-        let list = SEASONS.map(s => ({ s, st: seasonState(s, today) })).sort((a, b) =>
-            rank[a.st] - rank[b.st] || (a.st === 'soon' ? (a.s.start < b.s.start ? -1 : 1) : (a.s.start > b.s.start ? -1 : 1)));
-
-        let html = '';
+        let html = CHECK ? checkHtml(today) : '';
+        if (!SEASONS.length) {
+            document.getElementById('app').innerHTML = html + '<div class="empty">Скоро тут зʼявиться перший сезон.</div>';
+            return;
+        }
+        let list = SEASONS.map(s => ({ s, st: seasonState(s, today) })).sort((a, b) => rank[a.st] - rank[b.st] ||
+            (a.st === 'soon' ? (a.s.start < b.s.start ? -1 : 1) : ((a.s.start || '') > (b.s.start || '') ? -1 : 1)));
         if (list.length > 1) {
             html += '<div class="nav-base">' + list.map(({ s }) =>
-                `<div class="nav-seg" onclick="document.getElementById('s-${s.n}').scrollIntoView({behavior:'smooth', block:'start'})">Сезон ${s.n}</div>`).join('') + '</div>';
+                `<div class="nav-seg" onclick="document.getElementById('${s.id}').scrollIntoView({behavior:'smooth', block:'start'})">Сезон ${s.n}</div>`).join('') + '</div>';
         }
         list.forEach(({ s, st }) => { html += seasonHtml(s, st, today); });
         document.getElementById('app').innerHTML = html;
     }
 
     function seasonHtml(s, st, today) {
-        let eps = (EPS[s.n] || []).slice().sort((a, b) => a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0);
+        let eps = (EPS[s.k] || []).slice().sort((a, b) => a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0);
         let stLbl = st === 'live' ? '<span class="s-live">Зараз</span>' : (st === 'soon' ? 'Скоро' : 'Завершено');
-        let html = `<section class="season ${st}" id="s-${s.n}">` +
+        let html = `<section class="season ${st}" id="${s.id}">` +
             `<div class="s-lbl">${s.title ? 'Сезон ' + s.n + (st === 'live' ? ' ' : ' · ') : ''}${stLbl}</div>` +
             `<h2 class="s-title">${esc(s.title || 'Сезон ' + s.n)}</h2>` +
             (s.about ? `<p class="s-about">${esc(s.about)}</p>` : '');
 
-        let meta = [st === 'soon' ? 'Старт — ' + fmtDay(s.start, true) : fmtRange(s)];
+        let meta = [st === 'soon' ? 'Старт — ' + fmtDay(s.start, true) : esc(fmtRange(s))].filter(Boolean);
         if (st === 'live' && s.schedule) meta.push(esc(s.schedule));
         if (s.playlist && st !== 'soon')
             meta.push(`<a href="https://www.youtube.com/playlist?list=${encodeURIComponent(s.playlist)}" target="_blank" rel="noopener">Плейлист на YouTube ↗</a>`);
@@ -390,17 +521,21 @@
         if (st === 'soon') return html + '</section>';
 
         // Прогрес сезону — за часом (тижні), тож він «живий» навіть до першої серії.
-        let cnt = s.episodes
-            ? `Серій: ${eps.length} / ${s.episodes}`
-            : `${eps.length} ${plural(eps.length, 'серія', 'серії', 'серій')}`;
-        if (st === 'live' && s.end) {
-            let total = dayNum(s.end) - dayNum(s.start), passed = dayNum(today) - dayNum(s.start);
-            let weeks = Math.max(1, Math.round(total / 7)), week = Math.min(weeks, Math.floor(passed / 7) + 1);
-            let pct = Math.max(2, Math.min(100, Math.round(passed / Math.max(1, total) * 100)));
-            html += `<div class="prog"><div class="prog-bar"><i style="width:${pct}%"></i></div>` +
-                `<div class="prog-txt"><span>Тиждень ${week} з ${weeks}</span><span>${cnt}</span></div></div>`;
-        } else if (st === 'live') {
-            html += `<div class="prog"><div class="prog-txt"><span>Тиждень ${Math.floor((dayNum(today) - dayNum(s.start)) / 7) + 1}</span><span>${cnt}</span></div></div>`;
+        if (st === 'live') {
+            let cnt = s.episodes
+                ? `Серій: ${eps.length} / ${s.episodes}`
+                : `${eps.length} ${plural(eps.length, 'серія', 'серії', 'серій')}`;
+            let left = '', bar = '';
+            if (s.start) {
+                let passed = dayNum(today) - dayNum(s.start);
+                if (s.end) {
+                    let total = dayNum(s.end) - dayNum(s.start), weeks = Math.max(1, Math.round(total / 7));
+                    let pct = Math.max(2, Math.min(100, Math.round(passed / Math.max(1, total) * 100)));
+                    left = `Тиждень ${Math.min(weeks, Math.floor(passed / 7) + 1)} з ${weeks}`;
+                    bar = `<div class="prog-bar"><i style="width:${pct}%"></i></div>`;
+                } else left = `Тиждень ${Math.floor(passed / 7) + 1}`;
+            }
+            html += `<div class="prog">${bar}<div class="prog-txt"><span>${left}</span><span>${cnt}</span></div></div>`;
         }
 
         if (LOAD_FAILED && !eps.length)
@@ -412,8 +547,10 @@
             let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '' }) - 1;
             let body = (metaById[rec.key] || {}).body || '';
             let isNew = st === 'live' && i === eps.length - 1 && dayNum(today) - dayNum(rec.date) < 7;
-            html += `<a href="#" class="ep${watched.includes(rec.key) ? ' watched' : ''}" onclick="openVid(event, ${idx}, this)">` +
-                `<div class="ep-th"><img src="${esc(rec.thumb || '')}" loading="lazy" decoding="async" alt="">` +
+            // Справжнє посилання на YouTube: Ctrl/Cmd-клік і середня кнопка відкривають відео в новій вкладці
+            let href = rec.y ? 'https://www.youtube.com/watch?v=' + encodeURIComponent(rec.y) : '#';
+            html += `<a href="${href}" class="ep${watched.includes(rec.key) ? ' watched' : ''}" onclick="openVid(event, ${idx}, this)">` +
+                `<div class="ep-th">${rec.thumb ? `<img src="${esc(rec.thumb)}" loading="lazy" decoding="async" alt="">` : ''}` +
                 (isNew ? '<span class="ep-new">Нова</span>' : '') + (rec.imp ? STAR_SVG : '') + `</div>` +
                 `<div class="ep-k">Серія ${pad2(i + 1)} · ${fmtDay(rec.date, rec.date.slice(0, 4) !== today.slice(0, 4))}</div>` +
                 `<div class="ep-t">${esc(rec.title || '')}</div>` +
@@ -428,12 +565,30 @@
         return html + '</div></section>';
     }
 
+    // Самоперевірка: taras.kyiv.ua/?check — що сайт зрозумів із seasons.json і чому якихось серій не видно.
+    function checkHtml(today) {
+        const stName = { live: 'йде зараз', soon: 'ще не почався', done: 'завершено' };
+        let rows = SEASONS.map(s => {
+            let n = (EPS[s.k] || []).length, h = HIDDEN[s.playlist] || 0;
+            return `<li><b>Сезон ${s.n}</b> ${s.title ? '«' + esc(s.title) + '»' : '(без назви)'} — ${stName[seasonState(s, today)]}, ` +
+                `${esc(fmtRange(s) || 'без дат')}; ` + (s.playlist
+                    ? `плейлист ${esc(s.playlist)}: на сайті ${n} ${plural(n, 'серія', 'серії', 'серій')}` +
+                      (h ? `, ще ${h} приховано (приватні / заплановані / видалені)` : '')
+                    : 'нема плейлиста') + `</li>`;
+        }).join('');
+        return `<div class="chk"><div class="chk-h">Перевірка сайту</div>` +
+            `<p>Режим: ${esc(MODE)} · сезони: ${esc(SRC.seasons || '—')} · серії: ${esc(SRC.eps || '—')}</p>` +
+            (rows ? `<ul>${rows}</ul>` : '') + `<div class="chk-h">Що виправити</div>` +
+            (ISSUES.length ? `<ul>${ISSUES.map(m => `<li>${esc(m)}</li>`).join('')}</ul>` : '<p>✓ Помилок не знайдено.</p>') + `</div>`;
+    }
+
     window.openVid = function(e, idx, el) {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;   // Ctrl/Cmd-клік — браузер відкриє YouTube у новій вкладці
         e.preventDefault();
         let p = PLAY[idx] || {};
         if (p.key && !watched.includes(p.key)) {
             watched.push(p.key);
-            localStorage.setItem('vw', JSON.stringify(watched));
+            lsSet('vw', JSON.stringify(watched));
         }
         if (el) el.classList.add('watched');
         // Записка серії під плеєром (щоденник): текст веде, штамп часу — підпис знизу; зірка, якщо важливо.
