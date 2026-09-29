@@ -1,16 +1,10 @@
 {
-  "seasons": [
-    {
-      "n": 1,
-      "format": "weekly",
-      "title": "",
-      "about": "",
-      "start": "2026-09-20",
-      "end": "2026-12-20",
-      "schedule": "Нова серія щотижня",
-      "playlist": "PLV5Ekm-F8nm4",
-      "episodes": null,
-      "support": ""
-    }
-  ]
+  "calendar": {
+    "start": "2026-09-30",
+    "playlist": "UURSKTGA5a2hLrai_MXNaoUQ",
+    "exclude": ["PLS50DDpfd-9w"]
+  },
+  "topics": [],
+  "ignore_tags": [],
+  "seasons": []
 }

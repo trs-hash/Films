@@ -33,11 +33,21 @@ const priv = id => ({ snippet: { title: 'Private video', description: 'This vide
   contentDetails: { videoId: id }, status: { privacyStatus: 'private' } });
 const deleted = id => ({ snippet: { title: 'Deleted video', description: 'This video is unavailable.', resourceId: { videoId: id }, thumbnails: {} },
   contentDetails: { videoId: id }, status: { privacyStatus: 'privacyStatusUnspecified' } });
+// Головна: календар з усіх завантажень (UU1) без Shorts (SH)
+const CAL = (o = {}) => ({ calendar: Object.assign({ start: '2026-09-01', playlist: 'UU1', exclude: ['SH'] }, o) });
 const S1 = (o = {}) => Object.assign({ n: 1, title: 'Тема', about: 'Опис', start: '2026-09-20', end: '2026-12-20', schedule: 'Нова серія щотижня', playlist: 'PL1', episodes: null, support: '' }, o);
 // Відео з реальним набором мініатюр (як віддає API: medium/high/standard/maxres з шириною)
 // Окремі адреси на кожен розмір, як у YouTube (однакова картинка з різним #… браузер вважає вже завантаженою)
 const TFILE = { medium: 'mqdefault', high: 'hqdefault', standard: 'sddefault', maxres: 'maxresdefault' };
 const vidT = (id, title, pub) => { let v = vid(id, title, pub); v.snippet.thumbnails = Object.fromEntries([['medium', 320], ['high', 480], ['standard', 640], ['maxres', 1280]].map(([k, w]) => [k, { url: `https://i.ytimg.com/vi/${id}/${TFILE[k]}.jpg`, width: w, height: w * 9 / 16 }])); return v; };
+// Відео з хештегами: #подорожі ×3 (в описі, в назві, у ВЕРХНЬОМУ регістрі), #книги ×1; сміття — #1, якір у посиланні, #shorts
+const TAGGED = [
+  vid('g1', 'Перше', '2026-09-21T10:00:00Z', 'Сьогодні в дорозі #подорожі #книги'),
+  vid('g2', 'Друге', '2026-09-22T10:00:00Z', 'Опис'),
+  vid('g3', 'Третє', '2026-09-23T10:00:00Z', '#ПОДОРОЖІ, серія #1, https://x.com/#top #shorts'),
+  vid('g4', 'Без тем', '2026-09-24T10:00:00Z', 'просто день'),
+];
+TAGGED[1].snippet.title = 'Друге #подорожі';   // хештег у назві теж рахується
 const TWO = [vid('a1', 'Перша', '2026-09-20T15:00:00Z', 'Записка 1'), vid('a2', 'Друга', '2026-09-27T15:00:00Z', '№ Важлива\n\n🕒 18:00 27/09/2026')];
 
 // ── Запуск одного сценарію ──────────────────────────────────────────────────
@@ -127,8 +137,8 @@ const CASES = [
 
   ['F19 «Нова» не показується, якщо остання серія старша за 7 днів', { seasons: { seasons: [S1()] }, api: { PL1: [vid('o1', 'Стара', '2026-09-20T15:00:00Z')] } },
     async r => await r.page.locator('.ep-new').count() === 0],
-  ['F20 справжній seasons.json з репо + реальний стан каналу: ?check чистий', { path: '?check', api: { 'PLV5Ekm-F8nm4': [priv('7G7nJ1T3MBc'), priv('HKoKfqkAL-M')] }, shot: 'F20-real-check' },
-    r => has(r, 'Помилок не знайдено') && has(r, 'ще 2 приховано') && has(r, 'Перша серія')],
+  ['F20 справжній seasons.json з репо + реальний стан каналу (публічних відео ще нема): ?check чистий', { path: '?check', api: { 'UURSKTGA5a2hLrai_MXNaoUQ': '404', 'PLS50DDpfd-9w': [] }, shot: 'F20-real-check' },
+    r => has(r, 'Помилок не знайдено') && has(r, 'ще нема жодного публічного відео') && has(r, 'Скоро тут зʼявиться перша стрічка')],
   ['F21 клавіатура: Tab до серії, Enter відкриває плеєр, Esc закриває', { seasons: { seasons: [S1()] }, api: { PL1: TWO } },
     async r => { await r.page.focus('.ep'); await r.page.keyboard.press('Enter'); await r.page.waitForTimeout(200);
       let open = await r.page.locator('#vidModal.show').count();
@@ -208,6 +218,56 @@ const CASES = [
   ...[['iPhone 13–16, 3x', 390, 3, 'maxres'], ['iPhone SE, 2x', 375, 2, 'standard'], ['ноутбук, 1x', 1280, 1, 'standard'], ['MacBook, 2x', 1440, 2, 'maxres']].map(([d, w, dpr, want]) =>
     [`Q ${d}: велика картка бере ${want}`, { seasons: { seasons: [S1()] }, viewport: { width: w, height: 900 }, dpr, api: { PL1: [vidT('q1', 'Серія', '2026-09-21T10:00:00Z')] } },
       async r => { let src = await r.page.$eval('.ep img', i => i.currentSrc); return src.endsWith('/' + TFILE[want] + '.jpg'); }]),
+
+  // --- Головна: календар першим (з 29.09.2026)
+  ['C01 головна — стіна днів: дні від start до сьогодні, сьогодні пунктиром, календар першим', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: [vid('c1', 'Перше', '2026-09-21T10:00:00Z')], SH: [] }, shot: 'C01' },
+    async r => await r.page.locator('#cal .cell.has-vid').count() === 1 && await r.page.locator('#cal .cell.today').count() === 1
+      && (await r.page.$eval('#app', a => a.firstElementChild.id)) === 'cal' && !has(r, 'перший сезон')],
+  ['C02 до першого дня — спокійна заглушка без відліку', { seasons: CAL({ start: '2026-10-05' }), api: { UU1: [], SH: [] } },
+    async r => has(r, 'Скоро тут зʼявиться перша стрічка') && await r.page.locator('#cal .grid').count() === 0],
+  ['C03 Shorts (плейлист-виняток) у календар не потрапляють', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: [vid('c1', 'Відео', '2026-09-21T10:00:00Z'), vid('s1', 'Шортс', '2026-09-22T10:00:00Z')], SH: [vid('s1', 'Шортс', '2026-09-22T10:00:00Z')] } },
+    r => has(r, 'Відео') && !has(r, 'Шортс')],
+  ['C04 завантаження ще недоступні (0 публічних відео) — не помилка', { path: '?check', seasons: CAL({ start: '2026-09-20' }), api: { UU1: '404', SH: [] } },
+    r => has(r, 'Помилок не знайдено') && has(r, 'ще нема жодного публічного відео')],
+  ['C05 відео до start (проби) на стіну не потрапляють', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: [vid('p0', 'Проба', '2026-09-10T10:00:00Z'), vid('c1', 'Справжнє', '2026-09-21T10:00:00Z')], SH: [] } },
+    r => has(r, 'Справжнє') && !has(r, 'Проба')],
+  ['C06 календар + сезони: календар вище за сезони', { seasons: Object.assign(CAL({ start: '2026-09-20' }), { seasons: [S1({ playlist: 'PL1' })] }), api: { UU1: [], SH: [], PL1: TWO } },
+    async r => await r.page.evaluate(() => document.getElementById('cal').compareDocumentPosition(document.getElementById('s-1')) & Node.DOCUMENT_POSITION_FOLLOWING)],
+  ['C07 телефон: 12 тем в один рядок, календар на першому екрані', { seasons: CAL({ start: '2026-09-20' }), viewport: { width: 390, height: 844 },
+      api: { UU1: Array.from({ length: 12 }, (_, i) => vid('t' + i, 'Відео ' + i, `2026-09-2${i % 9 + 1}T1${i % 10}:00:00Z`, '#тема' + i + ' #спільна')), SH: [] }, shot: 'C07-mobile' },
+    async r => await r.page.evaluate(() => document.getElementById('cal').getBoundingClientRect().top < 400 && document.documentElement.scrollWidth <= innerWidth)],
+
+  // --- Каталог тем з хештегів
+  ['T01 теми з хештегів (опис + назва), лічильники, без чисел/якорів/#shorts', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, shot: 'T01' },
+    async r => { let c = await r.page.$$eval('.topics .chip', a => a.map(x => x.textContent));
+      return c.join('|') === '#подорожі3|#книги1'; }],   // рівно дві теми: без #1, #top із посилання та #shorts
+  ['T02 клік по темі: адреса #t=…, панель з відео (найновіші першими), календар приглушує інші', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, shot: 'T02' },
+    async r => { await r.page.click('.topics .chip >> nth=0'); await r.page.waitForTimeout(200);
+      let titles = await r.page.$$eval('#topic .ep-t', a => a.map(x => x.textContent));
+      return decodeURIComponent(await r.page.evaluate(() => location.hash)) === '#t=подорожі' && titles.join('|') === 'Третє|Друге #подорожі|Перше'
+        && await r.page.locator('#cal.filtering .v-lnk.hit').count() === 3 && await r.page.locator('#cal .v-lnk:not(.hit)').count() === 1; }],
+  ['T03 topics у seasons.json: синоніми, назва, опис; ignore_tags', { seasons: Object.assign(CAL({ start: '2026-09-20' }), { topics: [{ tag: 'подорожі', title: 'Подорожі', about: 'Про дороги.', aliases: ['#подорож'] }], ignore_tags: ['книги'] }),
+      api: { UU1: [...TAGGED, vid('e1', 'Синонім', '2026-09-26T10:00:00Z', '#подорож')], SH: [] }, path: '#t=подорожі' },
+    async r => { let c = await r.page.$$eval('.topics .chip', a => a.map(x => x.textContent)); return c.join('|') === 'Подорожі4' && has(r, 'Про дороги.'); }],
+  ['T04 глибоке посилання #t=… відкриває тему одразу', { path: '#t=' + encodeURIComponent('книги'), seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => (await r.page.innerText('#topic h2')) === '#книги'],
+  ['T05 плеєр: теми відео чипами, клік — закриває плеєр і відкриває тему', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await r.page.click('#cal .v-lnk >> nth=0'); await r.page.waitForTimeout(150);
+      let chips = await r.page.$$eval('.note-tags .chip', a => a.map(x => x.textContent));
+      await r.page.click('.note-tags .chip >> text=#книги'); await r.page.waitForTimeout(200);
+      return chips.join('|') === '#подорожі|#книги' && await r.page.locator('#vidModal.show').count() === 0 && (await r.page.innerText('#topic h2')) === '#книги'; }],
+  ['T06 «× Усі дні» знімає вибір', { path: '#t=' + encodeURIComponent('книги'), seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await r.page.click('#topic a[href="#"]'); await r.page.waitForTimeout(150);
+      return await r.page.locator('#topic').count() === 0 && await r.page.locator('#cal.filtering').count() === 0; }],
+  ['T07 невідома тема — «поки що нема відео»', { path: '#t=' + encodeURIComponent('немає'), seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    r => has(r, 'Поки що нема відео з цією темою')],
+  ['T08 doomsday: теми з описів у archive.json', { state: { mode: 'doomsday' }, seasons: CAL({ start: '2026-09-20' }),
+      archive: { base: '', days: { '2026-09-22': [{ t: 'Архів', y: 'ar', desc: 'Текст #архів' }] } } },
+    async r => (await r.page.$$eval('.topics .chip', a => a.map(x => x.textContent))).join() === '#архів1'],
+  ['T09 ?check показує теми з кількістю', { path: '?check', seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    r => has(r, '#подорожі (3), #книги (1)')],
+  ['H30 помилки в новому блоці: calendar без playlist, topics не список, описка в полі', { path: '?check', seasons: { calendar: { start: '2026-09-20' }, topics: 'подорожі', seasns: [] } },
+    r => has(r, 'calendar: нема playlist') && has(r, 'topics: очікую список') && has(r, 'невідоме поле «seasns»')],
 
   // --- Людські помилки в seasons.json
   ['H01 зайва кома після останнього поля', { seasons: '{"seasons":[{"n":1,"title":"Тема","start":"2026-09-20","end":"2026-12-20","playlist":"PL1",}],}', api: { PL1: TWO } },

@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарас Максимʼяк</title>
-    <meta name="description" content="Відео Тараса Максимʼяка. Один сезон — одна велика тема. Нова серія щотижня.">
+    <meta name="description" content="Щоденні стрічки Тараса Максимʼяка. Одне відео про кожен день, який більше не повториться.">
 
     <meta property="og:title" content="Taras Maksymiak">
-    <meta property="og:description" content="Один сезон — одна велика тема. Нова серія щотижня.">
+    <meta property="og:description" content="Щодня — одна стрічка про день, який більше не повториться.">
     <meta property="og:image" content="https://taras.kyiv.ua/image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
@@ -140,6 +140,26 @@
         .v-lnk.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
         .v-lnk.watched::after{transform:translate(-50%,-50%) rotate(-45deg)}
 
+        /* ── Головна: каталог тем (хештеги) + стіна днів ── */
+        .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+        .topics{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 36px}
+        .topics-lbl{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-right:6px}
+        .chip{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid var(--div);border-radius:999px;font-size:13px;font-weight:600;color:var(--txt);text-decoration:none;background:var(--bg);transition:.2s;white-space:nowrap}
+        .chip span{font-size:11px;color:var(--mut);font-variant-numeric:tabular-nums}
+        .chip:hover{border-color:var(--red);color:var(--red)}
+        .chip.on{background:var(--red);border-color:var(--red);color:#fff}
+        .chip.on span{color:#fff;opacity:.85}
+        .topic{margin:0 0 60px;scroll-margin-top:20px}
+        .eps.compact{grid-template-columns:repeat(4,1fr);gap:26px 16px}
+        .eps.compact .ep-t{font-size:15px}
+        .cal-home{scroll-margin-top:20px}
+        .cal-soon{font-size:17px;color:var(--mut);margin:14px 0 0}
+        /* Вибрана тема: у календарі приглушено відео інших тем — видно, коли тема «жила» */
+        .cal-home.filtering .v-lnk:not(.hit){opacity:.18;filter:grayscale(1)}
+        .note-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+        .note-tags .chip{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
+        .note-tags .chip:hover{color:#fff;border-color:var(--red);background:var(--red)}
+
         /* ?check — самоперевірка після правок seasons.json (бачить лише той, хто відкрив з ?check) */
         .chk{border:2px dashed var(--red);border-radius:10px;padding:16px 20px 6px;margin:0 0 50px;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
         .chk-h{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);margin:4px 0 8px}
@@ -173,6 +193,10 @@
             .s-about{font-size:15px}
             .season{margin-bottom:80px}
             .grid{grid-template-columns:repeat(2,1fr)}
+            .eps.compact{grid-template-columns:repeat(2,1fr)}
+            /* теми на телефоні — один рядок з прокруткою: календар лишається на першому екрані */
+            .topics{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -15px 28px;padding:0 15px}
+            .topics::-webkit-scrollbar{display:none}
             .dt-n{font-size:16px}
             .dt-d{font-size:9px}
             .mod-in{padding:10px}
@@ -240,17 +264,23 @@
     const API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
     const CHANNEL_URL = 'https://www.youtube.com/@Taras.maksymiak';
 
-    // ── Сезони (з 29.09.2026) ──────────────────────────────────────────────────
-    // Один сезон — одна велика тема. Сезони описані в seasons.json; серії сезону = його YouTube-плейлист
-    // (приватні/заплановані відео не показуємо). Формат сезону:
-    //   weekly (типово) — картки серій;  daily — «стіна днів», як у старому календарі (calendar.html).
-    // Режими (state.json): youtube — жива стрічка з API; doomsday — локальний archive.json,
-    // серії розкладаються по сезонах за датами start…end.
+    // ── Головна — «стіна днів» (з 29.09.2026 календар знову головний) ───────────
+    // Календар щоденних відео — перше, що бачить глядач. Налаштування в seasons.json → "calendar":
+    // start (перший день), playlist (звідки брати відео; UU… — усі завантаження каналу),
+    // exclude (плейлисти-винятки, напр. Shorts). Приватні/заплановані відео не показуємо.
+    // Теми — хештеги з назви й опису відео (#подорожі): з них сам збирається каталог тем;
+    // "topics" дає темам назви, описи й синоніми, "ignore_tags" — хештеги, які не є темами.
+    // Сезони ("seasons": weekly — картки серій, daily — окрема стіна днів) — необовʼязкові, під календарем.
+    // Режими (state.json): youtube — жива стрічка з API; doomsday — локальний archive.json (розкладка за датами).
     // Самоперевірка після правок: taras.kyiv.ua/?check — що сайт зрозумів і що виправити.
     let MODE = 'youtube';
     let BASE = '';               // префікс локальних відео (Фаза 5); '' → грає YouTube-плеєр за id
+    let CAL = null;              // календар головної: {k:'cal', id:'cal', format:'daily', start, end:'', playlist, exclude:[]}
+    let TOPICS = { cfg: {}, alias: {}, ignore: new Set() };   // теми з seasons.json: назви/описи, синоніми, ігноровані хештеги
+    let TOPIC = '';              // вибрана тема з адреси (#t=подорожі)
+    let CAL_NOTE = '';           // чому календар порожній (для ?check)
     let SEASONS = [];            // нормалізовані сезони: {k,id,n,format,title,about,start,end,schedule,playlist,episodes,support}
-    let EPS = {};                // {k: [rec]} серії сезону, rec = {key,title,thumb,srcset,imp,y,v,date,ts}
+    let EPS = {};                // {k: [rec]} відео календаря (k='cal') і сезонів, rec = {key,title,thumb,srcset,imp,tags,y,v,date,ts}
     let metaById = {};           // {key: {title,time,body,important}}
     let HIDDEN = {};             // {playlist: скільки приватних / запланованих / видалених відео пропущено}
     let ISSUES = [];             // знайдені ручні помилки — у консоль і на ?check
@@ -299,6 +329,30 @@
         return { important, time, body };
     }
 
+    // Теми = хештеги з назви й опису (#подорожі). Не беремо числа (#1), якорі в посиланнях (…/#top)
+    // і службові (#shorts); регістр не важливий. Синоніми зводимо до однієї теми через "topics".
+    const TAG_RE = /(^|[^\p{L}\p{N}_&\/])#([\p{L}\p{N}_]{2,40})/gu;
+    const IGNORE_TAGS = ['shorts', 'short', 'youtubeshorts', 'ytshorts', 'youtube'];
+    function tagsOf(...texts) {
+        let out = [];
+        texts.forEach(t => { for (const m of String(t || '').matchAll(TAG_RE)) {
+            let tag = m[2].toLowerCase();
+            if (!/^\d+$/.test(tag) && !out.includes(tag)) out.push(tag);
+        } });
+        return out;
+    }
+    function canonTag(t) { t = String(t || '').replace(/^#/, '').trim().toLowerCase(); return TOPICS.alias[t] || t; }
+    function recTopics(rec) {                          // теми відео з урахуванням синонімів і ігнору
+        let out = [];
+        (rec.tags || []).forEach(t => { let c = canonTag(t); if (!TOPICS.ignore.has(c) && !out.includes(c)) out.push(c); });
+        return out;
+    }
+    function topicLabel(t) { return (TOPICS.cfg[t] && TOPICS.cfg[t].title) || '#' + t; }
+    function topicFromHash() {
+        let h = ''; try { h = decodeURIComponent(location.hash.slice(1)); } catch(e) {}
+        return h.startsWith('t=') ? canonTag(h.slice(2)) : '';
+    }
+
     // ── Дати (рядки YYYY-MM-DD; різницю днів рахуємо в UTC — без стрибків через літній час) ──
     const MONTHS = ['Січень', 'Лютий', 'Березень', 'Квітень', 'Травень', 'Червень', 'Липень', 'Серпень', 'Вересень', 'Жовтень', 'Листопад', 'Грудень'];
     const MONTHS_GEN = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
@@ -318,6 +372,7 @@
     function fmtRange(s) {
         if (!s.start) return s.end ? 'до ' + fmtDay(s.end, true) : '';
         if (!s.end) return 'з ' + fmtDay(s.start, true);
+        if (s.start === s.end) return fmtDay(s.start, true);
         let sameYear = s.start.slice(0, 4) === s.end.slice(0, 4);
         return fmtDay(s.start, !sameYear) + ' — ' + fmtDay(s.end, true);
     }
@@ -413,6 +468,42 @@
         return out;
     }
 
+    // Увесь seasons.json: календар, теми, сезони. Старий формат (просто список сезонів) теж розуміємо.
+    const TOP_KEYS = ['calendar', 'topics', 'ignore_tags', 'seasons'];
+    const CAL_KEYS = ['start', 'playlist', 'exclude'];
+    const TOPIC_KEYS = ['tag', 'title', 'about', 'aliases'];
+    const bareTag = v => str(v).replace(/^#/, '').toLowerCase();
+    function normConfig(raw) {
+        CAL = null; TOPICS = { cfg: {}, alias: {}, ignore: new Set(IGNORE_TAGS) };
+        if (Array.isArray(raw)) { SEASONS = normSeasons(raw); return; }
+        if (!raw || typeof raw !== 'object') { issue('seasons.json: очікую обʼєкт {…}'); SEASONS = []; return; }
+        Object.keys(raw).forEach(k => { if (!TOP_KEYS.includes(k)) issue(`seasons.json: невідоме поле «${k}» — описка? Відомі: ${TOP_KEYS.join(', ')}`); });
+        let c = raw.calendar;
+        if (c != null && (typeof c !== 'object' || Array.isArray(c))) issue('seasons.json, calendar: очікую обʼєкт {"start": …, "playlist": …}');
+        else if (c != null) {
+            Object.keys(c).forEach(k => { if (!CAL_KEYS.includes(k)) issue(`seasons.json, calendar: невідоме поле «${k}» — відомі: ${CAL_KEYS.join(', ')}`); });
+            let ex = Array.isArray(c.exclude) ? c.exclude : (c.exclude ? [c.exclude] : []);
+            CAL = { k: 'cal', id: 'cal', format: 'daily', end: '', start: normDate(c.start, 'seasons.json, calendar.start'),
+                playlist: normPlaylist(c.playlist, 'seasons.json, calendar'),
+                exclude: ex.map(pl => normPlaylist(pl, 'seasons.json, calendar.exclude')).filter(Boolean) };
+            if (!CAL.playlist) issue('seasons.json, calendar: нема playlist — календар не знає, звідки брати відео (усі завантаження каналу — ID на UU…)');
+        }
+        let tl = raw.topics == null ? [] : raw.topics;
+        if (!Array.isArray(tl)) { issue('seasons.json, topics: очікую список [ … ]'); tl = []; }
+        tl.forEach((t, i) => {
+            let what = `seasons.json, topics №${i + 1}`;
+            if (!t || typeof t !== 'object' || Array.isArray(t)) { issue(`${what}: це не обʼєкт {…}`); return; }
+            Object.keys(t).forEach(k => { if (!TOPIC_KEYS.includes(k)) issue(`${what}: невідоме поле «${k}» — відомі: ${TOPIC_KEYS.join(', ')}`); });
+            let tag = bareTag(t.tag);
+            if (!tag) { issue(`${what}: нема tag (хештег теми без #)`); return; }
+            TOPICS.cfg[tag] = { title: str(t.title), about: str(t.about) };
+            (Array.isArray(t.aliases) ? t.aliases : []).forEach(a => { a = bareTag(a); if (a && a !== tag) TOPICS.alias[a] = tag; });
+        });
+        (Array.isArray(raw.ignore_tags) ? raw.ignore_tags : []).forEach(a => { a = bareTag(a); if (a) TOPICS.ignore.add(a); });
+        SEASONS = raw.seasons == null ? [] : normSeasons(Array.isArray(raw.seasons) ? raw.seasons : raw);
+        if (!CAL && raw.seasons == null) issue('seasons.json: нема ні calendar, ні seasons — сторінці нічого показувати');
+    }
+
     // ── Джерела даних ──────────────────────────────────────────────────────────
     function getFile(u) { return fetch(CHECK ? u + '?cb=' + Date.now() : u, { cache: CHECK ? 'no-store' : 'no-cache' }); }
 
@@ -441,7 +532,8 @@
             if (!raw) return false;
             SRC.seasons = 'остання справна копія з кешу браузера — сам файл зараз зіпсований!';
         }
-        SEASONS = normSeasons(raw);
+        normConfig(raw);
+        TOPIC = topicFromHash();
         return true;
     }
 
@@ -465,12 +557,16 @@
         return items;
     }
 
-    function applyPlaylists(byPl) {                    // byPl може прийти з кешу браузера — довіряємо лише цілим записам
+    // byPl може прийти з кешу браузера — довіряємо лише цілим записам
+    function cleanList(list) { return Array.isArray(list) ? list.filter(r => r && r.key && DATE_RE.test(r.date)) : []; }
+    function applyPlaylists(byPl) {
         EPS = {};
-        SEASONS.forEach(s => {
-            let list = s.playlist && byPl[s.playlist];
-            EPS[s.k] = Array.isArray(list) ? list.filter(r => r && r.key && DATE_RE.test(r.date)) : [];
-        });
+        SEASONS.forEach(s => { EPS[s.k] = cleanList(s.playlist && byPl[s.playlist]); });
+        if (CAL) {                                     // календар: усе з джерела від start, крім відео з плейлистів-винятків (Shorts)
+            let skip = new Set();
+            CAL.exclude.forEach(pl => cleanList(byPl[pl]).forEach(r => skip.add(r.key)));
+            EPS.cal = cleanList(CAL.playlist && byPl[CAL.playlist]).filter(r => !skip.has(r.key) && (!CAL.start || r.date >= CAL.start));
+        }
     }
 
     // Мініатюри: браузер сам бере розмір під картку (320…1280 px) — телефон не тягне 1280, коли вистачає 640
@@ -488,13 +584,16 @@
     async function loadYouTube() {
         try {
             let byPl = {}, meta = {}, hidden = {};
-            let pls = [...new Set(SEASONS.map(s => s.playlist).filter(Boolean))];
+            CAL_NOTE = '';
+            let pls = [...new Set([...SEASONS.map(s => s.playlist), ...(CAL ? [CAL.playlist, ...CAL.exclude] : [])].filter(Boolean))];
             await Promise.all(pls.map(async pid => {
                 let items;
                 try { items = await fetchPlaylist(pid); }
                 catch(e) {
                     if (!e.badPlaylist) throw e;
-                    issue(`плейлист ${pid} не знайдено або він закритий — перевір ID і доступ «Загальнодоступний»`);
+                    // Список завантажень (UU…) YouTube не віддає, поки на каналі нема жодного публічного відео — це не помилка
+                    if (CAL && pid === CAL.playlist && /^UU/.test(pid)) CAL_NOTE = 'на каналі ще нема жодного публічного відео';
+                    else issue(`плейлист ${pid} не знайдено або він закритий — перевір ID і доступ «Загальнодоступний»`);
                     byPl[pid] = []; return;
                 }
                 byPl[pid] = []; hidden[pid] = 0;
@@ -503,7 +602,7 @@
                     if (!sn || !cd.videoPublishedAt || (i.status || {}).privacyStatus === 'private') { hidden[pid]++; return; }
                     let vid = cd.videoId || (sn.resourceId || {}).videoId;
                     let pd = parseDesc(sn.description);
-                    byPl[pid].push(Object.assign({ key: vid, title: sn.title, y: vid, v: '', imp: pd.important,
+                    byPl[pid].push(Object.assign({ key: vid, title: sn.title, y: vid, v: '', imp: pd.important, tags: tagsOf(sn.title, sn.description),
                         date: localDay(cd.videoPublishedAt), ts: cd.videoPublishedAt }, thumbSet(sn.thumbnails || {})));
                     meta[vid] = { title: sn.title, time: pd.time, body: pd.body, important: pd.important };
                 });
@@ -518,7 +617,7 @@
     }
 
     // Судний день: читаємо локальний archive.json (незалежно від YouTube).
-    // Форма (site_publisher): {base, days:{date:[{t,p,v,y,d,desc}]}}. Сезон — за датою.
+    // Форма (site_publisher): {base, days:{date:[{t,p,v,y,d,desc}]}}. Календар і сезони — за датою.
     async function loadArchive() {
         try {
             let res = await getFile('archive.json');
@@ -529,13 +628,15 @@
             Object.keys(days).forEach(date => {
                 if (!DATE_RE.test(date) || !Array.isArray(days[date])) return;
                 let s = SEASONS.find(x => (!x.start || date >= x.start) && (!x.end || date <= x.end));
-                if (!s) return;
+                let inCal = CAL && (!CAL.start || date >= CAL.start);
+                if (!s && !inCal) return;
                 days[date].forEach((it, n) => {
                     let key = it.y || it.v || (date + '_' + n);
                     let pd = parseDesc(it.desc || '');
-                    if (!eps[s.k]) eps[s.k] = [];
-                    eps[s.k].push({ key: key, title: it.t || '', y: it.y || '', v: it.v || '',
-                        thumb: it.p || '', srcset: '', imp: pd.important, date: date, ts: date + 'T' + pad2(n) });
+                    let rec = { key: key, title: it.t || '', y: it.y || '', v: it.v || '', tags: tagsOf(it.t, it.desc),
+                        thumb: it.p || '', srcset: '', imp: pd.important, date: date, ts: date + 'T' + pad2(n) };
+                    if (s) (eps[s.k] = eps[s.k] || []).push(rec);
+                    if (inCal) (eps.cal = eps.cal || []).push(rec);
                     meta[key] = { title: it.t || '', time: pd.time, body: pd.body, important: pd.important };
                 });
             });
@@ -558,8 +659,9 @@
         if (CHECK) return false;
         let raw = lsJSON('ss_seasons', null), pl = lsJSON('ss_pl', null), t = +lsGet('ss_time') || 0;
         if (!raw || !pl || typeof pl !== 'object' || Date.now() - t > 30 * DAY_MS) return false;
-        SEASONS = normSeasons(raw);
-        if (!SEASONS.length) return false;
+        normConfig(raw);
+        if (!SEASONS.length && !CAL) return false;
+        TOPIC = topicFromHash();
         CACHED_PL = pl; applyPlaylists(pl); metaById = lsJSON('ss_meta', {}) || {};
         LOADING = false; SRC.eps = 'кеш браузера';
         render();
@@ -592,15 +694,16 @@
     }
 
     // ── Малювання ──────────────────────────────────────────────────────────────
-    // Порядок: поточний сезон → анонси (найближчий першим) → завершені (свіжі першими).
+    // Порядок: теми → вибрана тема → стіна днів → сезони (поточний → анонси → завершені).
     let LAST_HTML = '', HASH_DONE = false;
     function render() {
         // Телефон: на першому екрані одна картка — решта не повинна відбирати в неї канал; ширший екран — перший ряд
         PLAY = []; EAGER = matchMedia('(max-width:600px)').matches ? 1 : 3; FIRST_IMG = true;
         let today = todayStr(), rank = { live: 0, soon: 1, done: 2 };
         let html = CHECK ? checkHtml(today) : '';
+        if (CAL) html += homeHtml(today);
         if (!SEASONS.length) {
-            html += '<div class="msg-empty">Скоро тут зʼявиться перший сезон.</div>';
+            if (!CAL) html += '<div class="msg-empty">Скоро тут зʼявиться перший сезон.</div>';
         } else {
             let list = SEASONS.map(s => ({ s, st: seasonState(s, today) })).sort((a, b) => rank[a.st] - rank[b.st] ||
                 (a.st === 'soon' ? (a.s.start < b.s.start ? -1 : 1) : ((a.s.start || '') > (b.s.start || '') ? -1 : 1)));
@@ -688,6 +791,61 @@
         return html + (daily ? dailyHtml(s, st, today, eps) : weeklyHtml(s, st, today, eps)) + '</section>';
     }
 
+    // Головна: теми (коли вже є хештеги) → панель вибраної теми → стіна днів
+    function homeHtml(today) {
+        let s = CAL, soon = '<div class="s-lbl">Стіна днів</div><p class="cal-soon">Скоро тут зʼявиться перша стрічка.</p>';
+        if (s.start && today < s.start)                // ще до першого дня — спокійна заглушка (без відліку й дедлайну)
+            return `<section class="cal-home" id="cal">${soon}</section>`;
+        let eps = (EPS.cal || []).slice().sort((a, b) => a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0);
+        let all = allRecs();
+        let html = topicsBar(all) + topicPanel(all, today) +
+            `<section class="cal-home${TOPIC ? ' filtering' : ''}" id="cal" aria-label="Стіна днів"><h2 class="sr-only">Стіна днів</h2>`;
+        if (LOAD_FAILED && !eps.length) return html + '<p class="s-msg">Не вдалось завантажити відео. Спробуйте оновити сторінку.</p></section>';
+        if (LOADING && !eps.length) return html + '<div class="grid">' + '<div class="cell"></div>'.repeat(7) + '</div></section>';
+        return html + (dailyHtml(s, 'live', today, eps) || soon) + '</section>';
+    }
+
+    // Усі відомі відео (календар + сезони) без дублів — для каталогу тем
+    function allRecs() {
+        let seen = new Set(), out = [];
+        [EPS.cal || [], ...SEASONS.map(s => EPS[s.k] || [])].forEach(l => l.forEach(r => { if (!seen.has(r.key)) { seen.add(r.key); out.push(r); } }));
+        return out;
+    }
+    function topicCounts(all) {                        // [[тема, {n, last}]] — найчастіші першими, далі найсвіжіші
+        let m = {};
+        all.forEach(r => recTopics(r).forEach(t => { let e = m[t] = m[t] || { n: 0, last: '' }; e.n++; if (r.ts > e.last) e.last = r.ts; }));
+        return Object.entries(m).sort((a, b) => b[1].n - a[1].n || (a[1].last < b[1].last ? 1 : -1));
+    }
+    // Каталог тем — ряд «чипів» над календарем; вибрана тема — у адресі (#t=…), тож нею можна поділитися
+    function topicsBar(all) {
+        let list = topicCounts(all);
+        if (!list.length) return '';
+        return '<nav class="topics" aria-label="Теми"><span class="topics-lbl">Теми</span>' + list.map(([t, e]) => {
+            let on = t === TOPIC;
+            return `<a class="chip${on ? ' on' : ''}" href="${on ? '#' : '#t=' + encodeURIComponent(t)}"${on ? ' aria-current="true"' : ''}>${esc(topicLabel(t))}<span>${e.n}</span></a>`;
+        }).join('') + '</nav>';
+    }
+    // Вибрана тема: усі її відео (найновіші першими) + календар нижче приглушує інші
+    function topicPanel(all, today) {
+        if (!TOPIC) return '';
+        let list = all.filter(r => recTopics(r).includes(TOPIC)).sort((a, b) => a.ts < b.ts ? 1 : -1);
+        let cfg = TOPICS.cfg[TOPIC] || {};
+        let html = `<section class="topic" id="topic"><div class="s-lbl">Тема${list.length ? ' · ' + list.length + ' відео' : ''}</div>` +
+            `<h2 class="s-title">${esc(topicLabel(TOPIC))}</h2>` + (cfg.about ? `<p class="s-about">${esc(cfg.about)}</p>` : '');
+        let meta = list.length ? [esc(fmtRange({ start: list[list.length - 1].date, end: list[0].date }))] : [];
+        meta.push('<a href="#">× Усі дні</a>');
+        html += `<div class="s-meta">${meta.map(m => `<span>${m}</span>`).join('')}</div>`;
+        if (!list.length) return html + '<p class="s-msg">Поки що нема відео з цією темою.</p></section>';
+        let sizes = '(max-width:600px) 30vw, (max-width:1024px) 50vw, 340px';
+        return html + '<div class="eps compact">' + list.map(rec => {
+            let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [] }) - 1;
+            return `<a href="${ytHref(rec)}" class="ep${watched.includes(rec.key) ? ' watched' : ''}" onclick="openVid(event, ${idx}, this)">` +
+                `<div class="ep-th">${imgTag(rec, '', sizes)}${rec.imp ? STAR_SVG : ''}</div>` +
+                `<div class="ep-k">${fmtDay(rec.date, rec.date.slice(0, 4) !== today.slice(0, 4))}</div>` +
+                `<div class="ep-t">${esc(rec.title || '')}</div></a>`;
+        }).join('') + '</div></section>';
+    }
+
     // Щотижневий формат: картки серій 01, 02, … + пунктирне місце наступної
     function weeklyHtml(s, st, today, eps) {
         let showNote = st === 'live';
@@ -698,7 +856,7 @@
             : '(max-width:600px) calc((100vw - 30px) * .9), (max-width:1024px) calc((100vw - 62px) / 2), 560px';
         let html = '<div class="eps">';
         eps.forEach((rec, i) => {
-            let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '' }) - 1;
+            let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [] }) - 1;
             let body = (metaById[rec.key] || {}).body || '';
             let isNew = st === 'live' && i === eps.length - 1 && dayNum(today) - dayNum(rec.date) < 7;
             // Справжнє посилання на YouTube: Ctrl/Cmd-клік і середня кнопка відкривають відео в новій вкладці
@@ -746,9 +904,10 @@
                 let dt = `<div class="dt"><span class="dt-n">${dn}</span><span class="dt-d">${WDAYS[w]}</span></div>`;
                 if (!recs.length) { h += `<div class="cell ${d === today && st === 'live' ? 'today' : 'empty'}">${dt}</div>`; return; }
                 let links = recs.map(rec => {
-                    let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '' }) - 1;
+                    let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [] }) - 1;
                     let body = (metaById[rec.key] || {}).body || '';
-                    return `<a href="${ytHref(rec)}" class="v-lnk${watched.includes(rec.key) ? ' watched' : ''}" onclick="openVid(event, ${idx}, this)">` +
+                    let hit = TOPIC && recTopics(rec).includes(TOPIC) ? ' hit' : '';
+                    return `<a href="${ytHref(rec)}" class="v-lnk${watched.includes(rec.key) ? ' watched' : ''}${hit}" onclick="openVid(event, ${idx}, this)">` +
                         imgTag(rec, 'v-thumb', sizes) + (body ? `<div class="v-excerpt">${esc(body.slice(0, 160))}</div>` : '') +
                         `<div class="v-title">${esc(rec.title || '')}</div></a>`;
                 }).join('');
@@ -774,7 +933,15 @@
     // Самоперевірка: taras.kyiv.ua/?check — що сайт зрозумів із seasons.json і чому якихось серій не видно.
     function checkHtml(today) {
         const stName = { live: 'йде зараз', soon: 'ще не почався', done: 'завершено' };
-        let rows = SEASONS.map(s => {
+        let rows = '';
+        if (CAL) {
+            let n = (EPS.cal || []).length, h = HIDDEN[CAL.playlist] || 0, tl = topicCounts(allRecs());
+            rows += `<li><b>Календар</b> — ${CAL.start ? 'з ' + fmtDay(CAL.start, true) : 'від першого відео'}; джерело ${esc(CAL.playlist || '—')}: ` +
+                `на сайті ${n} відео` + (h ? `, ще ${h} приховано (приватні / заплановані)` : '') +
+                (CAL.exclude.length ? `; без відео з ${esc(CAL.exclude.join(', '))}` : '') + (CAL_NOTE ? ` — ${esc(CAL_NOTE)}` : '') + '</li>' +
+                `<li><b>Теми</b> — ${tl.length ? tl.map(([t, e]) => esc(topicLabel(t)) + ' (' + e.n + ')').join(', ') : 'поки жодного хештегу в назвах чи описах відео'}</li>`;
+        }
+        rows += SEASONS.map(s => {
             let n = (EPS[s.k] || []).length, h = HIDDEN[s.playlist] || 0;
             return `<li><b>Сезон ${s.n}</b> ${s.title ? '«' + esc(s.title) + '»' : '(без назви)'} — ${s.format === 'daily' ? 'щоденний' : 'щотижневий'}, ` +
                 `${stName[seasonState(s, today)]}, ${esc(fmtRange(s) || 'без дат')}; ` + (s.playlist
@@ -813,12 +980,14 @@
         // Записка серії під плеєром (щоденник): текст веде, штамп часу — підпис знизу; зірка, якщо важливо.
         let meta = metaById[p.key] || {};
         let note = document.getElementById('modNote');
-        note.innerHTML = (meta.time || meta.body)
+        let topics = recTopics(p);                     // теми відео — чипи під запискою, клік відкриває тему
+        note.innerHTML = ((meta.time || meta.body)
             ? `<div class="note-card${meta.important ? ' imp' : ''}">` +
               (meta.important ? STAR_SVG : '') +
               (meta.body ? `<div class="note-body">${esc(meta.body)}</div>` : '') +
               (meta.time ? `<div class="note-foot">🕒 ${esc(meta.time)}</div>` : '') + `</div>`
-            : '';
+            : '') + (topics.length ? '<div class="note-tags">' + topics.map(t =>
+              `<a class="chip" href="#t=${encodeURIComponent(t)}">${esc(topicLabel(t))}</a>`).join('') + '</div>' : '');
         // Плеєр: локальне відео (судний день, Фаза 5) якщо є base+v, інакше YouTube-ембед за id.
         let iframe = document.getElementById('ytIframe'), loc = document.getElementById('locVideo');
         let local = (BASE && p.v) ? (BASE.replace(/\/+$/, '') + '/' + p.v.replace(/^\/+/, '')) : '';
@@ -852,6 +1021,13 @@
     }
 
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+    // Вибір теми живе в адресі (#t=…): «назад» у браузері повертає попередній вибір, посиланням можна поділитися
+    window.addEventListener('hashchange', () => {
+        let t = topicFromHash();
+        if (t === TOPIC) return;
+        TOPIC = t; closeModal(); render();
+        if (t) { let el = document.getElementById('topic'); if (el) el.scrollIntoView({ block: 'start' }); }
+    });
 
     let tY = 0, mod = document.getElementById('vidModal'), mIn = document.getElementById('modIn');
     mod.addEventListener('touchstart', e => tY = e.touches[0].clientY, {passive:true});
