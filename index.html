@@ -36,7 +36,7 @@
         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--txt);margin:0;padding:20px 20px 0;overflow-x:hidden}
         :focus-visible{outline:2px solid var(--red);outline-offset:3px;border-radius:4px}
         .wrap{max-width:1400px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
-        .main{flex:1}
+        .main{flex:1;min-height:100vh}   /* підвал одразу нижче першого екрана — не «їде» вниз, коли зʼявляється календар (CLS) */
         .intro{margin:10px 0 50px}
         .intro .name{font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin:0 0 18px}
         .intro .links{display:flex;flex-wrap:wrap;gap:10px}
@@ -93,6 +93,7 @@
         .sk{background:var(--cell);border-radius:6px}
         .sk-l{height:12px;width:45%;margin-top:14px}
         .sk-l+.sk-l{width:70%;height:16px;margin-top:10px}
+        .sk-m{width:140px;height:23px;margin:0 0 16px}    /* як заголовок місяця .cal-hdr */
         .sk-a{width:120px;height:13px;margin-bottom:18px}
         .sk-b{width:min(520px,80%);height:64px;margin-bottom:24px}
         .sk-c{width:min(640px,90%);height:14px;margin-bottom:44px}
@@ -144,7 +145,7 @@
         .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
         .topics{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 36px}
         .topics-lbl{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-right:6px}
-        .chip{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid var(--div);border-radius:999px;font-size:13px;font-weight:600;color:var(--txt);text-decoration:none;background:var(--bg);transition:.2s;white-space:nowrap}
+        .chip{display:inline-flex;align-items:center;gap:7px;min-height:36px;box-sizing:border-box;padding:7px 14px;border:1px solid var(--div);border-radius:999px;font-size:13px;font-weight:600;color:var(--txt);text-decoration:none;background:var(--bg);transition:.2s;white-space:nowrap}
         .chip span{font-size:11px;color:var(--mut);font-variant-numeric:tabular-nums}
         .chip:hover{border-color:var(--red);color:var(--red)}
         .chip.on{background:var(--red);border-color:var(--red);color:#fff}
@@ -152,7 +153,11 @@
         .topic{margin:0 0 60px;scroll-margin-top:20px}
         .eps.compact{grid-template-columns:repeat(4,1fr);gap:26px 16px}
         .eps.compact .ep-t{font-size:15px}
-        .cal-home{scroll-margin-top:20px}
+        .cal-home{scroll-margin-top:20px;position:relative}
+        .topics:not(.all) .chip.extra,.topics.all .chip.more{display:none}
+        .chip.more{font:inherit;font-size:13px;font-weight:600;color:var(--mut);cursor:pointer}
+        .to-today{display:none;position:absolute;top:0;right:0;z-index:20;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);text-decoration:none;padding:6px 0}
+        @media(max-width:1024px){.to-today{display:block}}
         .cal-soon{font-size:17px;color:var(--mut);margin:14px 0 0}
         /* Вибрана тема: у календарі приглушено відео інших тем — видно, коли тема «жила» */
         .cal-home.filtering .v-lnk:not(.hit){opacity:.18;filter:grayscale(1)}
@@ -196,6 +201,9 @@
             .eps.compact{grid-template-columns:repeat(2,1fr)}
             /* теми на телефоні — один рядок з прокруткою: календар лишається на першому екрані */
             .topics{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -15px 28px;padding:0 15px}
+            .chip{min-height:40px}
+            .topics:not(.all) .chip.extra{display:inline-flex}   /* на телефоні ряд гортається — видно всі теми */
+            .topics .chip.more{display:none}
             .topics::-webkit-scrollbar{display:none}
             .dt-n{font-size:16px}
             .dt-d{font-size:9px}
@@ -237,10 +245,10 @@
     </header>
 
     <main class="main" id="app">
-        <!-- Скелет першого показу: місце під сезон є одразу, без стрибків макета -->
+        <!-- Скелет першого показу у формі стіни днів: місце під календар є одразу, без стрибків макета -->
         <div aria-hidden="true">
-            <div class="sk sk-a"></div><div class="sk sk-b"></div><div class="sk sk-c"></div>
-            <div class="eps"><div class="ep"><div class="ep-th sk"></div></div><div class="ep"><div class="ep-th sk"></div></div><div class="ep"><div class="ep-th sk"></div></div></div>
+            <div class="sk sk-m"></div>
+            <div class="grid"><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
         </div>
         <noscript><p class="msg-empty">Сторінці потрібен JavaScript. Усі відео — на <a href="https://www.youtube.com/@Taras.maksymiak">YouTube-каналі</a>.</p></noscript>
     </main>
@@ -347,6 +355,8 @@
         (rec.tags || []).forEach(t => { let c = canonTag(t); if (!TOPICS.ignore.has(c) && !out.includes(c)) out.push(c); });
         return out;
     }
+    // Назва на плитці — без хвоста з хештегів («Дорога до моря #подорожі» → «Дорога до моря»): теми й так видно
+    function showTitle(t) { t = String(t || ''); return t.replace(/(\s+#[\p{L}\p{N}_]+)+\s*$/u, '').trim() || t; }
     function topicLabel(t) { return (TOPICS.cfg[t] && TOPICS.cfg[t].title) || '#' + t; }
     function topicFromHash() {
         let h = ''; try { h = decodeURIComponent(location.hash.slice(1)); } catch(e) {}
@@ -473,6 +483,21 @@
     const CAL_KEYS = ['start', 'playlist', 'exclude'];
     const TOPIC_KEYS = ['tag', 'title', 'about', 'aliases'];
     const bareTag = v => str(v).replace(/^#/, '').toLowerCase();
+    // Найімовірніша ручна помилка в календарі — вставити канал замість плейлиста.
+    // ID каналу (UC…) або посилання /channel/UC… → беремо всі завантаження (UU…); @назва каналу — пояснюємо, що треба.
+    function calPlaylist(v) {
+        let s = str(v), m = s.match(/(?:^|\/channel\/)(UC[\w-]{22})(?:[/?#]|$)/);
+        if (m) {
+            let uu = 'UU' + m[1].slice(2);
+            issue(`seasons.json, calendar: «${s}» — це канал, а не плейлист; беру всі його завантаження: ${uu}`);
+            return uu;
+        }
+        if (/^@|youtube\.com\/@/.test(s)) {
+            issue(`seasons.json, calendar: «${s}» — це назва каналу; потрібен ID плейлиста (усі завантаження каналу — UU…, див. README)`);
+            return '';
+        }
+        return normPlaylist(s, 'seasons.json, calendar');
+    }
     function normConfig(raw) {
         CAL = null; TOPICS = { cfg: {}, alias: {}, ignore: new Set(IGNORE_TAGS) };
         if (Array.isArray(raw)) { SEASONS = normSeasons(raw); return; }
@@ -484,7 +509,7 @@
             Object.keys(c).forEach(k => { if (!CAL_KEYS.includes(k)) issue(`seasons.json, calendar: невідоме поле «${k}» — відомі: ${CAL_KEYS.join(', ')}`); });
             let ex = Array.isArray(c.exclude) ? c.exclude : (c.exclude ? [c.exclude] : []);
             CAL = { k: 'cal', id: 'cal', format: 'daily', end: '', start: normDate(c.start, 'seasons.json, calendar.start'),
-                playlist: normPlaylist(c.playlist, 'seasons.json, calendar'),
+                playlist: calPlaylist(c.playlist),
                 exclude: ex.map(pl => normPlaylist(pl, 'seasons.json, calendar.exclude')).filter(Boolean) };
             if (!CAL.playlist) issue('seasons.json, calendar: нема playlist — календар не знає, звідки брати відео (усі завантаження каналу — ID на UU…)');
         }
@@ -539,8 +564,9 @@
 
     // Швидкість: просимо в YouTube лише ті поля, які малюємо (відповідь у кілька разів легша)
     const PL_FIELDS = encodeURIComponent('nextPageToken,items(snippet(title,description,thumbnails,resourceId/videoId),contentDetails(videoId,videoPublishedAt),status/privacyStatus)');
-    async function fetchPlaylist(pid) {
-        let items = [], token = '';
+    // Сторінки плейлиста (по 50) від token; maxPages — скільки взяти (Infinity — до кінця). next — токен решти.
+    async function fetchPages(pid, token = '', maxPages = Infinity) {
+        let items = [], pages = 0;
         do {
             let res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails,status&playlistId=${encodeURIComponent(pid)}&maxResults=50&fields=${PL_FIELDS}&key=${API_KEY}${token ? '&pageToken='+token : ''}`);
             let data = await res.json().catch(() => ({}));
@@ -553,8 +579,8 @@
             }
             items.push(...(data.items || []));
             token = data.nextPageToken || '';
-        } while (token);
-        return items;
+        } while (token && ++pages < maxPages);
+        return { items, next: token };
     }
 
     // byPl може прийти з кешу браузера — довіряємо лише цілим записам
@@ -577,38 +603,71 @@
         return { thumb: src, srcset: set };
     }
 
-    // Серії сезону = його плейлист. Дата серії — дата публікації відео (videoPublishedAt),
-    // а не дата додавання в плейлист. Приватні, заплановані й видалені відео її не мають — пропускаємо.
-    // Кривий ID одного плейлиста гасить лише свій сезон; збій самого YouTube (квота, мережа) → фолбек на архів.
-    let PL_CACHE = {};
-    async function loadYouTube() {
+    // Відео плейлиста → записи. Дата — дата публікації відео (videoPublishedAt), а не додавання в плейлист.
+    // Приватні, заплановані й видалені відео її не мають — пропускаємо й рахуємо для ?check.
+    function parseItems(pid, items, meta, hidden) {
+        hidden[pid] = 0;
+        return items.reduce((out, i) => {
+            let sn = i.snippet, cd = i.contentDetails || {};
+            if (!sn || !cd.videoPublishedAt || (i.status || {}).privacyStatus === 'private') { hidden[pid]++; return out; }
+            let vid = cd.videoId || (sn.resourceId || {}).videoId;
+            let pd = parseDesc(sn.description);
+            out.push(Object.assign({ key: vid, title: sn.title, y: vid, v: '', imp: pd.important, tags: tagsOf(sn.title, sn.description),
+                date: localDay(cd.videoPublishedAt), ts: cd.videoPublishedAt }, thumbSet(sn.thumbnails || {})));
+            meta[vid] = { title: sn.title, time: pd.time, body: pd.body, important: pd.important };
+            return out;
+        }, []);
+    }
+    // Свіжа перша сторінка + старіші відео з кешу (перша сторінка — головна для свого проміжку часу)
+    function mergeOlder(fresh, cached) {
+        let oldest = fresh.reduce((m, r) => r.ts < m ? r.ts : m, '\uffff'), have = new Set(fresh.map(r => r.key));
+        return fresh.concat(cleanList(cached).filter(r => !have.has(r.key) && r.ts < oldest));
+    }
+
+    // Швидкість і квота YouTube API:
+    //  • перша сторінка (50 відео) кожного плейлиста — паралельно, і сторінка малюється одразу;
+    //  • решта сторінок довантажується фоном (після року щоденних відео це ~8 сторінок);
+    //  • список завантажень (UU…, найновіші першими) при свіжому кеші (< доби) оновлюємо лише першою
+    //    сторінкою, старіші відео — з кешу; повний перезбір — раз на добу.
+    // Кривий ID одного плейлиста гасить лише свій блок; збій самого YouTube (квота, мережа) → фолбек на архів.
+    let PL_CACHE = {}, YT_FULL = true;               // YT_FULL: цього разу все зібрано з YouTube, без доклеювання з кешу
+    async function loadYouTube(cachedPl, cacheAge) {
         try {
-            let byPl = {}, meta = {}, hidden = {};
             CAL_NOTE = '';
             let pls = [...new Set([...SEASONS.map(s => s.playlist), ...(CAL ? [CAL.playlist, ...CAL.exclude] : [])].filter(Boolean))];
+            let pages = {};
             await Promise.all(pls.map(async pid => {
-                let items;
-                try { items = await fetchPlaylist(pid); }
+                try { pages[pid] = await fetchPages(pid, '', 1); }
                 catch(e) {
                     if (!e.badPlaylist) throw e;
                     // Список завантажень (UU…) YouTube не віддає, поки на каналі нема жодного публічного відео — це не помилка
                     if (CAL && pid === CAL.playlist && /^UU/.test(pid)) CAL_NOTE = 'на каналі ще нема жодного публічного відео';
                     else issue(`плейлист ${pid} не знайдено або він закритий — перевір ID і доступ «Загальнодоступний»`);
-                    byPl[pid] = []; return;
+                    pages[pid] = { items: [], next: '' };
                 }
-                byPl[pid] = []; hidden[pid] = 0;
-                items.forEach(i => {
-                    let sn = i.snippet, cd = i.contentDetails || {};
-                    if (!sn || !cd.videoPublishedAt || (i.status || {}).privacyStatus === 'private') { hidden[pid]++; return; }
-                    let vid = cd.videoId || (sn.resourceId || {}).videoId;
-                    let pd = parseDesc(sn.description);
-                    byPl[pid].push(Object.assign({ key: vid, title: sn.title, y: vid, v: '', imp: pd.important, tags: tagsOf(sn.title, sn.description),
-                        date: localDay(cd.videoPublishedAt), ts: cd.videoPublishedAt }, thumbSet(sn.thumbnails || {})));
-                    meta[vid] = { title: sn.title, time: pd.time, body: pd.body, important: pd.important };
-                });
             }));
-            PL_CACHE = byPl; metaById = meta; HIDDEN = hidden;   // коміт лише за повного успіху
-            applyPlaylists(byPl);
+            let fresh = cachedPl && typeof cachedPl === 'object' && cacheAge < DAY_MS;
+            let fromCache = pid => fresh && /^UU/.test(pid) && Array.isArray(cachedPl[pid]);
+            let rest = pls.filter(pid => pages[pid].next && !fromCache(pid));
+            YT_FULL = !pls.some(pid => pages[pid].next && fromCache(pid));
+            const commit = () => {
+                let byPl = {}, meta = {}, hidden = {};
+                pls.forEach(pid => {
+                    byPl[pid] = parseItems(pid, pages[pid].items, meta, hidden);
+                    if (pages[pid].next && fromCache(pid)) byPl[pid] = mergeOlder(byPl[pid], cachedPl[pid]);
+                });
+                PL_CACHE = byPl; HIDDEN = hidden;
+                metaById = Object.assign({}, metaById, meta);   // записки старіших відео лишаються з кешу
+                applyPlaylists(byPl);
+            };
+            if (rest.length) {                          // перший екран — уже зараз, решта сторінок — фоном
+                commit(); LOADING = false; render();
+                await Promise.all(rest.map(async pid => {
+                    let more = await fetchPages(pid, pages[pid].next);
+                    pages[pid].items.push(...more.items); pages[pid].next = '';
+                }));
+            }
+            commit();
             return true;
         } catch(e) {
             console.error('YouTube API error:', e.message);
@@ -679,10 +738,12 @@
         }
         if (CACHED_PL) applyPlaylists(CACHED_PL);
         render();                                      // свіжі шапки сезонів одразу; серії — з кешу або скелетом
-        if (await loadYouTube()) {
+        // «Свіжість» для інкрементного оновлення рахуємо від останнього ПОВНОГО перезбору (ss_full), а не від будь-якого візиту
+        if (await loadYouTube(CACHED_PL, Date.now() - (+lsGet('ss_full') || 0))) {
             lsSet('ss_pl', JSON.stringify(PL_CACHE));
             lsSet('ss_meta', JSON.stringify(metaById));
             lsSet('ss_time', String(Date.now()));
+            if (YT_FULL) lsSet('ss_full', String(Date.now()));
             SRC.eps = 'YouTube';
         } else if (await loadArchive()) {              // ⚑ YouTube мовчить → авто-судний-день
             MODE = 'doomsday'; SRC.eps = 'archive.json (YouTube не відповів)';
@@ -801,8 +862,11 @@
         let html = topicsBar(all) + topicPanel(all, today) +
             `<section class="cal-home${TOPIC ? ' filtering' : ''}" id="cal" aria-label="Стіна днів"><h2 class="sr-only">Стіна днів</h2>`;
         if (LOAD_FAILED && !eps.length) return html + '<p class="s-msg">Не вдалось завантажити відео. Спробуйте оновити сторінку.</p></section>';
-        if (LOADING && !eps.length) return html + '<div class="grid">' + '<div class="cell"></div>'.repeat(7) + '</div></section>';
-        return html + (dailyHtml(s, 'live', today, eps) || soon) + '</section>';
+        if (LOADING && !eps.length) return html + '<div class="sk sk-m"></div><div class="grid">' + '<div class="cell"></div>'.repeat(7) + '</div></section>';
+        // Телефон: місяць у дві колонки — це кілька екранів, тож «сьогодні» під рукою (адресу й вибрану тему не чіпає)
+        let jump = +today.slice(8) > 6 ? '<a class="to-today" href="#cal-today" onclick="event.preventDefault();' +
+            'var t=document.getElementById(\'cal-today\');if(t)t.scrollIntoView({behavior:\'smooth\',block:\'center\'})">Сьогодні ↓</a>' : '';
+        return html + jump + (dailyHtml(s, 'live', today, eps) || soon) + '</section>';
     }
 
     // Усі відомі відео (календар + сезони) без дублів — для каталогу тем
@@ -820,10 +884,12 @@
     function topicsBar(all) {
         let list = topicCounts(all);
         if (!list.length) return '';
-        return '<nav class="topics" aria-label="Теми"><span class="topics-lbl">Теми</span>' + list.map(([t, e]) => {
+        // На компʼютері — 12 найчастіших тем, решта під «ще N» (щоб теми не відсували календар; вибрана — завжди видно)
+        const MAX = 12, extra = list.length - MAX;
+        return '<nav class="topics" aria-label="Теми"><span class="topics-lbl">Теми</span>' + list.map(([t, e], i) => {
             let on = t === TOPIC;
-            return `<a class="chip${on ? ' on' : ''}" href="${on ? '#' : '#t=' + encodeURIComponent(t)}"${on ? ' aria-current="true"' : ''}>${esc(topicLabel(t))}<span>${e.n}</span></a>`;
-        }).join('') + '</nav>';
+            return `<a class="chip${on ? ' on' : ''}${i >= MAX && !on ? ' extra' : ''}" href="${on ? '#' : '#t=' + encodeURIComponent(t)}"${on ? ' aria-current="true"' : ''}>${esc(topicLabel(t))}<span>${e.n}</span></a>`;
+        }).join('') + (extra > 0 ? `<button type="button" class="chip more" onclick="this.parentNode.classList.add('all')">ще ${extra}</button>` : '') + '</nav>';
     }
     // Вибрана тема: усі її відео (найновіші першими) + календар нижче приглушує інші
     function topicPanel(all, today) {
@@ -839,10 +905,10 @@
         let sizes = '(max-width:600px) 30vw, (max-width:1024px) 50vw, 340px';
         return html + '<div class="eps compact">' + list.map(rec => {
             let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [] }) - 1;
-            return `<a href="${ytHref(rec)}" class="ep${watched.includes(rec.key) ? ' watched' : ''}" onclick="openVid(event, ${idx}, this)">` +
+            return `<a href="${ytHref(rec)}" class="ep${watched.includes(rec.key) ? ' watched' : ''}" data-k="${esc(rec.key)}" onclick="openVid(event, ${idx}, this)">` +
                 `<div class="ep-th">${imgTag(rec, '', sizes)}${rec.imp ? STAR_SVG : ''}</div>` +
                 `<div class="ep-k">${fmtDay(rec.date, rec.date.slice(0, 4) !== today.slice(0, 4))}</div>` +
-                `<div class="ep-t">${esc(rec.title || '')}</div></a>`;
+                `<div class="ep-t">${esc(showTitle(rec.title))}</div></a>`;
         }).join('') + '</div></section>';
     }
 
@@ -860,11 +926,11 @@
             let body = (metaById[rec.key] || {}).body || '';
             let isNew = st === 'live' && i === eps.length - 1 && dayNum(today) - dayNum(rec.date) < 7;
             // Справжнє посилання на YouTube: Ctrl/Cmd-клік і середня кнопка відкривають відео в новій вкладці
-            html += `<a href="${ytHref(rec)}" class="ep${watched.includes(rec.key) ? ' watched' : ''}" onclick="openVid(event, ${idx}, this)">` +
+            html += `<a href="${ytHref(rec)}" class="ep${watched.includes(rec.key) ? ' watched' : ''}" data-k="${esc(rec.key)}" onclick="openVid(event, ${idx}, this)">` +
                 `<div class="ep-th">${imgTag(rec, '', sizes)}` +
                 (isNew ? '<span class="ep-new">Нова</span>' : '') + (rec.imp ? STAR_SVG : '') + `</div>` +
                 `<div class="ep-k">Серія ${pad2(i + 1)} · ${fmtDay(rec.date, rec.date.slice(0, 4) !== today.slice(0, 4))}</div>` +
-                `<div class="ep-t">${esc(rec.title || '')}</div>` +
+                `<div class="ep-t">${esc(showTitle(rec.title))}</div>` +
                 (showNote && body ? `<div class="ep-x">${esc(body.slice(0, 240))}</div>` : '') + `</a>`;
         });
         if (st === 'live' && (!s.episodes || eps.length < s.episodes)) {
@@ -902,16 +968,17 @@
                 let w = new Date(dayNum(d) * DAY_MS).getUTCDay(), recs = byDay[d] || [], dn = +d.slice(8);
                 if (w === 1 && i > 0) h += '<div class="week-divider"></div>';
                 let dt = `<div class="dt"><span class="dt-n">${dn}</span><span class="dt-d">${WDAYS[w]}</span></div>`;
-                if (!recs.length) { h += `<div class="cell ${d === today && st === 'live' ? 'today' : 'empty'}">${dt}</div>`; return; }
+                let tid = d === today && st === 'live' ? ` id="${s.id}-today"` : '';
+                if (!recs.length) { h += `<div class="cell ${tid ? 'today' : 'empty'}"${tid}>${dt}</div>`; return; }
                 let links = recs.map(rec => {
                     let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [] }) - 1;
                     let body = (metaById[rec.key] || {}).body || '';
                     let hit = TOPIC && recTopics(rec).includes(TOPIC) ? ' hit' : '';
-                    return `<a href="${ytHref(rec)}" class="v-lnk${watched.includes(rec.key) ? ' watched' : ''}${hit}" onclick="openVid(event, ${idx}, this)">` +
+                    return `<a href="${ytHref(rec)}" class="v-lnk${watched.includes(rec.key) ? ' watched' : ''}${hit}" data-k="${esc(rec.key)}" onclick="openVid(event, ${idx}, this)">` +
                         imgTag(rec, 'v-thumb', sizes) + (body ? `<div class="v-excerpt">${esc(body.slice(0, 160))}</div>` : '') +
-                        `<div class="v-title">${esc(rec.title || '')}</div></a>`;
+                        `<div class="v-title">${esc(showTitle(rec.title))}</div></a>`;
                 }).join('');
-                h += `<div class="cell has-vid"><div class="v-cont${recs.length > 1 ? ' mult' : ''}">${links}</div>${dt}${recs.some(r => r.imp) ? STAR_SVG : ''}</div>`;
+                h += `<div class="cell has-vid"${tid}><div class="v-cont${recs.length > 1 ? ' mult' : ''}">${links}</div>${dt}${recs.some(r => r.imp) ? STAR_SVG : ''}</div>`;
             });
             return h + '</div></div>';
         };
@@ -938,7 +1005,8 @@
             let n = (EPS.cal || []).length, h = HIDDEN[CAL.playlist] || 0, tl = topicCounts(allRecs());
             rows += `<li><b>Календар</b> — ${CAL.start ? 'з ' + fmtDay(CAL.start, true) : 'від першого відео'}; джерело ${esc(CAL.playlist || '—')}: ` +
                 `на сайті ${n} відео` + (h ? `, ще ${h} приховано (приватні / заплановані)` : '') +
-                (CAL.exclude.length ? `; без відео з ${esc(CAL.exclude.join(', '))}` : '') + (CAL_NOTE ? ` — ${esc(CAL_NOTE)}` : '') + '</li>' +
+                (CAL.exclude.length ? `; без відео з ${esc(CAL.exclude.join(', '))}` : '') + (CAL_NOTE ? ` — ${esc(CAL_NOTE)}` : '') +
+                (CAL.start && today < CAL.start ? ` — ще не почався: до ${esc(fmtDay(CAL.start, true))} головна показує «Скоро тут зʼявиться перша стрічка»` : '') + '</li>' +
                 `<li><b>Теми</b> — ${tl.length ? tl.map(([t, e]) => esc(topicLabel(t)) + ' (' + e.n + ')').join(', ') : 'поки жодного хештегу в назвах чи описах відео'}</li>`;
         }
         rows += SEASONS.map(s => {
@@ -956,8 +1024,36 @@
     }
 
     // ── Плеєр ──────────────────────────────────────────────────────────────────
+    // Телефон/планшет (iOS, iPadOS, Android): відео YouTube відкриваємо в застосунку YouTube
+    // (нема застосунку — відкриється сайт YouTube). Компʼютер — вікно з плеєром і запискою на сайті.
+    const UA = navigator.userAgent || '';
+    const IS_ANDROID = /Android/i.test(UA);
+    const IS_IOS = /iPhone|iPad|iPod/i.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const OPEN_IN_APP = IS_ANDROID || IS_IOS;
+    window.openApp = window.openApp || (u => { location.href = u; });   // окремо — щоб перехід можна було перевірити тестом
+
+    // Переглянуте: відмітка живе в localStorage цього браузера (ключ vw, спільний із calendar.html) і лишається
+    // між візитами. Відмічаємо всі копії відео на сторінці (календар, тема, сезон) одразу.
+    let askedPersist = false;
+    function markWatched(key) {
+        if (!key) return;
+        if (!watched.includes(key)) { watched.push(key); lsSet('vw', JSON.stringify(watched)); }
+        document.querySelectorAll('[data-k]').forEach(el => { if (el.dataset.k === key) el.classList.add('watched'); });
+        // Просимо браузер не стирати сховище під час нестачі місця (Chrome/Safari вирішують тихо; Firefox питав би — не чіпаємо)
+        if (!askedPersist && !/Firefox/i.test(UA)) {
+            askedPersist = true;
+            try { navigator.storage.persisted().then(p => p || navigator.storage.persist()).catch(() => {}); } catch(e) {}
+        }
+    }
+    // Відмітили в іншій вкладці — оновлюємо й тут
+    window.addEventListener('storage', e => {
+        if (e.key !== 'vw') return;
+        watched = lsJSON('vw', []); if (!Array.isArray(watched)) watched = [];
+        LAST_HTML = ''; render();
+    });
+
     // Прогрів: при першому наведенні/дотику на відео заздалегідь відкриваємо з'єднання з YouTube — плеєр стартує швидше
-    let warmed = false;
+    let warmed = OPEN_IN_APP;                         // на телефоні плеєр на сайті не відкривається — гріти нічого
     function warm(e) {
         if (warmed || !e.target.closest || !e.target.closest('.ep,.v-lnk')) return;
         warmed = true;
@@ -970,13 +1066,21 @@
     let lastFocus = null;
     window.openVid = function(e, idx, el) {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;   // Ctrl/Cmd-клік — браузер відкриє YouTube у новій вкладці
-        e.preventDefault();
         let p = PLAY[idx] || {};
-        if (p.key && !watched.includes(p.key)) {
-            watched.push(p.key);
-            lsSet('vw', JSON.stringify(watched));
+        markWatched(p.key);
+        let hasLocal = !!(BASE && p.v);
+        if (OPEN_IN_APP && p.y && !hasLocal) {
+            // iOS: звичайний перехід за посиланням youtube.com — система сама відкриє застосунок (Universal Link).
+            // Android: intent — застосунок YouTube, а якщо його нема — сторінка відео в браузері.
+            if (IS_ANDROID) {
+                e.preventDefault();
+                let web = 'https://www.youtube.com/watch?v=' + encodeURIComponent(p.y);
+                openApp('intent://www.youtube.com/watch?v=' + encodeURIComponent(p.y) +
+                    '#Intent;scheme=https;package=com.google.android.youtube;S.browser_fallback_url=' + encodeURIComponent(web) + ';end');
+            }
+            return;
         }
-        if (el) el.classList.add('watched');
+        e.preventDefault();
         // Записка серії під плеєром (щоденник): текст веде, штамп часу — підпис знизу; зірка, якщо важливо.
         let meta = metaById[p.key] || {};
         let note = document.getElementById('modNote');
@@ -990,7 +1094,7 @@
               `<a class="chip" href="#t=${encodeURIComponent(t)}">${esc(topicLabel(t))}</a>`).join('') + '</div>' : '');
         // Плеєр: локальне відео (судний день, Фаза 5) якщо є base+v, інакше YouTube-ембед за id.
         let iframe = document.getElementById('ytIframe'), loc = document.getElementById('locVideo');
-        let local = (BASE && p.v) ? (BASE.replace(/\/+$/, '') + '/' + p.v.replace(/^\/+/, '')) : '';
+        let local = hasLocal ? (BASE.replace(/\/+$/, '') + '/' + p.v.replace(/^\/+/, '')) : '';
         if (local) {
             iframe.src = ''; iframe.style.display = 'none';
             loc.src = local; loc.style.display = 'block'; try { loc.play(); } catch(_) {}

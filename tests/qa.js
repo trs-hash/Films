@@ -33,6 +33,24 @@ const priv = id => ({ snippet: { title: 'Private video', description: 'This vide
   contentDetails: { videoId: id }, status: { privacyStatus: 'private' } });
 const deleted = id => ({ snippet: { title: 'Deleted video', description: 'This video is unavailable.', resourceId: { videoId: id }, thumbnails: {} },
   contentDetails: { videoId: id }, status: { privacyStatus: 'privacyStatusUnspecified' } });
+const UA_IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+const UA_ANDROID = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Mobile Safari/537.36';
+// 120 щоденних відео (1 червня … 28 вересня), як їх віддає список завантажень: найновіші першими, по 50 на сторінку
+const DAILY120 = Array.from({ length: 120 }, (_, i) => vid('d' + i, 'День ' + i, new Date(Date.UTC(2026, 5, 1 + i, 10)).toISOString())).reverse();
+const pagedApi = (list, extra = {}) => (pid, tok) => {
+  if (pid !== 'UU1') return extra[pid] || [];
+  let p = +(tok || 0), items = list.slice(p * 50, p * 50 + 50);
+  return (p + 1) * 50 < list.length ? { items, nextPageToken: String(p + 1) } : { items };
+};
+// Кеш «повторного візиту»: те, що сайт сам зберігає в localStorage
+const cacheInit = (fullAgeMs) => `(() => { try {
+  const recs = ${JSON.stringify(Array.from({ length: 120 }, (_, i) => { const d = new Date(Date.UTC(2026, 5, 1 + i, 10)); return { key: 'd' + i, title: 'День ' + i, y: 'd' + i, v: '', imp: false, tags: [], date: d.toISOString().slice(0, 10), ts: d.toISOString(), thumb: '', srcset: '' }; }).reverse())};
+  localStorage.setItem('ss_seasons', JSON.stringify({ calendar: { start: '2026-05-01', playlist: 'UU1', exclude: ['SH'] } }));
+  localStorage.setItem('ss_pl', JSON.stringify({ UU1: recs, SH: [] }));
+  localStorage.setItem('ss_meta', '{}'); localStorage.setItem('ss_time', String(Date.now()));
+  localStorage.setItem('ss_full', String(Date.now() - ${fullAgeMs}));
+} catch (e) {} })()`;
+
 // Головна: календар з усіх завантажень (UU1) без Shorts (SH)
 const CAL = (o = {}) => ({ calendar: Object.assign({ start: '2026-09-01', playlist: 'UU1', exclude: ['SH'] }, o) });
 const S1 = (o = {}) => Object.assign({ n: 1, title: 'Тема', about: 'Опис', start: '2026-09-20', end: '2026-12-20', schedule: 'Нова серія щотижня', playlist: 'PL1', episodes: null, support: '' }, o);
@@ -52,14 +70,16 @@ const TWO = [vid('a1', 'Перша', '2026-09-20T15:00:00Z', 'Записка 1')
 
 // ── Запуск одного сценарію ──────────────────────────────────────────────────
 async function scenario(browser, o) {
-  const ctx = await browser.newContext({ viewport: o.viewport || { width: 1280, height: 900 }, deviceScaleFactor: o.dpr || 1, colorScheme: o.dark ? 'dark' : 'light', timezoneId: o.tz || 'Europe/Kyiv' });
+  const ctx = await browser.newContext({ viewport: o.viewport || { width: 1280, height: 900 }, deviceScaleFactor: o.dpr || 1, userAgent: o.ua, hasTouch: !!o.ua, isMobile: !!o.mobile,
+    storageState: o.storageState, colorScheme: o.dark ? 'dark' : 'light', timezoneId: o.tz || 'Europe/Kyiv' });
   const page = await ctx.newPage();
   const errs = [], warns = [], apiCalls = [], apiUrls = [], fileUrls = [];
   page.on('request', q => { if (/localhost:8766\/.*\.json/.test(q.url())) fileUrls.push(q.url()); });
   page.on('pageerror', e => errs.push(e.message));
   page.on('console', m => { if (m.type() === 'warning') warns.push(m.text()); });
   if (o.initScript) await page.addInitScript(o.initScript);
-  await page.route(/googleapis\.com/, async r => {
+  await page.addInitScript(() => { window.openApp = u => { window.__opened = u; }; });   // перехоплюємо відкриття застосунку
+  await ctx.route(/googleapis\.com/, async r => {
     apiUrls.push(r.request().url());
     if (o.apiDelay) await new Promise(res => setTimeout(res, o.apiDelay));
     const pid = new URL(r.request().url()).searchParams.get('playlistId'), tok = new URL(r.request().url()).searchParams.get('pageToken');
@@ -70,9 +90,10 @@ async function scenario(browser, o) {
     if (a === undefined || a === '404') return r.fulfill({ status: 404, contentType: 'application/json', body: '{"error":{"code":404,"message":"The playlist identified with the request\'s playlistId parameter cannot be found.","errors":[{"reason":"playlistNotFound"}]}}' });
     return r.fulfill({ contentType: 'application/json', body: JSON.stringify(Array.isArray(a) ? { items: a } : a) });
   });
-  await page.route(/i\.ytimg\.com/, r => r.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><rect width="100%" height="100%" fill="#5a6b7c"/></svg>' }));
-  await page.route(/youtube\.com\/embed/, r => r.fulfill({ body: '<body style="background:#000"></body>', contentType: 'text/html' }));
-  const json = (pat, v) => page.route(pat, r => v === 404 ? r.fulfill({ status: 404 })
+  await ctx.route(/i\.ytimg\.com/, r => r.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><rect width="100%" height="100%" fill="#5a6b7c"/></svg>' }));
+  await ctx.route(/youtube\.com\/watch/, r => r.fulfill({ body: '<title>YouTube</title>watch', contentType: 'text/html' }));
+  await ctx.route(/youtube\.com\/embed/, r => r.fulfill({ body: '<body style="background:#000"></body>', contentType: 'text/html' }));
+  const json = (pat, v) => ctx.route(pat, r => v === 404 ? r.fulfill({ status: 404 })
     : r.fulfill({ contentType: 'application/json', body: typeof v === 'string' ? v : JSON.stringify(v) }));
   if (o.seasons !== undefined) await json(/seasons\.json/, o.seasons);
   await json(/archive\.json/, o.archive !== undefined ? o.archive : { base: '', days: {} });
@@ -80,7 +101,7 @@ async function scenario(browser, o) {
   await page.goto('http://localhost:8766/' + (o.path || ''));
   await page.waitForTimeout(o.wait || 700);
   if (o.reload) { await o.reload(page); }
-  const r = { page, errs, warns, apiCalls, apiUrls, fileUrls, text: (await page.innerText('body')).replace(/\s+/g, ' ') };
+  const r = { page, ctx, browser, o, errs, warns, apiCalls, apiUrls, fileUrls, text: (await page.innerText('body')).replace(/\s+/g, ' ') };
   if (o.shot) await page.screenshot({ path: `${OUT}/${o.shot}.png`, fullPage: true });
   return { r, ctx };
 }
@@ -244,7 +265,7 @@ const CASES = [
   ['T02 клік по темі: адреса #t=…, панель з відео (найновіші першими), календар приглушує інші', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, shot: 'T02' },
     async r => { await r.page.click('.topics .chip >> nth=0'); await r.page.waitForTimeout(200);
       let titles = await r.page.$$eval('#topic .ep-t', a => a.map(x => x.textContent));
-      return decodeURIComponent(await r.page.evaluate(() => location.hash)) === '#t=подорожі' && titles.join('|') === 'Третє|Друге #подорожі|Перше'
+      return decodeURIComponent(await r.page.evaluate(() => location.hash)) === '#t=подорожі' && titles.join('|') === 'Третє|Друге|Перше'
         && await r.page.locator('#cal.filtering .v-lnk.hit').count() === 3 && await r.page.locator('#cal .v-lnk:not(.hit)').count() === 1; }],
   ['T03 topics у seasons.json: синоніми, назва, опис; ignore_tags', { seasons: Object.assign(CAL({ start: '2026-09-20' }), { topics: [{ tag: 'подорожі', title: 'Подорожі', about: 'Про дороги.', aliases: ['#подорож'] }], ignore_tags: ['книги'] }),
       api: { UU1: [...TAGGED, vid('e1', 'Синонім', '2026-09-26T10:00:00Z', '#подорож')], SH: [] }, path: '#t=подорожі' },
@@ -268,6 +289,97 @@ const CASES = [
     r => has(r, '#подорожі (3), #книги (1)')],
   ['H30 помилки в новому блоці: calendar без playlist, topics не список, описка в полі', { path: '?check', seasons: { calendar: { start: '2026-09-20' }, topics: 'подорожі', seasns: [] } },
     r => has(r, 'calendar: нема playlist') && has(r, 'topics: очікую список') && has(r, 'невідоме поле «seasns»')],
+
+  // --- Переглянуте: зберігається між візитами
+  ['W01 переглянуте лишається після закриття браузера (новий сеанс із тим самим сховищем)', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await r.page.click('#cal .v-lnk >> nth=1'); await r.page.keyboard.press('Escape');
+      const state = await r.ctx.storageState();
+      const { r: r2, ctx } = await scenario(r.browser, Object.assign({}, r.o, { storageState: state }));
+      const ok = await r2.page.locator('#cal .v-lnk.watched').count() === 1 && (await r2.page.getAttribute('#cal .v-lnk.watched', 'data-k')) === 'g2';
+      await ctx.close(); return ok; }],
+  ['W02 відмітка одразу на всіх копіях відео (календар + панель теми)', { path: '#t=' + encodeURIComponent('подорожі'), seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await r.page.click('#topic .ep >> nth=0'); await r.page.keyboard.press('Escape');
+      return await r.page.locator('[data-k="g3"].watched').count() === 2; }],
+  ['W03 відмітка в одній вкладці зʼявляється в іншій без перезавантаження', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { const p2 = await r.ctx.newPage(); await p2.goto(r.page.url()); await p2.waitForTimeout(600);
+      await r.page.click('#cal .v-lnk >> nth=0'); await r.page.keyboard.press('Escape'); await p2.waitForTimeout(300);
+      return await p2.locator('#cal .v-lnk.watched').count() === 1; }],
+  ['W04 той самий ключ відмітки в режимах youtube і doomsday', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] },
+      initScript: () => { try { localStorage.setItem('vw', JSON.stringify(['g1'])); } catch (e) {} },
+      state: { mode: 'doomsday' }, archive: { base: '', days: { '2026-09-21': [{ t: 'Перше', y: 'g1' }] } } },
+    async r => await r.page.locator('#cal .v-lnk.watched').count() === 1],
+
+  // --- Відкриття: компʼютер — вікно на сайті; телефон — застосунок YouTube
+  ['M01 компʼютер: вікно з плеєром на сайті, без переходу', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await r.page.click('#cal .v-lnk >> nth=0'); await r.page.waitForTimeout(150);
+      return await r.page.locator('#vidModal.show').count() === 1 && r.page.url().startsWith('http://localhost'); }],
+  ['M02 iPhone: перехід на youtube.com/watch (відкриє застосунок YouTube), без вікна, відмічено', { ua: UA_IPHONE, mobile: true, viewport: { width: 390, height: 844 }, seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await Promise.all([r.page.waitForURL(/youtube\.com\/watch\?v=g1/), r.page.tap('#cal .v-lnk >> nth=0')]);
+      await r.page.goBack(); await r.page.waitForTimeout(500);
+      return await r.page.locator('#cal .v-lnk.watched').count() === 1; }],
+  ['M03 Android: intent у застосунок YouTube із запасним переходом на сайт', { ua: UA_ANDROID, mobile: true, viewport: { width: 412, height: 915 }, seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await r.page.tap('#cal .v-lnk >> nth=0'); await r.page.waitForTimeout(150);
+      const u = await r.page.evaluate(() => window.__opened || '');
+      return u.startsWith('intent://www.youtube.com/watch?v=g1#Intent;') && u.includes('package=com.google.android.youtube') && u.includes('S.browser_fallback_url=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3Dg1')
+        && await r.page.locator('#vidModal.show').count() === 0 && await r.page.locator('#cal .v-lnk.watched').count() === 1; }],
+  ['M04 iPad (iPadOS видає себе за Mac) — теж застосунок', { ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15', mobile: false, viewport: { width: 820, height: 1180 },
+      initScript: () => { Object.defineProperty(navigator, 'platform', { get: () => 'MacIntel' }); Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 5 }); },
+      seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await Promise.all([r.page.waitForURL(/youtube\.com\/watch/), r.page.click('#cal .v-lnk >> nth=0')]); return true; }],
+  ['M05 телефон + локальне відео (doomsday, без YouTube) — вікно на сайті', { ua: UA_IPHONE, mobile: true, viewport: { width: 390, height: 844 }, state: { mode: 'doomsday' }, seasons: CAL({ start: '2026-09-20' }),
+      archive: { base: 'https://video.example', days: { '2026-09-22': [{ t: 'Локальне', y: 'yy', v: 'a.mp4' }] } } },
+    async r => { await r.page.tap('#cal .v-lnk'); await r.page.waitForTimeout(150); return await r.page.locator('#vidModal.show').count() === 1; }],
+  ['M06 Ctrl/Cmd-клік на компʼютері — нова вкладка, відмітка не ставиться', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { const [p2] = await Promise.all([r.ctx.waitForEvent('page'), r.page.click('#cal .v-lnk >> nth=0', { modifiers: ['ControlOrMeta'] })]);
+      await p2.close(); return await r.page.locator('#vidModal.show').count() === 0; }],
+
+  // --- Швидкість, коли відео багато
+  ['P06 перший візит, 120 відео (3 сторінки): перші 50 видно вже після першої сторінки', { seasons: CAL({ start: '2026-05-01' }), api: pagedApi(DAILY120, { SH: [] }), apiDelay: 400, wait: 650 },
+    async r => { let first = await r.page.locator('#cal .v-lnk').count(); await r.page.waitForTimeout(1300);
+      return first === 50 && await r.page.locator('#cal .v-lnk').count() === 120; }],
+  ['P07 повторний візит (кеш < доби): лише 1 запит до списку завантажень, старіші — з кешу', { seasons: CAL({ start: '2026-05-01' }), api: pagedApi(DAILY120, { SH: [] }), initScript: cacheInit(3600e3) },
+    async r => r.apiUrls.filter(u => u.includes('UU1')).length === 1 && await r.page.locator('#cal .v-lnk').count() === 120],
+  ['P08 кеш старший за добу — повний перезбір усіх сторінок', { seasons: CAL({ start: '2026-05-01' }), api: pagedApi(DAILY120, { SH: [] }), initScript: cacheInit(2 * 864e5), wait: 1200 },
+    async r => r.apiUrls.filter(u => u.includes('UU1')).length === 3 && await r.page.locator('#cal .v-lnk').count() === 120],
+
+  // --- UX
+  ['U01 назви на плитках — без хвоста з хештегів', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => (await r.page.$$eval('#cal .v-title', a => a.map(x => x.textContent))).includes('Друге')],
+  ['U02 чипи тем: зона дотику ≥ 40 px на телефоні', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, viewport: { width: 390, height: 844 } },
+    async r => (await r.page.$eval('.chip', c => c.getBoundingClientRect().height)) >= 40],
+
+  ['U03 телефон: «Сьогодні ↓» веде до сьогоднішнього дня, не чіпаючи вибрану тему; на компʼютері кнопки нема', { path: '#t=' + encodeURIComponent('подорожі'), seasons: CAL({ start: '2026-09-01' }), api: { UU1: DAILY120.slice(0, 28), SH: [] }, viewport: { width: 390, height: 700 } },
+    async r => { await r.page.click('.to-today'); await r.page.waitForTimeout(900);
+      let inView = await r.page.evaluate(() => { let b = document.getElementById('cal-today').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; });
+      await r.page.setViewportSize({ width: 1280, height: 900 });
+      let hiddenDesk = await r.page.$eval('.to-today', a => getComputedStyle(a).display === 'none');
+      return inView && hiddenDesk && decodeURIComponent(await r.page.evaluate(() => location.hash)) === '#t=подорожі'; }],
+  ['U04 багато тем: на компʼютері 12 + «ще N», на телефоні всі в рядку', { seasons: CAL({ start: '2026-09-01' }),
+      api: { UU1: Array.from({ length: 20 }, (_, i) => vid('x' + i, 'Відео', `2026-09-${String(i + 2).padStart(2, '0')}T10:00:00Z`, '#тема' + i)), SH: [] } },
+    async r => { const vis = () => r.page.$$eval('.topics .chip:not(.more)', a => a.filter(x => getComputedStyle(x).display !== 'none').length);
+      let d1 = await vis(); await r.page.click('.chip.more'); let d2 = await vis();
+      await r.page.setViewportSize({ width: 390, height: 800 }); await r.page.evaluate(() => { LAST_HTML = ''; render(); });
+      let m = await vis(), moreHidden = await r.page.$eval('.chip.more', b => getComputedStyle(b).display === 'none');
+      return d1 === 12 && d2 === 20 && m === 20 && moreHidden; }],
+
+  // --- Людські помилки в новому блоці календаря й тем
+  ['H31 calendar.start у форматі 20.09.2026', { path: '?check', seasons: { calendar: { start: '20.09.2026', playlist: 'UU1', exclude: ['SH'] } }, api: { UU1: TAGGED, SH: [] } },
+    async r => has(r, 'прочитано як 2026-09-20') && await r.page.locator('#cal .v-lnk').count() === 4],
+  ['H32 замість плейлиста — ID каналу (UC…) → беремо його завантаження (UU…)', { path: '?check', seasons: { calendar: { start: '2026-09-20', playlist: 'UC' + 'RSKTGA5a2hLrai_MXNaoUQ' } }, api: { UURSKTGA5a2hLrai_MXNaoUQ: TAGGED } },
+    async r => has(r, 'це канал, а не плейлист') && await r.page.locator('#cal .v-lnk').count() === 4],
+  ['H33 посилання на канал з /channel/UC…', { seasons: { calendar: { start: '2026-09-20', playlist: 'https://www.youtube.com/channel/UCRSKTGA5a2hLrai_MXNaoUQ' } }, api: { UURSKTGA5a2hLrai_MXNaoUQ: TAGGED } },
+    async r => await r.page.locator('#cal .v-lnk').count() === 4],
+  ['H34 @назва каналу замість плейлиста → зрозуміле пояснення', { path: '?check', seasons: { calendar: { start: '2026-09-20', playlist: 'https://www.youtube.com/@Taras.maksymiak' } } },
+    r => has(r, 'це назва каналу; потрібен ID плейлиста')],
+  ['H35 повне посилання на плейлист у calendar.playlist', { seasons: { calendar: { start: '2026-09-20', playlist: 'https://www.youtube.com/playlist?list=UU1' } }, api: { UU1: TAGGED } },
+    async r => await r.page.locator('#cal .v-lnk').count() === 4],
+  ['H36 exclude рядком, а не списком', { seasons: { calendar: { start: '2026-09-20', playlist: 'UU1', exclude: 'SH' } }, api: { UU1: [...TAGGED, vid('s1', 'Шортс', '2026-09-25T10:00:00Z')], SH: [vid('s1', 'Шортс', '2026-09-25T10:00:00Z')] } },
+    r => !has(r, 'Шортс')],
+  ['H37 теми в topics з # і великими літерами; описка-варіант видно в ?check', { path: '?check', seasons: Object.assign(CAL({ start: '2026-09-20' }), { topics: [{ tag: '#ПОДОРОЖІ', title: 'Подорожі' }] }),
+      api: { UU1: [...TAGGED, vid('y1', 'Описка', '2026-09-25T10:00:00Z', '#подорожи')], SH: [] } },
+    r => has(r, 'Подорожі (3)') && has(r, '#подорожи (1)')],
+  ['H38 старт календаря в майбутньому (описка в році) — ?check пояснює заглушку', { path: '?check', seasons: CAL({ start: '2027-09-30' }), api: { UU1: TAGGED, SH: [] } },
+    r => has(r, 'ще не почався') && has(r, 'Скоро тут зʼявиться перша стрічка')],
 
   // --- Людські помилки в seasons.json
   ['H01 зайва кома після останнього поля', { seasons: '{"seasons":[{"n":1,"title":"Тема","start":"2026-09-20","end":"2026-12-20","playlist":"PL1",}],}', api: { PL1: TWO } },
