@@ -35,12 +35,14 @@ const deleted = id => ({ snippet: { title: 'Deleted video', description: 'This v
   contentDetails: { videoId: id }, status: { privacyStatus: 'privacyStatusUnspecified' } });
 const S1 = (o = {}) => Object.assign({ n: 1, title: 'Тема', about: 'Опис', start: '2026-09-20', end: '2026-12-20', schedule: 'Нова серія щотижня', playlist: 'PL1', episodes: null, support: '' }, o);
 // Відео з реальним набором мініатюр (як віддає API: medium/high/standard/maxres з шириною)
-const vidT = (id, title, pub) => { let v = vid(id, title, pub); v.snippet.thumbnails = Object.fromEntries([['medium', 320], ['high', 480], ['standard', 640], ['maxres', 1280]].map(([k, w]) => [k, { url: thumb('#5a6b7c') + '#' + k, width: w, height: w * 9 / 16 }])); return v; };
+// Окремі адреси на кожен розмір, як у YouTube (однакова картинка з різним #… браузер вважає вже завантаженою)
+const TFILE = { medium: 'mqdefault', high: 'hqdefault', standard: 'sddefault', maxres: 'maxresdefault' };
+const vidT = (id, title, pub) => { let v = vid(id, title, pub); v.snippet.thumbnails = Object.fromEntries([['medium', 320], ['high', 480], ['standard', 640], ['maxres', 1280]].map(([k, w]) => [k, { url: `https://i.ytimg.com/vi/${id}/${TFILE[k]}.jpg`, width: w, height: w * 9 / 16 }])); return v; };
 const TWO = [vid('a1', 'Перша', '2026-09-20T15:00:00Z', 'Записка 1'), vid('a2', 'Друга', '2026-09-27T15:00:00Z', '№ Важлива\n\n🕒 18:00 27/09/2026')];
 
 // ── Запуск одного сценарію ──────────────────────────────────────────────────
 async function scenario(browser, o) {
-  const ctx = await browser.newContext({ viewport: o.viewport || { width: 1280, height: 900 }, colorScheme: o.dark ? 'dark' : 'light', timezoneId: o.tz || 'Europe/Kyiv' });
+  const ctx = await browser.newContext({ viewport: o.viewport || { width: 1280, height: 900 }, deviceScaleFactor: o.dpr || 1, colorScheme: o.dark ? 'dark' : 'light', timezoneId: o.tz || 'Europe/Kyiv' });
   const page = await ctx.newPage();
   const errs = [], warns = [], apiCalls = [], apiUrls = [], fileUrls = [];
   page.on('request', q => { if (/localhost:8766\/.*\.json/.test(q.url())) fileUrls.push(q.url()); });
@@ -58,6 +60,7 @@ async function scenario(browser, o) {
     if (a === undefined || a === '404') return r.fulfill({ status: 404, contentType: 'application/json', body: '{"error":{"code":404,"message":"The playlist identified with the request\'s playlistId parameter cannot be found.","errors":[{"reason":"playlistNotFound"}]}}' });
     return r.fulfill({ contentType: 'application/json', body: JSON.stringify(Array.isArray(a) ? { items: a } : a) });
   });
+  await page.route(/i\.ytimg\.com/, r => r.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><rect width="100%" height="100%" fill="#5a6b7c"/></svg>' }));
   await page.route(/youtube\.com\/embed/, r => r.fulfill({ body: '<body style="background:#000"></body>', contentType: 'text/html' }));
   const json = (pat, v) => page.route(pat, r => v === 404 ? r.fulfill({ status: 404 })
     : r.fulfill({ contentType: 'application/json', body: typeof v === 'string' ? v : JSON.stringify(v) }));
@@ -200,6 +203,11 @@ const CASES = [
   ['P04 повторний візит: серії з кешу видно ще до відповіді YouTube', { seasons: { seasons: [S1()] }, api: { PL1: TWO }, apiDelay: 1500,
       reload: async p => { await p.waitForTimeout(1600); await p.reload(); await p.waitForTimeout(300); } },
     async r => await r.page.locator('.ep img').count() === 2],
+
+  // --- Якість мініатюр: не менше ~90% ширини картки в пікселях екрана (регресія «переекономили»)
+  ...[['iPhone 13–16, 3x', 390, 3, 'maxres'], ['iPhone SE, 2x', 375, 2, 'standard'], ['ноутбук, 1x', 1280, 1, 'standard'], ['MacBook, 2x', 1440, 2, 'maxres']].map(([d, w, dpr, want]) =>
+    [`Q ${d}: велика картка бере ${want}`, { seasons: { seasons: [S1()] }, viewport: { width: w, height: 900 }, dpr, api: { PL1: [vidT('q1', 'Серія', '2026-09-21T10:00:00Z')] } },
+      async r => { let src = await r.page.$eval('.ep img', i => i.currentSrc); return src.endsWith('/' + TFILE[want] + '.jpg'); }]),
 
   // --- Людські помилки в seasons.json
   ['H01 зайва кома після останнього поля', { seasons: '{"seasons":[{"n":1,"title":"Тема","start":"2026-09-20","end":"2026-12-20","playlist":"PL1",}],}', api: { PL1: TWO } },
