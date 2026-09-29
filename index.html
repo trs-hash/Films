@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарас Максимʼяк</title>
-    <meta name="description" content="Щоденні стрічки Тараса Максимʼяка. Одне відео про кожен день, який більше не повториться.">
+    <meta name="description" content="Відео Тараса Максимʼяка. Один сезон — одна велика тема. Нова серія щотижня.">
 
     <meta property="og:title" content="Taras Maksymiak">
-    <meta property="og:description" content="Щодня — одна стрічка про день, який більше не повториться.">
+    <meta property="og:description" content="Один сезон — одна велика тема. Нова серія щотижня.">
     <meta property="og:image" content="https://taras.kyiv.ua/image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
@@ -23,8 +23,6 @@
         .main{flex:1}
         .intro{margin:10px 0 50px}
         .intro .name{font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:18px}
-        .intro .motto{font-size:42px;font-weight:800;line-height:1.05;letter-spacing:-1px;margin:0 0 18px}
-        .intro .lede{font-size:16px;line-height:1.5;color:var(--mut);max-width:560px;margin:0 0 28px;font-weight:400}
         .intro .links{display:flex;flex-wrap:wrap;gap:10px}
         /* Іконки без підписів: символи впізнавані самі по собі (05.08.2026) */
         .intro .links a{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;padding:10px;border-radius:8px;transition:.2s}
@@ -32,47 +30,52 @@
         .intro .links a.primary:hover{background:var(--red)}
         .intro .links a.ghost{color:var(--mut);border:1px solid var(--div)}
         .intro .links a.ghost:hover{color:var(--red);border-color:var(--red)}
-        h2{font-size:48px;font-weight:800;margin:60px 0 10px;line-height:1;letter-spacing:-1px}
-        h2:first-child{margin-top:10px}
-        .info{margin-bottom:25px}
-        .info a{display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--mut);font-weight:600;letter-spacing:2px;text-decoration:none;transition:.2s}
-        .info a:hover{color:var(--red)}
-        .nav-base{background:var(--cell);border-radius:8px;display:flex;border:1px solid var(--div);margin-bottom:40px;overflow:hidden}
+        .nav-base{background:var(--cell);border-radius:8px;display:flex;border:1px solid var(--div);margin-bottom:50px;overflow:hidden}
         .nav-seg{flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--mut);cursor:pointer;text-transform:uppercase;letter-spacing:1px;padding:12px 5px;transition:.2s;user-select:none;-webkit-tap-highlight-color:transparent}
         .nav-seg:hover{color:var(--red)}
-        .mo-wrap{margin-bottom:40px;scroll-margin-top:20px}
-        .mo-hdr{color:var(--mut);font-size:22px;font-weight:500;text-transform:uppercase;margin:0 0 20px;letter-spacing:1px}
-        .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
-        .cell{aspect-ratio:16/9;position:relative;background:var(--cell);border-radius:6px;overflow:hidden;transform:translateZ(0)}
-        .cell.empty{background:transparent}
-        .week-divider{grid-column:1/-1;height:2px;background:var(--div);border-radius:2px;margin:8px 0}
-        .dt{position:absolute;top:8px;left:10px;display:flex;align-items:baseline;gap:6px;z-index:10;pointer-events:none}
-        .dt-n{font-size:18px;font-weight:800;line-height:1;color:var(--date-color,#ccc)}
-        .dt-d{font-size:10px;font-weight:500;text-transform:uppercase;color:var(--date-color,#ccc);opacity:.6}
-        .has-vid .dt-n,.has-vid .dt-d{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)}
-        .has-vid .dt-d{opacity:.7;text-shadow:0 1px 2px rgba(0,0,0,.9)}
-        .v-cont{position:absolute;inset:0;display:flex;z-index:5}
-        .v-lnk{position:relative;flex:1;height:100%;display:block;cursor:pointer;overflow:hidden;text-decoration:none}
-        .v-cont.mult .v-lnk:not(:last-child){border-right:2px solid #fff}
-        .v-thumb{width:100%;height:100%;object-fit:cover;transition:transform .4s;background:#e0e0e0}
-        @media (prefers-color-scheme:dark){.v-thumb{background:#2a2a2a}}
-        .v-lnk:hover .v-thumb{transform:scale(1.03)}
-        .v-lnk::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4) 0%,transparent 40%,rgba(0,0,0,.9) 100%);pointer-events:none}
-        .v-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        /* Уривок нотатки на плитці — лише на desktop (наведення); стіна в спокої чиста */
-        .v-excerpt{position:absolute;left:10px;right:10px;bottom:30px;color:#fff;font-family:Georgia,'Times New Roman',serif;font-size:10.5px;line-height:1.4;z-index:9;opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.95);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-        @media (hover:hover) and (pointer:fine){
-            .v-lnk:hover .v-excerpt{opacity:1;transform:translateY(0)}
-            .v-lnk:hover::after{background:linear-gradient(to bottom,rgba(0,0,0,.35) 0%,transparent 28%,rgba(0,0,0,.92) 82%)}
-        }
-        .v-lnk.watched .v-thumb{filter:grayscale(1) opacity(0.8)}
-        .v-lnk.watched::before,.v-lnk.watched::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:var(--red);z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
-        .v-lnk.watched::before{transform:translate(-50%,-50%) rotate(45deg)}
-        .v-lnk.watched::after{transform:translate(-50%,-50%) rotate(-45deg)}
-        .count{margin:30px 0 70px}
-        .count .cd-lbl{font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:12px}
-        .count .cd-num{font-size:120px;font-weight:800;letter-spacing:-4px;line-height:1}
-        .count .cd-sub{font-size:15px;color:var(--mut);margin-top:12px}
+
+        /* ── Сезон: одна велика тема, серії щотижня ── */
+        .season{margin:0 0 100px;scroll-margin-top:20px}
+        .s-lbl{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:16px}
+        .s-live{display:inline-flex;align-items:center;gap:7px;color:var(--red)}
+        .s-live::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 2s ease-in-out infinite}
+        @keyframes pulse{50%{opacity:.25}}
+        .s-title{font-size:48px;font-weight:800;line-height:1.02;letter-spacing:-1px;margin:0 0 18px;overflow-wrap:anywhere}
+        .season.live .s-title{font-size:72px;letter-spacing:-2.5px}
+        .s-about{font-size:17px;line-height:1.55;color:var(--mut);max-width:640px;margin:0 0 22px;white-space:pre-line}
+        .s-meta{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13px;font-weight:600;letter-spacing:.3px;color:var(--mut);margin-bottom:26px}
+        .s-meta a{color:inherit;text-decoration:none;transition:.2s}
+        .s-meta a:hover,.s-meta a.hot{color:var(--red)}
+        .prog{max-width:640px;margin:0 0 44px}
+        .prog-bar{height:4px;background:var(--div);border-radius:2px;overflow:hidden}
+        .prog-bar i{display:block;height:100%;background:var(--red);border-radius:2px}
+        .prog-txt{display:flex;justify-content:space-between;gap:12px;margin-top:10px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-variant-numeric:tabular-nums}
+
+        .eps{display:grid;grid-template-columns:repeat(3,1fr);gap:34px 22px}
+        .season.done .eps{grid-template-columns:repeat(4,1fr);gap:26px 16px}
+        .ep{display:block;color:inherit;text-decoration:none;cursor:pointer;min-width:0}
+        .ep-th{position:relative;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:var(--cell);transform:translateZ(0)}
+        .ep-th img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s;background:#e0e0e0}
+        @media (prefers-color-scheme:dark){.ep-th img{background:#2a2a2a}}
+        .ep:hover .ep-th img{transform:scale(1.03)}
+        .ep-new{position:absolute;top:10px;left:10px;z-index:15;background:var(--red);color:#fff;font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:4px 8px;border-radius:4px}
+        .ep-k{margin-top:14px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-variant-numeric:tabular-nums}
+        .ep-t{margin-top:6px;font-size:18px;font-weight:700;line-height:1.3;transition:color .2s;overflow-wrap:anywhere}
+        .ep:hover .ep-t{color:var(--red)}
+        .season.done .ep-t{font-size:15px}
+        .ep-x{margin-top:8px;font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.55;color:var(--mut);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+        .ep.watched .ep-th img{filter:grayscale(1) opacity(0.8)}
+        .ep.watched .ep-th::before,.ep.watched .ep-th::after{content:'';position:absolute;top:50%;left:50%;width:150%;height:3px;background:var(--red);z-index:20;pointer-events:none;box-shadow:0 0 5px rgba(0,0,0,.3)}
+        .ep.watched .ep-th::before{transform:translate(-50%,-50%) rotate(45deg)}
+        .ep.watched .ep-th::after{transform:translate(-50%,-50%) rotate(-45deg)}
+        /* Наступна серія: пунктирне місце — сезон триває, а не «порожньо» */
+        .ep.next{cursor:default}
+        .ep.next .ep-th{background:transparent;border:2px dashed var(--div);display:flex;align-items:center;justify-content:center}
+        .ep.next .ep-th span{font-size:64px;font-weight:800;letter-spacing:-2px;color:var(--div)}
+        .ep.next .ep-t{color:var(--mut)}
+        .ep.next:hover .ep-t{color:var(--mut)}
+        .s-msg{font-size:15px;color:var(--mut)}
+
         .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:1000;align-items:center;justify-content:center}
         .modal.show{display:flex}
         .mod-in{width:100%;max-width:1000px;padding:20px;position:relative;transition:transform .2s ease-out;max-height:94vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -86,29 +89,30 @@
         .mail{margin-top:12px}
         .mail a{font-size:11px;letter-spacing:.5px;color:var(--mut);opacity:.45;text-decoration:none;transition:.25s}
         .mail a:hover{opacity:1;color:var(--red)}
-        @media(max-width:1024px){.grid{grid-template-columns:repeat(4,1fr)}}
+        @media(max-width:1024px){
+            .eps,.season.done .eps{grid-template-columns:repeat(2,1fr)}
+            .season.live .s-title{font-size:56px;letter-spacing:-2px}
+        }
         @media(max-width:600px){
             body{padding:15px 15px 0}
-            .grid{grid-template-columns:repeat(2,1fr)}
-            h2{font-size:38px}
             .intro{margin:5px 0 35px}
-            .intro .motto{font-size:32px}
-            .intro .lede{font-size:15px}
-            .dt-n{font-size:16px}
-            .dt-d{font-size:9px}
-            .count .cd-num{font-size:80px;letter-spacing:-3px}
+            .eps{grid-template-columns:1fr}
+            .s-title{font-size:34px}
+            .season.live .s-title{font-size:42px;letter-spacing:-1.5px}
+            .s-about{font-size:15px}
+            .season{margin-bottom:80px}
             .mod-in{padding:10px}
             .close{right:10px;top:-25px}
             .nav-seg{font-size:9px;letter-spacing:0;padding:10px 2px}
             .footer{padding:50px 0}
         }
-        /* ── Записка дня (щоденник) + маркер важливого (Трек C) ── */
-        .cell .star{position:absolute;top:2px;right:3px;width:26px;height:26px;z-index:16;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));transform:rotate(-8deg)}
+        /* ── Записка серії (опис відео) + маркер важливого (Трек C) ── */
+        .star{position:absolute;top:6px;right:8px;width:30px;height:30px;z-index:16;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));transform:rotate(-8deg)}
         .note{margin-top:14px}
         .note-card{position:relative;background:var(--note-bg,#faf9f4);border:1px solid var(--div);border-left:3px solid var(--red);border-radius:10px;padding:20px 22px 22px}
         .note-foot{margin-top:18px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-variant-numeric:tabular-nums}
         .note-body{font-family:Georgia,'Iowan Old Style','Times New Roman',serif;font-size:16.5px;line-height:1.75;color:var(--txt);white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;max-width:66ch}
-        .note-card .star{position:absolute;top:16px;right:16px;width:30px;height:30px;transform:rotate(-8deg)}
+        .note-card .star{top:16px;right:16px;filter:none}
         .note-card.imp{padding-right:52px}
         @media (prefers-color-scheme:dark){.note-card{--note-bg:#191919}}
     </style>
@@ -147,20 +151,20 @@
     // TODO: заміни на НОВИЙ ключ з окремого проєкту "taras-site" (крок 2 інструкції).
     // Старий ключ після заміни регенеруй у консолі — опублікована копія помре.
     const API_KEY = 'AIzaSyBk_r3wrlYczHybeZtnPBID4zK_yv_XuHw';
-    // Uploads-плейлист каналу UCRSKTGA5a2hLrai_MXNaoUQ (@Taras.maksymiak).
-    const UPLOADS_ID = 'UURSKTGA5a2hLrai_MXNaoUQ';
+    const CHANNEL_URL = 'https://www.youtube.com/@Taras.maksymiak';
 
-    // ── Два режими (Ф3 «судний день») ──────────────────────────────────────────
-    // youtube  — жива стрічка з YouTube API (як було); doomsday — незалежна від YouTube:
-    // читаємо локальний archive.json (постери + проксі + опис-щоденник). Режим задає
-    // state.json {"mode":...}; АВТО-ФОЛБЕК: якщо YouTube мовчить — самі переходимо в doomsday.
-    // Стіна днів починається з першого відео марафону. Усе раніше (довипускові проби
-    // в archive.json / на каналі) на стіну не потрапляє й відлік не зсуває.
-    const SITE_START = '2026-08-06';
+    // ── Формат «сезонів» (з 29.09.2026) ────────────────────────────────────────
+    // Один сезон — одна велика тема, серії щотижня. Сезони описані в seasons.json;
+    // серії сезону = його YouTube-плейлист (приватні/заплановані відео не показуємо).
+    // Режими ті самі, що й у календарі (state.json): youtube — жива стрічка з API;
+    // doomsday — локальний archive.json, серії розкладаються по сезонах за датами start…end.
+    // Стара календарна «стіна днів» збережена в calendar.html.
     let MODE = 'youtube';
     let BASE = '';               // префікс локальних відео (Фаза 5); '' → грає YouTube-плеєр за id
-    let videosMap = {};          // {date: [rec]}, rec = {key,title,thumb,imp,y,v}
+    let SEASONS = [];            // [{n,title,about,start,end,schedule,playlist,episodes,support}]
+    let EPS = {};                // {n: [rec]}, rec = {key,title,thumb,imp,y,v,date,ts}
     let metaById = {};           // {key: {title,time,body,important}}
+    let LOAD_FAILED = false;     // серії не вдалось отримати ні з YouTube, ні з архіву
     let PLAY = [];               // реєстр програвання: PLAY[idx] = {key,y,v} (без крихких inline-id)
     let watched = JSON.parse(localStorage.getItem('vw') || '[]');
 
@@ -168,9 +172,9 @@
         return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
-    // Записка дня (Трек C): опис відео = щоденник. Штамп часу з Треку B — підпис у кінці.
-    // Маркер важливого дня — символ № (Shift+3, укр. розкладка), який НЕ є нумерацією («№5»).
-    const IMPORTANT_RE = /№(?!\d)/;                                 // важливий день (самостійний №)
+    // Записка серії (Трек C): опис відео = щоденник. Штамп часу з Треку B — підпис у кінці.
+    // Маркер важливого — символ № (Shift+3, укр. розкладка), який НЕ є нумерацією («№5»).
+    const IMPORTANT_RE = /№(?!\d)/;                                 // важлива серія (самостійний №)
     const TS_RE = /🕒\s*(\d{2}:\d{2}\s+\d{2}\/\d{2}\/\d{4})/;        // штамп часу з опису (Трек B, у кінці)
     // Червона зірочка-асстериск «наче від руки» — три хвилясті штрихи через центр.
     const STAR_SVG = '<svg class="star" viewBox="0 0 40 40" aria-hidden="true">' +
@@ -190,11 +194,35 @@
         return { important, time, body };
     }
 
-    function daysWord(n) {
+    // ── Дати (рядки YYYY-MM-DD, рахуємо в UTC — без стрибків через перехід на літній час) ──
+    const MONTHS_GEN = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
+    const DAY_MS = 864e5;
+    function todayStr() {
+        let t = new Date();
+        return t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+    }
+    function dayNum(s) { let [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d) / DAY_MS; }
+    function fmtDay(s, withYear) {
+        let [y, m, d] = s.split('-').map(Number);
+        return d + ' ' + MONTHS_GEN[m - 1] + (withYear ? ' ' + y : '');
+    }
+    function fmtRange(s) {
+        if (!s.end) return 'з ' + fmtDay(s.start, true);
+        let sameYear = s.start.slice(0, 4) === s.end.slice(0, 4);
+        return fmtDay(s.start, !sameYear) + ' — ' + fmtDay(s.end, true);
+    }
+    function plural(n, one, few, many) {
         let m10 = n % 10, m100 = n % 100;
-        if (m10 === 1 && m100 !== 11) return 'день';
-        if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return 'дні';
-        return 'днів';
+        if (m10 === 1 && m100 !== 11) return one;
+        if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
+        return many;
+    }
+    const pad2 = n => String(n).padStart(2, '0');
+
+    function seasonState(s, today) {
+        if (today < s.start) return 'soon';
+        if (s.end && today > s.end) return 'done';
+        return 'live';
     }
 
     // ── Джерела даних ──────────────────────────────────────────────────────────
@@ -207,27 +235,53 @@
         } catch(e) { return 'youtube'; }
     }
 
-    async function fetchAPI(token = '', acc) {
-        acc = acc || { map: {}, meta: {} };
+    async function loadSeasons() {
         try {
-            let res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${UPLOADS_ID}&maxResults=50&key=${API_KEY}${token ? '&pageToken='+token : ''}`);
+            let r = await fetch('seasons.json?cb=' + Date.now(), { cache: 'no-store' });
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            let d = await r.json();
+            SEASONS = (d.seasons || []).filter(s => s && Number.isInteger(s.n) && /^\d{4}-\d{2}-\d{2}$/.test(s.start || ''));
+            return SEASONS.length > 0;
+        } catch(e) {
+            console.error('seasons.json error:', e.message);
+            return false;
+        }
+    }
+
+    async function fetchPlaylist(pid) {
+        let items = [], token = '';
+        do {
+            let res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails,status&playlistId=${encodeURIComponent(pid)}&maxResults=50&key=${API_KEY}${token ? '&pageToken='+token : ''}`);
             if (!res.ok) throw new Error('HTTP ' + res.status);
             let data = await res.json();
             if (data.error) throw new Error(data.error.message || 'API error');
-            (data.items || []).forEach(i => {
-                let s = i.snippet;
-                if (!s || !s.publishedAt) return;
-                let date = s.publishedAt.split('T')[0];
-                let t = s.thumbnails || {};
-                let vid = s.resourceId.videoId;
-                let pd = parseDesc(s.description);
-                if (!acc.map[date]) acc.map[date] = [];
-                acc.map[date].push({ key: vid, title: s.title, y: vid, v: '',
-                    thumb: (t.high || t.standard || t.default || {}).url || '', imp: pd.important });
-                acc.meta[vid] = { title: s.title, time: pd.time, body: pd.body, important: pd.important };
-            });
-            if (data.nextPageToken) return await fetchAPI(data.nextPageToken, acc);
-            videosMap = acc.map; metaById = acc.meta;      // коміт лише за повного успіху (без дублів кешу)
+            items.push(...(data.items || []));
+            token = data.nextPageToken || '';
+        } while (token);
+        return items;
+    }
+
+    // Серії сезону = його плейлист. Дата серії — дата публікації відео (videoPublishedAt),
+    // а не дата додавання в плейлист. Приватні, заплановані й видалені відео її не мають — пропускаємо.
+    async function loadYouTube() {
+        try {
+            let eps = {}, meta = {};
+            await Promise.all(SEASONS.filter(s => s.playlist).map(async s => {
+                let items = await fetchPlaylist(s.playlist);
+                eps[s.n] = [];
+                items.forEach(i => {
+                    let sn = i.snippet, cd = i.contentDetails || {};
+                    if (!sn || !cd.videoPublishedAt || (i.status || {}).privacyStatus === 'private') return;
+                    let vid = cd.videoId || sn.resourceId.videoId;
+                    let t = sn.thumbnails || {};
+                    let pd = parseDesc(sn.description);
+                    eps[s.n].push({ key: vid, title: sn.title, y: vid, v: '',
+                        thumb: (t.maxres || t.standard || t.high || t.medium || t.default || {}).url || '',
+                        imp: pd.important, date: cd.videoPublishedAt.split('T')[0], ts: cd.videoPublishedAt });
+                    meta[vid] = { title: sn.title, time: pd.time, body: pd.body, important: pd.important };
+                });
+            }));
+            EPS = eps; metaById = meta;                  // коміт лише за повного успіху
             return true;
         } catch(e) {
             console.error('YouTube API error:', e.message);
@@ -236,25 +290,27 @@
     }
 
     // Судний день: читаємо локальний archive.json (незалежно від YouTube).
-    // Форма (site_publisher): {base, days:{date:[{t,p,v,y,d,desc}]}}.
+    // Форма (site_publisher): {base, days:{date:[{t,p,v,y,d,desc}]}}. Сезон — за датою.
     async function loadArchive() {
         try {
             let res = await fetch('archive.json?cb=' + Date.now(), { cache: 'no-store' });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             let data = await res.json();
             BASE = data.base || '';
-            let map = {}, meta = {}, days = data.days || {};
+            let eps = {}, meta = {}, days = data.days || {};
             Object.keys(days).forEach(date => {
+                let s = SEASONS.find(x => date >= x.start && (!x.end || date <= x.end));
+                if (!s) return;
                 (days[date] || []).forEach((it, n) => {
                     let key = it.y || it.v || (date + '_' + n);
                     let pd = parseDesc(it.desc || '');
-                    if (!map[date]) map[date] = [];
-                    map[date].push({ key: key, title: it.t || '', y: it.y || '', v: it.v || '',
-                        thumb: it.p || '', imp: pd.important });
+                    if (!eps[s.n]) eps[s.n] = [];
+                    eps[s.n].push({ key: key, title: it.t || '', y: it.y || '', v: it.v || '',
+                        thumb: it.p || '', imp: pd.important, date: date, ts: date + 'T' + pad2(n) });
                     meta[key] = { title: it.t || '', time: pd.time, body: pd.body, important: pd.important };
                 });
             });
-            videosMap = map; metaById = meta;
+            EPS = eps; metaById = meta;
             return true;
         } catch(e) {
             console.error('archive.json error:', e.message);
@@ -262,109 +318,114 @@
         }
     }
 
+    function showError() {
+        document.getElementById('app').innerHTML =
+            '<div style="text-align:center;padding:60px 20px;color:var(--mut);font-family:-apple-system,sans-serif">' +
+            'Не вдалось завантажити сторінку. Спробуйте оновити.</div>';
+    }
+
     async function init() {
-        MODE = await loadMode();
+        let [mode, ok] = await Promise.all([loadMode(), loadSeasons()]);
+        if (!ok) { showError(); return; }
+        MODE = mode;
         if (MODE === 'doomsday') {                     // явний судний день зі state.json
             if (await loadArchive()) { render(); return; }
             MODE = 'youtube';                          // архів недоступний — пробуємо YouTube
         }
         // youtube-режим: спершу кеш (миттєво), потім жива відповідь
-        let cached = localStorage.getItem('yt_data2'), cmeta = localStorage.getItem('yt_meta2'),
-            time = localStorage.getItem('yt_time2'), now = Date.now(), hadCache = false;
+        let cached = localStorage.getItem('ss_eps'), cmeta = localStorage.getItem('ss_meta'),
+            time = localStorage.getItem('ss_time'), now = Date.now(), hadCache = false;
         if (cached && time && (now - time) < 21600000) {
-            try { videosMap = JSON.parse(cached); if (cmeta) metaById = JSON.parse(cmeta); hadCache = true; render(); } catch(e) {}
+            try { EPS = JSON.parse(cached); if (cmeta) metaById = JSON.parse(cmeta); hadCache = true; render(); } catch(e) {}
         }
-        if (await fetchAPI()) {
-            localStorage.setItem('yt_data2', JSON.stringify(videosMap));
-            localStorage.setItem('yt_meta2', JSON.stringify(metaById));
-            localStorage.setItem('yt_time2', now);
+        if (await loadYouTube()) {
+            localStorage.setItem('ss_eps', JSON.stringify(EPS));
+            localStorage.setItem('ss_meta', JSON.stringify(metaById));
+            localStorage.setItem('ss_time', now);
             render();
         } else if (await loadArchive()) {              // ⚑ YouTube мовчить → авто-судний-день
             MODE = 'doomsday';
             render();
-        } else if (!hadCache) {
-            document.getElementById('app').innerHTML =
-                '<div style="text-align:center;padding:60px 20px;color:var(--mut);font-family:-apple-system,sans-serif">' +
-                'Не вдалось завантажити відео. Спробуйте оновити сторінку.</div>';
+        } else if (!hadCache) {                        // сезон показуємо все одно — без серій
+            LOAD_FAILED = true;
+            render();
         }
     }
 
-    // Календар стартує з SITE_START (перше відео марафону) — усе раніше ігноруємо.
+    // ── Малювання ──────────────────────────────────────────────────────────────
+    // Порядок: поточний сезон → анонси (найближчий першим) → завершені (свіжі першими).
     function render() {
         PLAY = [];
-        let today = new Date();
-        let ty = today.getFullYear(), tm = today.getMonth(), td = today.getDate();
-        let fd = (ty + '-' + String(tm+1).padStart(2,'0') + '-' + String(td).padStart(2,'0')) >= SITE_START
-            ? SITE_START : null;                       // старт ще попереду → нічого не малюємо
-        // Ще нема жодного дня → спокійна заглушка (без відліку/дедлайну — рішення Тараса).
-        if (!fd) {
-            document.getElementById('app').innerHTML =
-                `<div class="count"><div class="cd-lbl">Стіна днів</div>` +
-                `<div class="cd-sub" style="margin-top:22px;font-size:17px">Скоро тут зʼявиться перша стрічка.</div></div>`;
-            return;
-        }
-        let [sy, sm, sd] = fd.split('-').map(Number);
-        let startY = sy, startM = sm - 1, startD = sd;
+        let today = todayStr(), rank = { live: 0, soon: 1, done: 2 };
+        let list = SEASONS.map(s => ({ s, st: seasonState(s, today) })).sort((a, b) =>
+            rank[a.st] - rank[b.st] || (a.st === 'soon' ? (a.s.start < b.s.start ? -1 : 1) : (a.s.start > b.s.start ? -1 : 1)));
 
         let html = '';
-        let loop = new Date(startY, startM, 1);
-        let curY = 0;
-        let wDays = ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"];
-        let mNames = ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень", "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"];
-        let abbr = ['СІЧ', 'ЛЮТ', 'БЕР', 'КВІ', 'ТРА', 'ЧЕР', 'ЛИП', 'СЕР', 'ВЕР', 'ЖОВ', 'ЛИС', 'ГРУ'];
-
-        while (loop <= today) {
-            let y = loop.getFullYear(), m = loop.getMonth();
-            if (y !== curY) {
-                html += `<h2>${y}</h2>`;
-                if (curY === 0) {
-                    let navHtml = '';
-                    for(let i = 0; i <= 11; i++) {
-                        if (y === startY && i < startM) continue;
-                        if (y === today.getFullYear() && i > today.getMonth()) continue;
-                        navHtml += `<div class="nav-seg" onclick="document.getElementById('m-${y}-${i}').scrollIntoView({behavior:'smooth', block:'start'})">${abbr[i]}</div>`;
-                    }
-                    if (navHtml) html += `<div class="nav-base">${navHtml}</div>`;
-                }
-                curY = y;
-            }
-
-            html += `<div class="mo-wrap" id="m-${y}-${m}"><div class="mo-hdr">${mNames[m]}</div><div class="grid">`;
-
-            let dMax = new Date(y, m + 1, 0).getDate();
-            let dStartRender = (y === startY && m === startM) ? startD : 1;
-            // Стіна тримає лише прожиті дні: майбутні клітинки не малюємо.
-            let dEnd = (y === today.getFullYear() && m === today.getMonth()) ? today.getDate() : dMax;
-
-            for (let d = dStartRender; d <= dEnd; d++) {
-                let dw = new Date(y, m, d).getDay();
-
-                if (dw === 1 && d !== dStartRender) {
-                    html += `<div class="week-divider"></div>`;
-                }
-
-                let key = `${y}-${(m+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
-                let v = videosMap[key];
-
-                let cCls = (v && v.length) ? 'cell has-vid' : 'cell empty';
-                let cIn = '';
-
-                if (v && v.length) {
-                    v.forEach(rec => {
-                        let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '' }) - 1;
-                        let wCls = watched.includes(rec.key) ? ' watched' : '';
-                        let mb = (metaById[rec.key] || {}).body || '';
-                        let exc = mb ? `<div class="v-excerpt">${esc(mb.slice(0, 160))}</div>` : '';
-                        cIn += `<a href="#" class="v-lnk${wCls}" onclick="openVid(event, ${idx}, this)"><img src="${esc(rec.thumb || '')}" class="v-thumb" loading="lazy" decoding="async" alt="">${exc}<div class="v-title">${esc(rec.title || '')}</div></a>`;
-                    });
-                }
-                let starHtml = (v && v.some(x => x.imp)) ? STAR_SVG : '';
-                html += `<div class="${cCls}"><div class="v-cont ${v && v.length>1?'mult':''}">${cIn}</div><div class="dt"><span class="dt-n">${d}</span><span class="dt-d">${wDays[dw]}</span></div>${starHtml}</div>`;
-            }
-            html += `</div></div>`;
-            loop.setMonth(m + 1);
+        if (list.length > 1) {
+            html += '<div class="nav-base">' + list.map(({ s }) =>
+                `<div class="nav-seg" onclick="document.getElementById('s-${s.n}').scrollIntoView({behavior:'smooth', block:'start'})">Сезон ${s.n}</div>`).join('') + '</div>';
         }
+        list.forEach(({ s, st }) => { html += seasonHtml(s, st, today); });
         document.getElementById('app').innerHTML = html;
+    }
+
+    function seasonHtml(s, st, today) {
+        let eps = (EPS[s.n] || []).slice().sort((a, b) => a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0);
+        let stLbl = st === 'live' ? '<span class="s-live">Зараз</span>' : (st === 'soon' ? 'Скоро' : 'Завершено');
+        let html = `<section class="season ${st}" id="s-${s.n}">` +
+            `<div class="s-lbl">${s.title ? 'Сезон ' + s.n + (st === 'live' ? ' ' : ' · ') : ''}${stLbl}</div>` +
+            `<h2 class="s-title">${esc(s.title || 'Сезон ' + s.n)}</h2>` +
+            (s.about ? `<p class="s-about">${esc(s.about)}</p>` : '');
+
+        let meta = [st === 'soon' ? 'Старт — ' + fmtDay(s.start, true) : fmtRange(s)];
+        if (st === 'live' && s.schedule) meta.push(esc(s.schedule));
+        if (s.playlist && st !== 'soon')
+            meta.push(`<a href="https://www.youtube.com/playlist?list=${encodeURIComponent(s.playlist)}" target="_blank" rel="noopener">Плейлист на YouTube ↗</a>`);
+        if (st !== 'done')
+            meta.push(`<a href="${CHANNEL_URL}?sub_confirmation=1" target="_blank" rel="noopener">Підписатися ↗</a>`);
+        if (s.support && st !== 'done')
+            meta.push(`<a class="hot" href="${esc(s.support)}" target="_blank" rel="noopener">Підтримати сезон ↗</a>`);
+        html += `<div class="s-meta">${meta.map(m => `<span>${m}</span>`).join('')}</div>`;
+
+        if (st === 'soon') return html + '</section>';
+
+        // Прогрес сезону — за часом (тижні), тож він «живий» навіть до першої серії.
+        let cnt = s.episodes
+            ? `Серій: ${eps.length} / ${s.episodes}`
+            : `${eps.length} ${plural(eps.length, 'серія', 'серії', 'серій')}`;
+        if (st === 'live' && s.end) {
+            let total = dayNum(s.end) - dayNum(s.start), passed = dayNum(today) - dayNum(s.start);
+            let weeks = Math.max(1, Math.round(total / 7)), week = Math.min(weeks, Math.floor(passed / 7) + 1);
+            let pct = Math.max(2, Math.min(100, Math.round(passed / Math.max(1, total) * 100)));
+            html += `<div class="prog"><div class="prog-bar"><i style="width:${pct}%"></i></div>` +
+                `<div class="prog-txt"><span>Тиждень ${week} з ${weeks}</span><span>${cnt}</span></div></div>`;
+        } else if (st === 'live') {
+            html += `<div class="prog"><div class="prog-txt"><span>Тиждень ${Math.floor((dayNum(today) - dayNum(s.start)) / 7) + 1}</span><span>${cnt}</span></div></div>`;
+        }
+
+        if (LOAD_FAILED && !eps.length)
+            return html + '<p class="s-msg">Не вдалось завантажити серії. Спробуйте оновити сторінку.</p></section>';
+
+        let showNote = st === 'live';
+        html += '<div class="eps">';
+        eps.forEach((rec, i) => {
+            let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '' }) - 1;
+            let body = (metaById[rec.key] || {}).body || '';
+            let isNew = st === 'live' && i === eps.length - 1 && dayNum(today) - dayNum(rec.date) < 7;
+            html += `<a href="#" class="ep${watched.includes(rec.key) ? ' watched' : ''}" onclick="openVid(event, ${idx}, this)">` +
+                `<div class="ep-th"><img src="${esc(rec.thumb || '')}" loading="lazy" decoding="async" alt="">` +
+                (isNew ? '<span class="ep-new">Нова</span>' : '') + (rec.imp ? STAR_SVG : '') + `</div>` +
+                `<div class="ep-k">Серія ${pad2(i + 1)} · ${fmtDay(rec.date, rec.date.slice(0, 4) !== today.slice(0, 4))}</div>` +
+                `<div class="ep-t">${esc(rec.title || '')}</div>` +
+                (showNote && body ? `<div class="ep-x">${esc(body.slice(0, 240))}</div>` : '') + `</a>`;
+        });
+        if (st === 'live' && (!s.episodes || eps.length < s.episodes)) {
+            let n = eps.length + 1;
+            html += `<div class="ep next"><div class="ep-th"><span>${pad2(n)}</span></div>` +
+                `<div class="ep-k">Серія ${pad2(n)} · скоро</div>` +
+                `<div class="ep-t">${eps.length ? 'Наступна серія' : 'Перша серія'}</div></div>`;
+        }
+        return html + '</div></section>';
     }
 
     window.openVid = function(e, idx, el) {
@@ -375,7 +436,7 @@
             localStorage.setItem('vw', JSON.stringify(watched));
         }
         if (el) el.classList.add('watched');
-        // Записка дня під плеєром (щоденник): текст веде, штамп часу — підпис знизу; зірка, якщо важливо.
+        // Записка серії під плеєром (щоденник): текст веде, штамп часу — підпис знизу; зірка, якщо важливо.
         let meta = metaById[p.key] || {};
         let note = document.getElementById('modNote');
         note.innerHTML = (meta.time || meta.body)
