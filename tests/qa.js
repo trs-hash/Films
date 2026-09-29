@@ -34,17 +34,22 @@ const priv = id => ({ snippet: { title: 'Private video', description: 'This vide
 const deleted = id => ({ snippet: { title: 'Deleted video', description: 'This video is unavailable.', resourceId: { videoId: id }, thumbnails: {} },
   contentDetails: { videoId: id }, status: { privacyStatus: 'privacyStatusUnspecified' } });
 const S1 = (o = {}) => Object.assign({ n: 1, title: 'Тема', about: 'Опис', start: '2026-09-20', end: '2026-12-20', schedule: 'Нова серія щотижня', playlist: 'PL1', episodes: null, support: '' }, o);
+// Відео з реальним набором мініатюр (як віддає API: medium/high/standard/maxres з шириною)
+const vidT = (id, title, pub) => { let v = vid(id, title, pub); v.snippet.thumbnails = Object.fromEntries([['medium', 320], ['high', 480], ['standard', 640], ['maxres', 1280]].map(([k, w]) => [k, { url: thumb('#5a6b7c') + '#' + k, width: w, height: w * 9 / 16 }])); return v; };
 const TWO = [vid('a1', 'Перша', '2026-09-20T15:00:00Z', 'Записка 1'), vid('a2', 'Друга', '2026-09-27T15:00:00Z', '№ Важлива\n\n🕒 18:00 27/09/2026')];
 
 // ── Запуск одного сценарію ──────────────────────────────────────────────────
 async function scenario(browser, o) {
   const ctx = await browser.newContext({ viewport: o.viewport || { width: 1280, height: 900 }, colorScheme: o.dark ? 'dark' : 'light', timezoneId: o.tz || 'Europe/Kyiv' });
   const page = await ctx.newPage();
-  const errs = [], warns = [], apiCalls = [];
+  const errs = [], warns = [], apiCalls = [], apiUrls = [], fileUrls = [];
+  page.on('request', q => { if (/localhost:8766\/.*\.json/.test(q.url())) fileUrls.push(q.url()); });
   page.on('pageerror', e => errs.push(e.message));
   page.on('console', m => { if (m.type() === 'warning') warns.push(m.text()); });
   if (o.initScript) await page.addInitScript(o.initScript);
-  await page.route(/googleapis\.com/, r => {
+  await page.route(/googleapis\.com/, async r => {
+    apiUrls.push(r.request().url());
+    if (o.apiDelay) await new Promise(res => setTimeout(res, o.apiDelay));
     const pid = new URL(r.request().url()).searchParams.get('playlistId'), tok = new URL(r.request().url()).searchParams.get('pageToken');
     apiCalls.push(pid);
     const a = typeof o.api === 'function' ? o.api(pid, tok) : (o.api || {})[pid];
@@ -62,7 +67,7 @@ async function scenario(browser, o) {
   await page.goto('http://localhost:8766/' + (o.path || ''));
   await page.waitForTimeout(o.wait || 700);
   if (o.reload) { await o.reload(page); }
-  const r = { page, errs, warns, apiCalls, text: (await page.innerText('body')).replace(/\s+/g, ' ') };
+  const r = { page, errs, warns, apiCalls, apiUrls, fileUrls, text: (await page.innerText('body')).replace(/\s+/g, ' ') };
   if (o.shot) await page.screenshot({ path: `${OUT}/${o.shot}.png`, fullPage: true });
   return { r, ctx };
 }
@@ -71,8 +76,8 @@ async function scenario(browser, o) {
 const has = (r, s) => r.text.toLowerCase().includes(s.toLowerCase());
 const CASES = [
   // --- Базовий функціонал
-  ['F01 реальний стан: 2 приватні відео → 0 серій, «Перша серія»', { seasons: { seasons: [S1({ title: '' })] }, api: { PL1: [priv('x1'), priv('x2')] }, shot: 'F01' },
-    r => has(r, 'Сезон 1') && has(r, '0 серій') && has(r, 'Перша серія') && has(r, 'Тиждень 2 з 13')],
+  ['F01 реальний стан: 2 приватні відео → без «0 серій», є «Перша серія»', { seasons: { seasons: [S1({ title: '' })] }, api: { PL1: [priv('x1'), priv('x2')] }, shot: 'F01' },
+    r => has(r, 'Сезон 1') && !has(r, '0 серій') && has(r, 'Перша серія') && has(r, 'Тиждень 2 з 13')],
   ['F02 дві публічні серії, № → зірка, «Нова» на останній', { seasons: { seasons: [S1()] }, api: { PL1: TWO }, shot: 'F02' },
     async r => has(r, '2 серії') && has(r, 'Серія 02 · 27 вересня') && has(r, 'Наступна серія')
       && await r.page.locator('.ep .star').count() === 1 && await r.page.locator('.ep-new').count() === 1],
@@ -123,13 +128,79 @@ const CASES = [
     r => has(r, 'Помилок не знайдено') && has(r, 'ще 2 приховано') && has(r, 'Перша серія')],
   ['F21 клавіатура: Tab до серії, Enter відкриває плеєр, Esc закриває', { seasons: { seasons: [S1()] }, api: { PL1: TWO } },
     async r => { await r.page.focus('.ep'); await r.page.keyboard.press('Enter'); await r.page.waitForTimeout(200);
-      let open = await r.page.locator('#vidModal.show').count(); await r.page.keyboard.press('Escape');
-      return open === 1 && await r.page.locator('#vidModal.show').count() === 0; }],
+      let open = await r.page.locator('#vidModal.show').count();
+      let onClose = await r.page.evaluate(() => document.activeElement && document.activeElement.classList.contains('close'));
+      await r.page.keyboard.press('Escape');
+      let back = await r.page.evaluate(() => document.activeElement && document.activeElement.classList.contains('ep'));
+      return open === 1 && onClose && back && await r.page.locator('#vidModal.show').count() === 0; }],
   ['F22 повторний візит: спершу кеш, потім свіжі дані з YouTube', { seasons: { seasons: [S1()] }, api: (() => { let n = 0; return pid => (++n === 1 ? TWO : [...TWO, vid('a3', 'Третя', '2026-09-28T15:00:00Z')]); })(),
       reload: async p => { await p.reload(); await p.waitForTimeout(700); } },
     r => has(r, 'Третя') && has(r, '3 серії')],
   ['F23 сезон «Скоро» без плейлиста не вважається помилкою', { path: '?check', seasons: { seasons: [S1(), S1({ n: 2, start: '2027-01-10', end: '', playlist: '' })] }, api: { PL1: TWO } },
     r => has(r, 'Помилок не знайдено')],
+  // --- Щоденний формат (підготовка до повернення календаря)
+  ['D01 щоденний сезон: стіна днів, сьогодні — пунктир, майбутнього нема', { seasons: { seasons: [S1({ format: 'daily', start: '2026-09-21', end: '2026-10-31', schedule: 'Нове відео щодня' })] },
+      api: { PL1: [vid('d1', 'День перший', '2026-09-21T15:00:00Z', 'Записка'), vid('d2', 'День третій', '2026-09-23T15:00:00Z', '№ важливий'), vid('d3', 'Ще того ж дня', '2026-09-23T18:00:00Z')] }, shot: 'D01' },
+    async r => has(r, 'День 9 з 41') && has(r, '3 відео') && await r.page.locator('.cell.today').count() === 1
+      && await r.page.locator('.cell.has-vid').count() === 2 && await r.page.locator('.v-cont.mult').count() === 1
+      && await r.page.locator('.cell .star').count() === 1 && !has(r, '30 ПН')],
+  ['D02 щоденний: тиждень з понеділка — роздільник', { seasons: { seasons: [S1({ format: 'daily', start: '2026-09-21', end: '2026-10-31' })] }, api: { PL1: [] } },
+    async r => await r.page.locator('.week-divider').count() === 1],
+  ['D03 щоденний довгий сезон: відкриті 2 останні місяці, решта в «Раніше»', { seasons: { seasons: [S1({ format: 'daily', start: '2026-05-01', end: '2027-01-31' })] },
+      api: { PL1: [vid('m1', 'Травневе', '2026-05-03T10:00:00Z'), vid('m2', 'Серпневе', '2026-08-03T10:00:00Z'), vid('m3', 'Вересневе', '2026-09-03T10:00:00Z')] }, shot: 'D03' },
+    async r => await r.page.locator('details.cal-old:not([open])').count() === 1 && has(r, 'Раніше · 3 місяці · 1 відео')
+      && await r.page.locator('#app > section > .cal-mo').count() === 2],
+  ['D04 щоденний: глибоке посилання на згорнутий місяць розкриває «Раніше»', { path: '#s-1-2026-06', seasons: { seasons: [S1({ format: 'daily', start: '2026-05-01', end: '2027-01-31' })] }, api: { PL1: [] } },
+    async r => await r.page.locator('details.cal-old[open]').count() === 1],
+  ['D05 щоденний завершений: календар згорнуто, клік по дню відкриває плеєр, день закреслено', { seasons: { seasons: [S1({ format: 'daily', start: '2026-08-01', end: '2026-08-10' })] }, api: { PL1: [vid('e1', 'Серпень', '2026-08-02T10:00:00Z')] } },
+    async r => { let closed = await r.page.locator('details.cal-old:not([open])').count(); await r.page.click('details.cal-old summary');
+      await r.page.click('.v-lnk'); await r.page.waitForTimeout(150); let open = await r.page.locator('#vidModal.show').count();
+      await r.page.keyboard.press('Escape'); return closed === 1 && open === 1 && await r.page.locator('.v-lnk.watched').count() === 1; }],
+  ['D06 щоденний у doomsday: дні з archive.json', { state: { mode: 'doomsday' }, seasons: { seasons: [S1({ format: 'daily', start: '2026-09-20', end: '2026-10-31' })] },
+      archive: { base: '', days: { '2026-09-22': [{ t: 'Архівний день', p: thumb('#7a5'), y: 'ar' }] } } },
+    async r => await r.page.locator('.cell.has-vid').count() === 1 && has(r, 'Архівний день')],
+  ['D07 format українською («щоденний») і з опискою', { path: '?check', seasons: { seasons: [S1({ format: 'щоденний' }), S1({ n: 2, format: 'dayly', start: '2026-01-01', end: '2026-02-01', playlist: 'PL2' })] }, api: { PL1: [], PL2: [] } },
+    async r => await r.page.locator('#s-1 .grid').count() === 1 && has(r, 'format «dayly» невідомий')],
+  ['D08 щоденний на телефоні: 2 колонки, без горизонтального скролу', { seasons: { seasons: [S1({ format: 'daily', start: '2026-09-01', end: '2026-10-31' })] }, api: { PL1: TWO }, viewport: { width: 390, height: 800 }, shot: 'D08-mobile' },
+    async r => await r.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && getComputedStyle(document.querySelector('.grid')).gridTemplateColumns.split(' ').length === 2)],
+  ['D09 тиждень і щоденний сезони одночасно', { seasons: { seasons: [S1(), S1({ n: 2, format: 'daily', title: 'Щоденник', start: '2026-09-25', end: '2026-10-25', playlist: 'PL2' })] }, api: { PL1: TWO, PL2: [vid('q1', 'Щоденне', '2026-09-26T10:00:00Z')] } },
+    async r => await r.page.locator('.eps .ep').count() >= 2 && await r.page.locator('.cell.has-vid').count() === 1],
+
+  // --- Доступність і UX
+  ['A01 навігація сезонів — справжні посилання-якорі', { seasons: { seasons: [S1(), S1({ n: 2, start: '2027-01-10', end: '2027-04-04' })] }, api: { PL1: TWO } },
+    async r => (await r.page.$$eval('.nav-seg', a => a.map(x => x.tagName + x.getAttribute('href')))).join() === 'A#s-1,A#s-2'],
+  ['A02 глибоке посилання #s-0 прокручує до сезону після завантаження', { path: '#s-0', seasons: { seasons: [S1(), S1({ n: 0, title: 'Пілот', start: '2026-07-01', end: '2026-08-31', playlist: 'PL0' })] }, api: { PL1: TWO, PL0: [vid('z1', 'Пілот 1', '2026-07-05T10:00:00Z')] }, wait: 1200 },
+    async r => await r.page.evaluate(() => { let top = document.getElementById('s-0').getBoundingClientRect().top, max = document.documentElement.scrollHeight - innerHeight;
+      return scrollY > 0 && (Math.abs(top) < 60 || Math.abs(scrollY - max) < 2); })],   // коротка сторінка: доїхали до низу — теж правильно
+  ['A03 контраст сірого тексту ≥ 4.5:1', { seasons: { seasons: [S1()] }, api: { PL1: TWO } },
+    async r => await r.page.evaluate(() => {
+      const lum = c => { let [R, G, B] = c.match(/\d+/g).map(Number).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * R + .7152 * G + .0722 * B; };
+      let fg = lum(getComputedStyle(document.querySelector('.ep-k')).color), bg = lum(getComputedStyle(document.body).backgroundColor);
+      return (Math.max(fg, bg) + .05) / (Math.min(fg, bg) + .05) >= 4.5; })],
+  ['A04 скелет на першому візиті, поки YouTube думає', { seasons: { seasons: [S1()] }, api: { PL1: TWO }, apiDelay: 1500, wait: 500 },
+    async r => await r.page.locator('.ep-th.sk').count() === 3 && has(r, 'Тема') && !has(r, '0 серій')],
+  ['A05 заголовок h1 — ім\'я автора, сезони — h2', { seasons: { seasons: [S1()] }, api: { PL1: TWO } },
+    async r => (await r.page.innerText('h1')).toLowerCase().includes('тарас') && await r.page.locator('h2.s-title').count() === 1],
+  ['A06 переглянута серія: смужка + «переглянуто», без хреста', { seasons: { seasons: [S1()] }, api: { PL1: TWO } },
+    async r => { await r.page.click('.ep:nth-child(1)'); await r.page.keyboard.press('Escape');
+      return await r.page.evaluate(() => { let e = document.querySelector('.ep:nth-child(1)');
+        return e.classList.contains('watched') && getComputedStyle(e.querySelector('.ep-k'), '::after').content.includes('переглянуто')
+          && getComputedStyle(e.querySelector('.ep-th'), '::before').content === 'none'; }); }],
+
+  // --- Швидкість
+  ['P01 запит до YouTube просить лише потрібні поля (fields=)', { seasons: { seasons: [S1()] }, api: { PL1: TWO } },
+    r => r.apiUrls.some(u => u.includes('fields='))],
+  ['P02 звичайний візит: seasons.json без ?cb (кеш CDN), ?check — з ?cb', { seasons: { seasons: [S1()] }, api: { PL1: TWO } },
+    r => r.fileUrls.some(u => /seasons\.json$/.test(u)) && !r.fileUrls.some(u => /cb=/.test(u))],
+  ['P03 мініатюри з srcset/sizes; перший ряд — одразу (перша з пріоритетом), решта — ліниво', { seasons: { seasons: [S1()] }, api: { PL1: Array.from({ length: 8 }, (_, i) => vidT('t' + i, 'Серія ' + i, `2026-09-2${i}T10:00:00Z`)) } },
+    async r => { let a = await r.page.$$eval('.ep img', im => im.map(x => [!!x.getAttribute('srcset'), x.getAttribute('loading'), x.getAttribute('fetchpriority')]));
+      return a.length === 8 && a.every(x => x[0]) && a[0][2] === 'high' && !a[1][2] && !a[1][1] && !a[2][1] && a.slice(3).every(x => x[1] === 'lazy'); }],
+  ['P05 телефон: одразу вантажиться лише перша мініатюра', { seasons: { seasons: [S1()] }, viewport: { width: 390, height: 844 }, api: { PL1: Array.from({ length: 4 }, (_, i) => vidT('t' + i, 'Серія ' + i, `2026-09-2${i}T10:00:00Z`)) } },
+    async r => { let a = await r.page.$$eval('.ep img', im => im.map(x => x.getAttribute('loading'))); return a[0] === null && a.slice(1).every(x => x === 'lazy'); }],
+  ['P04 повторний візит: серії з кешу видно ще до відповіді YouTube', { seasons: { seasons: [S1()] }, api: { PL1: TWO }, apiDelay: 1500,
+      reload: async p => { await p.waitForTimeout(1600); await p.reload(); await p.waitForTimeout(300); } },
+    async r => await r.page.locator('.ep img').count() === 2],
+
   // --- Людські помилки в seasons.json
   ['H01 зайва кома після останнього поля', { seasons: '{"seasons":[{"n":1,"title":"Тема","start":"2026-09-20","end":"2026-12-20","playlist":"PL1",}],}', api: { PL1: TWO } },
     r => has(r, 'Тема') && has(r, '2 серії')],
