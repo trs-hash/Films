@@ -12,6 +12,14 @@
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="color-scheme" content="light dark">
+    <!-- 📱 Застосунок на головному екрані (PWA) -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Лови день">
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
     <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
@@ -156,14 +164,25 @@
         .cal-home{scroll-margin-top:20px;position:relative}
         .topics:not(.all) .chip.extra,.topics.all .chip.more{display:none}
         .chip.more{font:inherit;font-size:13px;font-weight:600;color:var(--mut);cursor:pointer}
-        .to-today{display:none;position:absolute;top:0;right:0;z-index:20;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);text-decoration:none;padding:6px 0}
-        @media(max-width:1024px){.to-today{display:block}}
+        /* Дії над стіною (праворуч від назви місяця): 🎲 випадковий день, «Сьогодні ↓» (лише телефон/планшет) */
+        .cal-acts{position:absolute;top:0;right:0;z-index:20;display:flex;gap:18px;align-items:center}
+        .act{background:none;border:0;padding:6px 0;font:inherit;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);cursor:pointer;text-decoration:none;transition:color .2s}
+        .act:hover{color:var(--red)}
+        .to-today{display:none;color:var(--red)}
+        @media(max-width:1024px){.to-today{display:inline-block}}
+        /* День, до якого перейшли (випадковий / за посиланням) — коротко підсвічується */
+        .cell.flash{animation:flash 1.4s ease-out 2}
+        @keyframes flash{0%{box-shadow:0 0 0 3px var(--red)}100%{box-shadow:0 0 0 3px transparent}}
+        .install{display:block;margin-top:6px;padding:0;background:none;border:0;font:inherit;font-size:11px;letter-spacing:.5px;color:var(--mut);opacity:.6;cursor:pointer}
+        .install:hover{opacity:1;color:var(--red)}
+        .install[hidden]{display:none}
         .cal-soon{font-size:17px;color:var(--mut);margin:14px 0 0}
         /* Вибрана тема: у календарі приглушено відео інших тем — видно, коли тема «жила» */
         .cal-home.filtering .v-lnk:not(.hit){opacity:.18;filter:grayscale(1)}
         .note-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
         .note-tags .chip{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
         .note-tags .chip:hover{color:#fff;border-color:var(--red);background:var(--red)}
+        .note-tags .chip.share{font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 
         /* ?check — самоперевірка після правок seasons.json (бачить лише той, хто відкрив з ?check) */
         .chk{border:2px dashed var(--red);border-radius:10px;padding:16px 20px 6px;margin:0 0 50px;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
@@ -202,6 +221,7 @@
             /* теми на телефоні — один рядок з прокруткою: календар лишається на першому екрані */
             .topics{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -15px 28px;padding:0 15px}
             .chip{min-height:40px}
+            .cal-acts{position:static;justify-content:flex-end;margin:-6px 0 10px}
             .topics:not(.all) .chip.extra{display:inline-flex}   /* на телефоні ряд гортається — видно всі теми */
             .topics .chip.more{display:none}
             .topics::-webkit-scrollbar{display:none}
@@ -242,6 +262,7 @@
             </a>
         </div>
         <div class="mail"><a href="mailto:hello@taras.kyiv.ua">hello@taras.kyiv.ua</a></div>
+        <button id="install" class="install" type="button" hidden onclick="installApp()">Встановити застосунок</button>
     </header>
 
     <main class="main" id="app">
@@ -358,6 +379,11 @@
     // Назва на плитці — без хвоста з хештегів («Дорога до моря #подорожі» → «Дорога до моря»): теми й так видно
     function showTitle(t) { t = String(t || ''); return t.replace(/(\s+#[\p{L}\p{N}_]+)+\s*$/u, '').trim() || t; }
     function topicLabel(t) { return (TOPICS.cfg[t] && TOPICS.cfg[t].title) || '#' + t; }
+    function dayFromHash() {
+        let m = ''; try { m = decodeURIComponent(location.hash.slice(1)); } catch(e) {}
+        let d = (m.match(/(?:^|&)d=(\d{4}-\d{2}-\d{2})(?:&|$)/) || [])[1] || '';
+        return DATE_RE.test(d) ? d : '';
+    }
     function topicFromHash() {
         let h = ''; try { h = decodeURIComponent(location.hash.slice(1)); } catch(e) {}
         return h.startsWith('t=') ? canonTag(h.slice(2)) : '';
@@ -745,9 +771,11 @@
             lsSet('ss_time', String(Date.now()));
             if (YT_FULL) lsSet('ss_full', String(Date.now()));
             SRC.eps = 'YouTube';
-        } else if (await loadArchive()) {              // ⚑ YouTube мовчить → авто-судний-день
+        } else if (CACHED_PL) {                        // YouTube мовчить (або нема інтернету), але в браузері є копія — лишаємо її
+            SRC.eps = 'кеш браузера (YouTube не відповів)';
+        } else if (await loadArchive()) {              // ⚑ YouTube мовчить і копії нема → авто-судний-день
             MODE = 'doomsday'; SRC.eps = 'archive.json (YouTube не відповів)';
-        } else if (!CACHED_PL) {                       // сезон показуємо все одно — без серій
+        } else {                                       // показуємо все одно — без відео
             LOAD_FAILED = true; SRC.eps = 'нічого — YouTube і архів недоступні';
         }
         LOADING = false;
@@ -756,7 +784,7 @@
 
     // ── Малювання ──────────────────────────────────────────────────────────────
     // Порядок: теми → вибрана тема → стіна днів → сезони (поточний → анонси → завершені).
-    let LAST_HTML = '', HASH_DONE = false;
+    let LAST_HTML = '', HASH_DONE = false, DAY_DONE = '';
     function render() {
         // Телефон: на першому екрані одна картка — решта не повинна відбирати в неї канал; ширший екран — перший ряд
         PLAY = []; EAGER = matchMedia('(max-width:600px)').matches ? 1 : 3; FIRST_IMG = true;
@@ -779,6 +807,12 @@
         let opened = [...app.querySelectorAll('details[open]')].map(d => d.id);
         app.innerHTML = html;
         opened.forEach(id => { let d = document.getElementById(id); if (d) d.open = true; });
+        // Посилання на день (#d=2026-09-30, сюди ж ведуть сторінки /d/…/): показати день; на компʼютері — ще й відкрити відео
+        let dh = dayFromHash();
+        if (dh && dh !== DAY_DONE && !LOADING && document.getElementById('cal-' + dh)) {
+            DAY_DONE = dh; HASH_DONE = true;
+            setTimeout(() => showDay(dh, '', !OPEN_IN_APP), 0);
+        }
         // Глибоке посилання (#s-2, #s-3-2026-09) — прокрутити, коли серії вже на місці (інакше макет ще «поїде»)
         if (!HASH_DONE && !LOADING && location.hash.length > 1) {
             let el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
@@ -863,10 +897,11 @@
             `<section class="cal-home${TOPIC ? ' filtering' : ''}" id="cal" aria-label="Стіна днів"><h2 class="sr-only">Стіна днів</h2>`;
         if (LOAD_FAILED && !eps.length) return html + '<p class="s-msg">Не вдалось завантажити відео. Спробуйте оновити сторінку.</p></section>';
         if (LOADING && !eps.length) return html + '<div class="sk sk-m"></div><div class="grid">' + '<div class="cell"></div>'.repeat(7) + '</div></section>';
-        // Телефон: місяць у дві колонки — це кілька екранів, тож «сьогодні» під рукою (адресу й вибрану тему не чіпає)
-        let jump = +today.slice(8) > 6 ? '<a class="to-today" href="#cal-today" onclick="event.preventDefault();' +
-            'var t=document.getElementById(\'cal-today\');if(t)t.scrollIntoView({behavior:\'smooth\',block:\'center\'})">Сьогодні ↓</a>' : '';
-        return html + jump + (dailyHtml(s, 'live', today, eps) || soon) + '</section>';
+        // Над стіною: 🎲 випадковий день (коли є з чого вибирати) і на телефоні «Сьогодні ↓» — місяць у дві колонки
+        // займає кілька екранів (адресу й вибрану тему кнопка не чіпає)
+        let acts = (eps.filter(r => r.y || r.v).length > 1 ? '<button type="button" class="act" onclick="randomDay()">🎲 Випадковий день</button>' : '') +
+            (+today.slice(8) > 6 ? `<a class="act to-today" href="#cal-${today}" onclick="event.preventDefault();showDay('${today}')">Сьогодні ↓</a>` : '');
+        return html + (acts ? `<div class="cal-acts">${acts}</div>` : '') + (dailyHtml(s, 'live', today, eps) || soon) + '</section>';
     }
 
     // Усі відомі відео (календар + сезони) без дублів — для каталогу тем
@@ -904,7 +939,7 @@
         if (!list.length) return html + '<p class="s-msg">Поки що нема відео з цією темою.</p></section>';
         let sizes = '(max-width:600px) 30vw, (max-width:1024px) 50vw, 340px';
         return html + '<div class="eps compact">' + list.map(rec => {
-            let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [] }) - 1;
+            let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [], date: rec.date, title: rec.title }) - 1;
             return `<a href="${ytHref(rec)}" class="ep${watched.includes(rec.key) ? ' watched' : ''}" data-k="${esc(rec.key)}" onclick="openVid(event, ${idx}, this)">` +
                 `<div class="ep-th">${imgTag(rec, '', sizes)}${rec.imp ? STAR_SVG : ''}</div>` +
                 `<div class="ep-k">${fmtDay(rec.date, rec.date.slice(0, 4) !== today.slice(0, 4))}</div>` +
@@ -922,7 +957,7 @@
             : '(max-width:600px) calc((100vw - 30px) * .9), (max-width:1024px) calc((100vw - 62px) / 2), 560px';
         let html = '<div class="eps">';
         eps.forEach((rec, i) => {
-            let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [] }) - 1;
+            let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [], date: rec.date, title: rec.title }) - 1;
             let body = (metaById[rec.key] || {}).body || '';
             let isNew = st === 'live' && i === eps.length - 1 && dayNum(today) - dayNum(rec.date) < 7;
             // Справжнє посилання на YouTube: Ctrl/Cmd-клік і середня кнопка відкривають відео в новій вкладці
@@ -968,10 +1003,10 @@
                 let w = new Date(dayNum(d) * DAY_MS).getUTCDay(), recs = byDay[d] || [], dn = +d.slice(8);
                 if (w === 1 && i > 0) h += '<div class="week-divider"></div>';
                 let dt = `<div class="dt"><span class="dt-n">${dn}</span><span class="dt-d">${WDAYS[w]}</span></div>`;
-                let tid = d === today && st === 'live' ? ` id="${s.id}-today"` : '';
-                if (!recs.length) { h += `<div class="cell ${tid ? 'today' : 'empty'}"${tid}>${dt}</div>`; return; }
+                let isToday = d === today && st === 'live', tid = ` id="${s.id}-${d}"`;   // id дня — для «Сьогодні ↓», випадкового дня й посилань #d=
+                if (!recs.length) { h += `<div class="cell ${isToday ? 'today' : 'empty'}"${tid}>${dt}</div>`; return; }
                 let links = recs.map(rec => {
-                    let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [] }) - 1;
+                    let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [], date: rec.date, title: rec.title }) - 1;
                     let body = (metaById[rec.key] || {}).body || '';
                     let hit = TOPIC && recTopics(rec).includes(TOPIC) ? ' hit' : '';
                     return `<a href="${ytHref(rec)}" class="v-lnk${watched.includes(rec.key) ? ' watched' : ''}${hit}" data-k="${esc(rec.key)}" onclick="openVid(event, ${idx}, this)">` +
@@ -1090,8 +1125,9 @@
               (meta.important ? STAR_SVG : '') +
               (meta.body ? `<div class="note-body">${esc(meta.body)}</div>` : '') +
               (meta.time ? `<div class="note-foot">🕒 ${esc(meta.time)}</div>` : '') + `</div>`
-            : '') + (topics.length ? '<div class="note-tags">' + topics.map(t =>
-              `<a class="chip" href="#t=${encodeURIComponent(t)}">${esc(topicLabel(t))}</a>`).join('') + '</div>' : '');
+            : '') + ((topics.length || p.date) ? '<div class="note-tags">' +
+              (p.date ? `<button type="button" class="chip share" onclick="shareDay('${p.date}', this)">🔗 Посилання на день</button>` : '') +
+              topics.map(t => `<a class="chip" href="#t=${encodeURIComponent(t)}">${esc(topicLabel(t))}</a>`).join('') + '</div>' : '');
         // Плеєр: локальне відео (судний день, Фаза 5) якщо є base+v, інакше YouTube-ембед за id.
         let iframe = document.getElementById('ytIframe'), loc = document.getElementById('locVideo');
         let local = hasLocal ? (BASE.replace(/\/+$/, '') + '/' + p.v.replace(/^\/+/, '')) : '';
@@ -1124,9 +1160,65 @@
         if (lastFocus && lastFocus.isConnected) lastFocus.focus({ preventScroll: true });   // фокус — туди, звідки відкрили
     }
 
+    // Показати день на стіні: розгорнути «Раніше», прокрутити, коротко підсвітити; open — ще й відкрити відео
+    // (той самий клік по плитці: компʼютер — вікно, телефон — застосунок YouTube)
+    window.showDay = function(date, key, open) {
+        let cell = document.getElementById('cal-' + date);
+        if (!cell) return false;
+        let det = cell.closest('details'); if (det) det.open = true;
+        cell.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+        cell.classList.remove('flash'); void cell.offsetWidth; cell.classList.add('flash');
+        if (open) {
+            let a = [...cell.querySelectorAll('a.v-lnk')].find(x => !key || x.dataset.k === key);
+            if (a) a.click();
+        }
+        return true;
+    };
+    // 🎲 Випадковий день — з усієї стіни, а якщо вибрано тему, то з її відео; двічі поспіль той самий не випадає
+    let lastRandom = '';
+    window.randomDay = function() {
+        let pool = (EPS.cal || []).filter(r => r.y || r.v);
+        if (TOPIC) { let inTopic = pool.filter(r => recTopics(r).includes(TOPIC)); if (inTopic.length) pool = inTopic; }
+        if (pool.length > 1) pool = pool.filter(r => r.key !== lastRandom);
+        if (!pool.length) return;
+        let rec = pool[Math.floor(Math.random() * pool.length)];
+        lastRandom = rec.key;
+        showDay(rec.date, rec.key, true);
+    };
+    // 🔗 Посилання на день: /d/РРРР-ММ-ДД/ — гарне прев'ю в Telegram (сторінку генерує архів на GitHub);
+    // на телефоні — системне меню «Поділитися», на компʼютері — копія в буфер обміну
+    window.shareDay = async function(date, btn) {
+        let url = location.origin + '/d/' + date + '/';
+        try {
+            if (navigator.share && OPEN_IN_APP) { await navigator.share({ url }); return; }
+            await navigator.clipboard.writeText(url);
+            if (btn) { let t = btn.textContent; btn.textContent = '✓ Скопійовано'; setTimeout(() => { btn.textContent = t; }, 2000); }
+        } catch(e) {
+            if (e && e.name === 'AbortError') return;          // людина сама закрила меню «Поділитися»
+            window.prompt('Посилання на цей день:', url);
+        }
+    };
+
+    // 📱 Застосунок на головному екрані (PWA): офлайн-копія сторінки; на iPhone застосунок із головного екрана
+    // не потрапляє під 7-денне стирання сховища Safari — відмітки «переглянуто» не губляться.
+    if ('serviceWorker' in navigator && window.isSecureContext)
+        addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    // Кнопка «Встановити» — там, де браузер це вміє (Chrome, Edge, Android). На iPhone: «Поділитися → На початковий екран».
+    let installEvt = null;
+    addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; document.getElementById('install').hidden = false; });
+    addEventListener('appinstalled', () => { installEvt = null; document.getElementById('install').hidden = true; });
+    window.installApp = async function() {
+        if (!installEvt) return;
+        installEvt.prompt();
+        try { await installEvt.userChoice; } catch(e) {}
+        installEvt = null; document.getElementById('install').hidden = true;
+    };
+
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
     // Вибір теми живе в адресі (#t=…): «назад» у браузері повертає попередній вибір, посиланням можна поділитися
     window.addEventListener('hashchange', () => {
+        let d = dayFromHash();
+        if (d && d !== DAY_DONE) { DAY_DONE = d; closeModal(); showDay(d, '', !OPEN_IN_APP); return; }
         let t = topicFromHash();
         if (t === TOPIC) return;
         TOPIC = t; closeModal(); render();

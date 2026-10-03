@@ -17,8 +17,12 @@ const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
   if (p === '/') p = '/index.html';
   let f = path.join(ROOT, p);
-  if (!fs.existsSync(f)) { res.writeHead(404); return res.end(); }
-  res.writeHead(200, { 'Content-Type': f.endsWith('.json') ? 'application/json' : 'text/html; charset=utf-8' });
+  if (!fs.existsSync(f) || fs.statSync(f).isDirectory() && !fs.existsSync(f = path.join(f, 'index.html'))) {   // як GitHub Pages: 404.html
+    res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' }); return res.end(fs.readFileSync(path.join(ROOT, '404.html')));
+  }
+  // MIME як на GitHub Pages: сервіс-воркер реєструється лише з JavaScript-типом
+  const TYPES = { '.json': 'application/json', '.js': 'text/javascript', '.mjs': 'text/javascript', '.png': 'image/png', '.webmanifest': 'application/manifest+json', '.xml': 'application/xml', '.txt': 'text/plain' };
+  res.writeHead(200, { 'Content-Type': TYPES[path.extname(f)] || 'text/html; charset=utf-8' });
   res.end(fs.readFileSync(f));
 }).listen(8766);
 
@@ -71,8 +75,11 @@ const TWO = [vid('a1', 'Перша', '2026-09-20T15:00:00Z', 'Записка 1')
 // ── Запуск одного сценарію ──────────────────────────────────────────────────
 async function scenario(browser, o) {
   const ctx = await browser.newContext({ viewport: o.viewport || { width: 1280, height: 900 }, deviceScaleFactor: o.dpr || 1, userAgent: o.ua, hasTouch: !!o.ua, isMobile: !!o.mobile,
-    storageState: o.storageState, colorScheme: o.dark ? 'dark' : 'light', timezoneId: o.tz || 'Europe/Kyiv' });
+    storageState: o.storageState, colorScheme: o.dark ? 'dark' : 'light', timezoneId: o.tz || 'Europe/Kyiv', serviceWorkers: o.sw ? 'allow' : 'block' });
+  if (o.clipboard) await ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
   const page = await ctx.newPage();
+  // «Сьогодні» в тестах — 29.09.2026 15:00 за Києвом (сценарії писались під цю дату); o.now — інша дата
+  await page.clock.setFixedTime(new Date(o.now || '2026-09-29T15:00:00+03:00'));
   const errs = [], warns = [], apiCalls = [], apiUrls = [], fileUrls = [];
   page.on('request', q => { if (/localhost:8766\/.*\.json/.test(q.url())) fileUrls.push(q.url()); });
   page.on('pageerror', e => errs.push(e.message));
@@ -96,7 +103,7 @@ async function scenario(browser, o) {
   const json = (pat, v) => ctx.route(pat, r => v === 404 ? r.fulfill({ status: 404 })
     : r.fulfill({ contentType: 'application/json', body: typeof v === 'string' ? v : JSON.stringify(v) }));
   if (o.seasons !== undefined) await json(/seasons\.json/, o.seasons);
-  await json(/archive\.json/, o.archive !== undefined ? o.archive : { base: '', days: {} });
+  if (!o.realFiles) await json(/archive\.json/, o.archive !== undefined ? o.archive : { base: '', days: {} });   // realFiles — справжні файли сайту
   if (o.state !== undefined) await json(/state\.json/, o.state);
   await page.goto('http://localhost:8766/' + (o.path || ''));
   await page.waitForTimeout(o.wait || 700);
@@ -274,7 +281,7 @@ const CASES = [
     async r => (await r.page.innerText('#topic h2')) === '#книги'],
   ['T05 плеєр: теми відео чипами, клік — закриває плеєр і відкриває тему', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
     async r => { await r.page.click('#cal .v-lnk >> nth=0'); await r.page.waitForTimeout(150);
-      let chips = await r.page.$$eval('.note-tags .chip', a => a.map(x => x.textContent));
+      let chips = await r.page.$$eval('.note-tags a.chip', a => a.map(x => x.textContent));
       await r.page.click('.note-tags .chip >> text=#книги'); await r.page.waitForTimeout(200);
       return chips.join('|') === '#подорожі|#книги' && await r.page.locator('#vidModal.show').count() === 0 && (await r.page.innerText('#topic h2')) === '#книги'; }],
   ['T06 «× Усі дні» знімає вибір', { path: '#t=' + encodeURIComponent('книги'), seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
@@ -350,7 +357,7 @@ const CASES = [
 
   ['U03 телефон: «Сьогодні ↓» веде до сьогоднішнього дня, не чіпаючи вибрану тему; на компʼютері кнопки нема', { path: '#t=' + encodeURIComponent('подорожі'), seasons: CAL({ start: '2026-09-01' }), api: { UU1: DAILY120.slice(0, 28), SH: [] }, viewport: { width: 390, height: 700 } },
     async r => { await r.page.click('.to-today'); await r.page.waitForTimeout(900);
-      let inView = await r.page.evaluate(() => { let b = document.getElementById('cal-today').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; });
+      let inView = await r.page.evaluate(() => { let b = document.querySelector('.cell.today').getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; });
       await r.page.setViewportSize({ width: 1280, height: 900 });
       let hiddenDesk = await r.page.$eval('.to-today', a => getComputedStyle(a).display === 'none');
       return inView && hiddenDesk && decodeURIComponent(await r.page.evaluate(() => location.hash)) === '#t=подорожі'; }],
@@ -361,6 +368,74 @@ const CASES = [
       await r.page.setViewportSize({ width: 390, height: 800 }); await r.page.evaluate(() => { LAST_HTML = ''; render(); });
       let m = await vis(), moreHidden = await r.page.$eval('.chip.more', b => getComputedStyle(b).display === 'none');
       return d1 === 12 && d2 === 20 && m === 20 && moreHidden; }],
+
+  // --- 🎲 Випадковий день
+  ['R01 компʼютер: випадковий день відкриває відео й підсвічує день; двічі поспіль — різні', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { const pick = async () => { await r.page.click('.cal-acts .act >> text=Випадковий день'); await r.page.waitForTimeout(250);
+        let src = await r.page.getAttribute('#ytIframe', 'src'); let flash = await r.page.locator('.cell.flash').count(); await r.page.keyboard.press('Escape'); return [src, flash]; };
+      let [a, f1] = await pick(), [b] = await pick();
+      return /\/embed\/g\d/.test(a) && /\/embed\/g\d/.test(b) && a !== b && f1 === 1; }],
+  ['R02 випадковий день у вибраній темі — лише з її відео', { path: '#t=' + encodeURIComponent('книги'), seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await r.page.click('text=🎲 Випадковий день'); await r.page.waitForTimeout(250); return (await r.page.getAttribute('#ytIframe', 'src')).includes('/embed/g1'); }],
+  ['R03 Android: випадковий день — у застосунку YouTube; кнопки нема, коли відео менше двох', { ua: UA_ANDROID, mobile: true, viewport: { width: 412, height: 915 }, seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await r.page.tap('text=🎲 Випадковий день'); await r.page.waitForTimeout(250);
+      let ok = /^intent:\/\/www\.youtube\.com\/watch\?v=g\d/.test(await r.page.evaluate(() => window.__opened || ''));
+      const { r: r2, ctx } = await scenario(r.browser, Object.assign({}, r.o, { api: { UU1: TAGGED.slice(0, 1), SH: [] } }));
+      let none = await r2.page.locator('text=🎲 Випадковий день').count() === 0; await ctx.close(); return ok && none; }],
+
+  // --- 🔗 Посилання на день
+  ['L01 посилання #d=… на компʼютері: день підсвічено й відео відкрито', { path: '#d=2026-09-23', seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, wait: 1000 },
+    async r => (await r.page.getAttribute('#ytIframe', 'src') || '').includes('/embed/g3') && await r.page.locator('#cal-2026-09-23.flash').count() === 1],
+  ['L02 посилання #d=… на iPhone: лише підсвічено день, без самовільного переходу в застосунок', { path: '#d=2026-09-23', ua: UA_IPHONE, mobile: true, viewport: { width: 390, height: 844 }, seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, wait: 1000 },
+    async r => await r.page.locator('#cal-2026-09-23.flash').count() === 1 && r.page.url().startsWith('http://localhost') && await r.page.locator('#vidModal.show').count() === 0],
+  ['L03 «Посилання на день» у плеєрі копіює /d/РРРР-ММ-ДД/', { clipboard: true, seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await r.page.click('[data-k="g3"]'); await r.page.click('.note-tags .share'); await r.page.waitForTimeout(150);
+      let clip = await r.page.evaluate(() => navigator.clipboard.readText());
+      return clip === 'http://localhost:8766/d/2026-09-23/' && (await r.page.innerText('.note-tags .share')).includes('Скопійовано'); }],
+  ['L04 /d/дата/, якої ще не згенеровано, — 404.html веде на стіну до цього дня', { path: 'd/2026-09-22/', seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, wait: 1200 },
+    async r => r.page.url().endsWith('/#d=2026-09-22') && (await r.page.getAttribute('#ytIframe', 'src') || '').includes('/embed/g2')],
+  ['L05 перехід на інший день без перезавантаження (зміна адреси)', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await r.page.evaluate(() => { location.hash = 'd=2026-09-24'; }); await r.page.waitForTimeout(400);
+      return (await r.page.getAttribute('#ytIframe', 'src') || '').includes('/embed/g4'); }],
+  ['L06 генератор архіву: дата за Києвом, Shorts/приватні/проби — ні, поля локального скрипта — так, OG-теги, ідемпотентність', {},
+    async () => {
+      const os = require('os'), cp = require('child_process'), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'arch-')), out = path.join(dir, 'out');
+      fs.mkdirSync(out);
+      const it = (id, title, pub, desc, priv) => ({ snippet: { title, description: desc || '', resourceId: { videoId: id }, thumbnails: { maxres: { url: `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`, width: 1280, height: 720 } } },
+        contentDetails: pub ? { videoId: id, videoPublishedAt: pub } : { videoId: id }, status: { privacyStatus: priv ? 'private' : 'public' } });
+      fs.writeFileSync(path.join(dir, 'fx.json'), JSON.stringify({
+        UURSKTGA5a2hLrai_MXNaoUQ: [it('n1', 'Нічна #подорожі', '2026-09-30T22:30:00Z', 'Опис "в лапках" & <тег> #подорожі'), it('a1', 'Перша', '2026-09-30T15:00:00Z', '№ Перший'),
+          it('sh', 'Шортс', '2026-10-01T10:00:00Z'), it('pr', 'Private video', '', '', true), it('old', 'Проба', '2026-09-20T10:00:00Z')],
+        'PLS50DDpfd-9w': [it('sh', 'Шортс', '2026-10-01T10:00:00Z')] }));
+      fs.writeFileSync(path.join(out, 'archive.json'), JSON.stringify({ base: 'https://video.example', days: { '2026-09-30': [{ t: 'стара', y: 'a1', v: 'a1.mp4', d: 7 }], '2026-09-01': 'зіпсовано' } }));
+      const run = () => cp.execFileSync('node', [path.join(ROOT, 'tools/archive.mjs')], { env: Object.assign({}, process.env, { ARCHIVE_OUT: out, ARCHIVE_FIXTURE: path.join(dir, 'fx.json'), ARCHIVE_NO_POSTERS: '1' }) }).toString();
+      run(); const second = run();
+      const a = JSON.parse(fs.readFileSync(path.join(out, 'archive.json'), 'utf8')), page = fs.readFileSync(path.join(out, 'd/2026-10-01/index.html'), 'utf8');
+      return a.days['2026-10-01'][0].y === 'n1' && a.days['2026-09-30'][0].v === 'a1.mp4' && a.days['2026-09-30'][0].d === 7 && a.days['2026-09-30'][0].t === 'Перша'
+        && !JSON.stringify(a).includes('"sh"') && !JSON.stringify(a).includes('"pr"') && !JSON.stringify(a).includes('"old"') && a.base === 'https://video.example'
+        && page.includes('<meta property="og:title" content="1 жовтня 2026 — Нічна">') && page.includes('&quot;в лапках&quot; &amp; &lt;тег&gt;')
+        && page.includes('og:image" content="https://i.ytimg.com/vi/n1/maxresdefault.jpg') && page.includes('location.replace("/#d=2026-10-01")')
+        && fs.readFileSync(path.join(out, 'sitemap.xml'), 'utf8').includes('https://taras.kyiv.ua/d/2026-10-01/') && /змінено файлів: 0/.test(second);
+    }],
+
+  // --- 📱 PWA
+  ['P09 PWA: маніфест з іконками, сервіс-воркер, офлайн — стіна з кешу', { sw: true, now: '2026-10-05T12:00:00+03:00', api: { 'UURSKTGA5a2hLrai_MXNaoUQ': TAGGED.map((v, i) => Object.assign({}, v, { contentDetails: { videoId: 'g' + (i + 1), videoPublishedAt: `2026-10-0${i + 1}T10:00:00Z` } })), 'PLS50DDpfd-9w': [] }, realFiles: true, wait: 1000 },
+    async r => {
+      const man = await r.page.evaluate(async () => { const l = document.querySelector('link[rel=manifest]'); const m = await (await fetch(l.href)).json();
+        const icons = await Promise.all(m.icons.map(async i => (await fetch(i.src)).status)); return { name: m.short_name, display: m.display, icons, maskable: m.icons.some(i => i.purpose === 'maskable') }; });
+      const ready = await r.page.evaluate(() => Promise.race([navigator.serviceWorker.ready.then(() => true), new Promise(res => setTimeout(() => res(false), 5000))]));
+      if (!ready) return false;
+      await r.page.reload(); await r.page.waitForTimeout(800);
+      const controlled = await r.page.evaluate(() => !!navigator.serviceWorker.controller);
+      await r.ctx.setOffline(true); await r.page.reload(); await r.page.waitForTimeout(800);
+      const offlineCells = await r.page.locator('#cal .v-lnk').count();
+      await r.ctx.setOffline(false);
+      return man.name === 'Лови день' && man.display === 'standalone' && man.icons.every(x => x === 200) && man.maskable && controlled && offlineCells === 4; }],
+
+  // --- Людські помилки в адресі й архіві
+  ['H39 криві адреси: #d=2026-13-45, #t=%E0%A4%A, #d= — без помилок', { path: '#d=2026-13-45', seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await r.page.evaluate(() => { location.hash = 't=%E0%A4%A'; }); await r.page.waitForTimeout(200); await r.page.evaluate(() => { location.hash = 'd='; }); await r.page.waitForTimeout(200);
+      return r.errs.length === 0 && await r.page.locator('#cal .v-lnk').count() === 4; }],
 
   // --- Людські помилки в новому блоці календаря й тем
   ['H31 calendar.start у форматі 20.09.2026', { path: '?check', seasons: { calendar: { start: '20.09.2026', playlist: 'UU1', exclude: ['SH'] } }, api: { UU1: TAGGED, SH: [] } },

@@ -1,0 +1,57 @@
+# Архів без компʼютера: раз на годину (і вручну — кнопка «Run workflow») tools/archive.mjs збирає з YouTube
+# усі публічні відео й оновлює archive.json, posters/, сторінки днів d/РРРР-ММ-ДД/ і sitemap.xml.
+# Комітить лише коли щось змінилось. Ключ YouTube — секрет YT_API_KEY (див. README); без нього — ключ сайту.
+# Розклад працює лише з гілки за замовчуванням (main).
+name: Архів відео
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: archive
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Зібрати архів
+        run: node tools/archive.mjs
+        env:
+          YT_API_KEY: ${{ secrets.YT_API_KEY }}
+
+      - name: Закомітити зміни
+        id: commit
+        run: |
+          git add archive.json posters d sitemap.xml 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "Без змін."
+            exit 0
+          fi
+          git config user.name "archive-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "archive: оновлення $(TZ=Europe/Kyiv date '+%Y-%m-%d %H:%M')"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+          echo "pushed=1" >> "$GITHUB_OUTPUT"
+
+      # Комміти від GITHUB_TOKEN можуть не запускати збірку Pages — просимо її явно
+      - name: Оновити сайт (GitHub Pages)
+        if: steps.commit.outputs.pushed == '1'
+        continue-on-error: true
+        run: |
+          curl -sS -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages/builds"
