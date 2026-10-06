@@ -248,9 +248,15 @@ const CASES = [
       async r => { let src = await r.page.$eval('.ep img', i => i.currentSrc); return src.endsWith('/' + TFILE[want] + '.jpg'); }]),
 
   // --- Головна: календар першим (з 29.09.2026)
-  ['C01 головна — стіна днів: дні від start до сьогодні, сьогодні пунктиром, календар першим', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: [vid('c1', 'Перше', '2026-09-21T10:00:00Z')], SH: [] }, shot: 'C01' },
+  ['C01 головна — стіна днів: від дня першого відео до сьогодні, сьогодні пунктиром, календар першим', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: [vid('c1', 'Перше', '2026-09-21T10:00:00Z')], SH: [] }, shot: 'C01' },
     async r => await r.page.locator('#cal .cell.has-vid').count() === 1 && await r.page.locator('#cal .cell.today').count() === 1
+      && await r.page.locator('#cal .cell').count() === 9 && await r.page.locator('#cal-2026-09-20').count() === 0
       && (await r.page.$eval('#app', a => a.firstElementChild.id)) === 'cal' && !has(r, 'перший сезон')],
+  ['C08 start давно минув, а відео ще нема — заглушка, не порожні тижні', { seasons: CAL({ start: '2026-08-06' }), api: { UU1: [], SH: [] } },
+    async r => has(r, 'Скоро тут зʼявиться перша стрічка') && await r.page.locator('#cal .cell').count() === 0 && !has(r, 'Випадковий день')],
+  ['C09 перше відео пізніше за start — стіна з нього; ?check називає день першого відео', { path: '?check', seasons: CAL({ start: '2026-08-06' }), api: { UU1: [vid('c1', 'Перше', '2026-09-28T10:00:00Z')], SH: [] } },
+    async r => await r.page.locator('#cal .cell').count() === 2 && await r.page.locator('#cal-2026-09-28.has-vid').count() === 1
+      && has(r, 'відлік від першого відео (28 вересня 2026), старіші за 6 серпня 2026 не беремо') && !has(r, 'Серпень')],
   ['C02 до першого дня — спокійна заглушка без відліку', { seasons: CAL({ start: '2026-10-05' }), api: { UU1: [], SH: [] } },
     async r => has(r, 'Скоро тут зʼявиться перша стрічка') && await r.page.locator('#cal .grid').count() === 0],
   ['C03 Shorts (плейлист-виняток) у календар не потрапляють', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: [vid('c1', 'Відео', '2026-09-21T10:00:00Z'), vid('s1', 'Шортс', '2026-09-22T10:00:00Z')], SH: [vid('s1', 'Шортс', '2026-09-22T10:00:00Z')] } },

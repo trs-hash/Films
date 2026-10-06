@@ -257,9 +257,6 @@
             <a class="primary" href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
             </a>
-            <a class="ghost" href="https://www.youtube.com/@Taras.maksymiak" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube">
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.5 15.5v-7l6.5 3.5z"/></svg>
-            </a>
         </div>
         <div class="mail"><a href="mailto:hello@taras.kyiv.ua">hello@taras.kyiv.ua</a></div>
         <button id="install" class="install" type="button" hidden onclick="installApp()">Встановити застосунок</button>
@@ -901,7 +898,9 @@
         // займає кілька екранів (адресу й вибрану тему кнопка не чіпає)
         let acts = (eps.filter(r => r.y || r.v).length > 1 ? '<button type="button" class="act" onclick="randomDay()">🎲 Випадковий день</button>' : '') +
             (+today.slice(8) > 6 ? `<a class="act to-today" href="#cal-${today}" onclick="event.preventDefault();showDay('${today}')">Сьогодні ↓</a>` : '');
-        return html + (acts ? `<div class="cal-acts">${acts}</div>` : '') + (dailyHtml(s, 'live', today, eps) || soon) + '</section>';
+        // Відлік стіни — від дня першого відео (calendar.start лише відсікає старіші проби): без порожніх тижнів до старту
+        let wall = eps.length ? dailyHtml(Object.assign({}, s, { start: eps[0].date }), 'live', today, eps) : '';
+        return html + (wall && acts ? `<div class="cal-acts">${acts}</div>` : '') + (wall || soon) + '</section>';
     }
 
     // Усі відомі відео (календар + сезони) без дублів — для каталогу тем
@@ -1038,7 +1037,9 @@
         let rows = '';
         if (CAL) {
             let n = (EPS.cal || []).length, h = HIDDEN[CAL.playlist] || 0, tl = topicCounts(allRecs());
-            rows += `<li><b>Календар</b> — ${CAL.start ? 'з ' + fmtDay(CAL.start, true) : 'від першого відео'}; джерело ${esc(CAL.playlist || '—')}: ` +
+            let first = (EPS.cal || []).reduce((m, r) => !m || r.date < m ? r.date : m, '');
+            rows += `<li><b>Календар</b> — відлік від першого відео${first ? ' (' + fmtDay(first, true) + ')' : ' (його ще нема)'}` +
+                (CAL.start ? `, старіші за ${fmtDay(CAL.start, true)} не беремо` : '') + `; джерело ${esc(CAL.playlist || '—')}: ` +
                 `на сайті ${n} відео` + (h ? `, ще ${h} приховано (приватні / заплановані)` : '') +
                 (CAL.exclude.length ? `; без відео з ${esc(CAL.exclude.join(', '))}` : '') + (CAL_NOTE ? ` — ${esc(CAL_NOTE)}` : '') +
                 (CAL.start && today < CAL.start ? ` — ще не почався: до ${esc(fmtDay(CAL.start, true))} головна показує «Скоро тут зʼявиться перша стрічка»` : '') + '</li>' +
