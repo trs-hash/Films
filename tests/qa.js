@@ -71,6 +71,15 @@ const TAGGED = [
 ];
 TAGGED[1].snippet.title = 'Друге #подорожі';   // хештег у назві теж рахується
 const TWO = [vid('a1', 'Перша', '2026-09-20T15:00:00Z', 'Записка 1'), vid('a2', 'Друга', '2026-09-27T15:00:00Z', '№ Важлива\n\n🕒 18:00 27/09/2026')];
+// Підтримка: увімкнений блок — спонсорство YouTube + благодійний збір із банкою (сьогодні в тестах — 29.09.2026)
+const FUND = (o = {}) => Object.assign({ enabled: true, id: 'dron', title: 'Дрон для бригади', about: 'Збираємо на мавік для побратимів.',
+  url: 'https://send.monobank.ua/jar/AbC123xyz', goal: 50000, raised: 18500, until: '2026-10-31', kind: 'charity' }, o);
+const SUP = (o = {}) => Object.assign(CAL({ start: '2026-09-20' }), { support: Object.assign({ enabled: true,
+  membership: { enabled: true, url: 'https://www.youtube.com/channel/UCRSKTGA5a2hLrai_MXNaoUQ/join', label: 'Стати спонсором', about: 'Ранній доступ і закулісся.' },
+  donate: { enabled: false, url: '', label: 'Підтримати' }, fundraisers: [FUND()] }, o) });
+const API1 = { UU1: [vid('c1', 'Перше', '2026-09-21T10:00:00Z', 'Опис #подорожі'), vid('c2', 'Друге', '2026-09-22T10:00:00Z')], SH: [] };
+const REAL_API = { 'UURSKTGA5a2hLrai_MXNaoUQ': '404', 'PLS50DDpfd-9w': [] };
+const noHScroll = async r => r.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
 
 // ── Запуск одного сценарію ──────────────────────────────────────────────────
 async function scenario(browser, o) {
@@ -105,6 +114,7 @@ async function scenario(browser, o) {
   if (o.seasons !== undefined) await json(/seasons\.json/, o.seasons);
   if (!o.realFiles) await json(/archive\.json/, o.archive !== undefined ? o.archive : { base: '', days: {} });   // realFiles — справжні файли сайту
   if (o.state !== undefined) await json(/state\.json/, o.state);
+  if (o.funds !== undefined) await json(/fundraisers\.json/, o.funds);
   await page.goto('http://localhost:8766/' + (o.path || ''));
   await page.waitForTimeout(o.wait || 700);
   if (o.reload) { await o.reload(page); }
@@ -518,6 +528,84 @@ const CASES = [
   ['H29 archive.json з кривою датою-ключем → пропускається', { state: { mode: 'doomsday' }, seasons: { seasons: [S1()] },
       archive: { base: '', days: { '2026-9-21': [{ t: 'Крива дата', y: 'q' }], '2026-09-22': 'не масив', '2026-09-23': [{ t: 'Нормальна', y: 'w' }] } } },
     r => has(r, 'Нормальна') && !has(r, 'Крива дата') && !has(r, 'NaN')],
+  // --- 💛 Підтримка: платна підписка, «Підтримати», збори (підготовлено, типово вимкнено)
+  ['S01 справжній seasons.json: підтримку підготовлено, але глядач не бачить нічого; fundraisers.json не запитується', { api: REAL_API },
+    async r => await r.page.locator('#sup a').count() === 0 && await r.page.locator('.funds, .fund').count() === 0
+      && !has(r, 'Стати спонсором') && !has(r, 'Назва збору') && !r.fileUrls.some(u => u.includes('fundraisers'))],
+  ['S02 ?check на справжньому seasons.json: попередній перегляд у пунктирі, пояснення, помилок нема', { path: '?check', api: REAL_API, shot: 'S02-check-preview' },
+    async r => await r.page.locator('#sup a.sup-btn.off').count() === 1 && await r.page.locator('.fund.off').count() === 1
+      && await r.page.locator('.fund-go').count() === 0 && has(r, 'вимкнено: глядачі не бачать') && has(r, 'у url ще приклад')
+      && has(r, 'Помилок не знайдено')],
+  ['S03 увімкнено: «Стати спонсором» у шапці → /join у новій вкладці; збір над стіною з прогресом; рядок у плеєрі', { seasons: SUP(), api: API1, shot: 'S03-support-on' },
+    async r => {
+      const a = r.page.locator('#sup a.sup-btn'), href = await a.getAttribute('href');
+      const bar = await r.page.$eval('.fund-bar i', i => i.style.width);
+      const before = await r.page.evaluate(() => !!(document.querySelector('.funds').compareDocumentPosition(document.getElementById('cal')) & Node.DOCUMENT_POSITION_FOLLOWING));
+      await r.page.click('#cal .v-lnk'); await r.page.waitForTimeout(200);
+      const note = await r.page.innerText('#modNote');
+      return await a.count() === 1 && href.endsWith('UCRSKTGA5a2hLrai_MXNaoUQ/join') && await a.getAttribute('target') === '_blank'
+        && has(r, 'Благодійний збір · до 31 жовтня') && has(r, '18 500 ₴ з 50 000 ₴ · 37%') && bar === '37%' && before
+        && await r.page.locator('#f-dron .fund-go[href="https://send.monobank.ua/jar/AbC123xyz"]').count() === 1
+        && note.includes('Зараз збираємо: Дрон для бригади') && !has(r, 'вимкнено');
+    }],
+  ['S04 збір після until зникає сам; у плеєрі — тоді платна підписка', { seasons: SUP({ fundraisers: [FUND({ until: '2026-09-28' })] }), api: API1 },
+    async r => { await r.page.click('#cal .v-lnk'); await r.page.waitForTimeout(200); const note = await r.page.innerText('#modNote');
+      return await r.page.locator('.fund').count() === 0 && note.includes('Ранній доступ і закулісся. Стати спонсором ↗')
+        && await r.page.locator('#modNote .note-sup a[href$="/join"]').count() === 1; }],
+  ['S05 ?check: завершений збір — «завершився», але видно в пунктирі', { path: '?check', seasons: SUP({ fundraisers: [FUND({ until: '2026-09-28' })] }), api: API1 },
+    async r => has(r, 'завершився 28 вересня 2026') && await r.page.locator('.fund.off').count() === 1],
+  ['S06 суми з банки (fundraisers.json) важливіші за raised; ціль з банки, коли goal нема; ціль досягнута', {
+      seasons: SUP({ fundraisers: [FUND({ goal: '' }), FUND({ id: 'b', title: 'Другий', url: 'https://send.monobank.ua/jar/Other1', goal: 1000, raised: 0 })] }), api: API1,
+      funds: { updated: '2026-09-29T14:17:00+03:00', jars: { AbC123xyz: { raised: 41234.56, goal: 60000 }, Other1: { raised: 1000, goal: 0 } } } },
+    r => has(r, '41 234 ₴ з 60 000 ₴ · 68%') && has(r, 'Ціль досягнуто — дякую! · 1 000 ₴ з 1 000 ₴ · 100%') && r.fileUrls.filter(u => u.includes('fundraisers')).length === 1],
+  ['S07 fundraisers.json нема або він битий → суми з seasons.json, без помилок', { seasons: SUP(), api: API1, funds: '{"jars": {"AbC123xyz": {"raised": "багато"' },
+    r => has(r, '18 500 ₴ з 50 000 ₴ · 37%') && r.errs.length === 0],
+  ['S08 ручні помилки: enabled "так", суми рядком, url без https, канал без /join, описка в полі, збір не в списку', { path: '?check', api: API1,
+      seasons: SUP({ membership: { enabled: 'true', url: 'youtube.com/@Taras.maksymiak' }, fundraisers: { enabled: 'так', title: 'Генератор', url: 'send.monobank.ua/jar/AbC123xyz',
+        goal: '50 000 грн', raised: '1 500,50', kind: 'благодійний', until: '31.10.2026', tittle: 'x' } }) },
+    async r => await r.page.locator('.fund:not(.off)').count() === 1 && has(r, '1 500 ₴ з 50 000 ₴ · 3%')
+      && await r.page.getAttribute('#sup a.sup-btn', 'href') === 'https://youtube.com/@Taras.maksymiak/join' && has(r, 'Стати спонсором')
+      && await r.page.locator('.fund-go[href="https://send.monobank.ua/jar/AbC123xyz"]').count() === 1
+      && has(r, 'enabled «так» прочитано як true') && has(r, '«50 000 грн» прочитано як 50 000 ₴') && has(r, 'посилання на канал без /join')
+      && has(r, 'невідоме поле «tittle»') && has(r, 'один збір теж беру в [ ]') && has(r, '«31.10.2026» прочитано як 2026-10-31')],
+  ['S09 небезпечне й недороблене не показується: javascript:, приклад XXXXXXXXXX, без назви', {
+      seasons: SUP({ membership: { enabled: true, url: 'javascript:alert(1)' }, fundraisers: [FUND({ url: 'javascript:alert(1)' }), FUND({ id: 's', url: 'https://send.monobank.ua/jar/XXXXXXXXXX' }), FUND({ id: 't', title: '' })] }), api: API1 },
+    async r => await r.page.locator('.fund').count() === 0 && await r.page.locator('#sup a').count() === 0
+      && await r.page.locator('a[href^="javascript"]').count() === 0 && !r.fileUrls.some(u => u.includes('fundraisers'))],
+  ['S10 ?check: пункти увімкнено, а весь блок — ні → пояснення; гроші з копійками й «50к»', { path: '?check',
+      seasons: SUP({ enabled: false, fundraisers: [FUND({ goal: '50к', raised: 12345.678 })] }), api: API1 },
+    async r => has(r, 'вимкнено весь блок (support.enabled)') && await r.page.locator('#sup a.sup-btn.off').count() === 1
+      && has(r, '12 345 ₴ з 50 000 ₴ · 24%') && has(r, '«50к» прочитано як 50 000 ₴')],
+  ['S11 телефон 320px, темна тема: усе увімкнено — без горизонтального скролу, кнопки ≥ 38 px', { seasons: SUP({ donate: { enabled: true, url: 'https://send.monobank.ua/jar/AbC123xyz' },
+      fundraisers: [FUND({ title: 'Дуже довга назва збору, яка не вміщується в один рядок на маленькому телефоні' })] }), api: API1,
+      viewport: { width: 320, height: 640 }, dark: true, shot: 'S11-mobile' },
+    async r => await noHScroll(r) && await r.page.locator('#sup a').count() === 2
+      && (await r.page.$eval('.fund-go', e => e.getBoundingClientRect().height)) >= 38
+      && Math.min(...await r.page.$$eval('#sup a', l => l.map(e => e.getBoundingClientRect().height))) >= 38],
+  ['S12 посилання на збір #f-dron прокручує до нього', { path: '#f-dron', seasons: SUP(), api: API1, viewport: { width: 1280, height: 500 } },
+    async r => (await r.page.$eval('#f-dron', e => e.getBoundingClientRect().top)) < 60],
+  ['S13 генератор зборів: банки з seasons.json, гривні з копійками, чужа помилка не стирає суми, без зайвих перезаписів', {},
+    async () => {
+      const os = require('os'), cp = require('child_process'), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'funds-')), out = path.join(dir, 'out');
+      const run = fx => { fs.writeFileSync(path.join(dir, 'fx.json'), JSON.stringify(fx));
+        return cp.execFileSync('node', [path.join(ROOT, 'tools/fundraisers.mjs')], { env: Object.assign({}, process.env, { FUNDS_OUT: out, FUNDS_FIXTURE: path.join(dir, 'fx.json'), MONO_TOKEN: '' }) }).toString(); };
+      // справжній seasons.json — лише приклад XXXXXXXXXX: ні запитів, ні файлу
+      const first = run({});
+      if (fs.existsSync(path.join(out, 'fundraisers.json')) || !first.includes('нічого робити')) return false;
+      // підміняємо seasons.json копією з двома банками (скрипт читає seasons.json із кореня, тож — тимчасова копія репо)
+      const repo = path.join(dir, 'repo'); fs.mkdirSync(path.join(repo, 'tools'), { recursive: true });
+      fs.copyFileSync(path.join(ROOT, 'tools/fundraisers.mjs'), path.join(repo, 'tools/fundraisers.mjs'));
+      fs.writeFileSync(path.join(repo, 'seasons.json'), JSON.stringify({ support: { fundraisers: [{ url: 'https://send.monobank.ua/jar/Aaa111' }, { url: 'send.monobank.ua/jar/Bbb222' }, { url: 'https://send.monobank.ua/jar/XXXXXXXXXX' }, 'сміття'] } }));
+      const run2 = fx => { fs.writeFileSync(path.join(dir, 'fx.json'), JSON.stringify(fx));
+        return cp.execFileSync('node', [path.join(repo, 'tools/fundraisers.mjs')], { env: Object.assign({}, process.env, { FUNDS_OUT: out, FUNDS_FIXTURE: path.join(dir, 'fx.json'), MONO_TOKEN: '' }) }).toString(); };
+      run2({ Aaa111: { raised: 1234.5, goal: 50000 }, Bbb222: { raised: 10, goal: 0 } });
+      const a = JSON.parse(fs.readFileSync(path.join(out, 'fundraisers.json'), 'utf8'));
+      const same = run2({ Aaa111: { raised: 1234.5, goal: 50000 }, Bbb222: { raised: 10, goal: 0 } });
+      run2({ Aaa111: 'fail', Bbb222: { raised: 20, goal: 0 } });
+      const b = JSON.parse(fs.readFileSync(path.join(out, 'fundraisers.json'), 'utf8'));
+      return a.jars.Aaa111.raised === 1234.5 && a.jars.Bbb222.raised === 10 && !a.jars.XXXXXXXXXX && /\+0[23]:00$/.test(a.updated)
+        && same.includes('без змін') && b.jars.Aaa111.raised === 1234.5 && b.jars.Bbb222.raised === 20;
+    }],
 ];
 
 (async () => {

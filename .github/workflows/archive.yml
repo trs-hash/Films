@@ -1,6 +1,8 @@
 # Архів без компʼютера: раз на годину (і вручну — кнопка «Run workflow») tools/archive.mjs збирає з YouTube
 # усі публічні відео й оновлює archive.json, posters/, сторінки днів d/РРРР-ММ-ДД/ і sitemap.xml.
-# Комітить лише коли щось змінилось. Ключ YouTube — секрет YT_API_KEY (див. README); без нього — ключ сайту.
+# Тут же tools/fundraisers.mjs оновлює fundraisers.json — суми в банках monobank для зборів на сайті (секрет MONO_TOKEN
+# необовʼязковий; без зборів із банками крок нічого не робить). Комітить лише коли щось змінилось.
+# Ключ YouTube — секрет YT_API_KEY (див. README); без нього — ключ сайту.
 # Розклад працює лише з гілки за замовчуванням (main).
 name: Архів відео
 
@@ -33,10 +35,20 @@ jobs:
         env:
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
 
+      # Збори не мають зупиняти архів: monobank недоступний → лишаються останні відомі суми
+      - name: Збори (банки monobank)
+        continue-on-error: true
+        run: node tools/fundraisers.mjs
+        env:
+          MONO_TOKEN: ${{ secrets.MONO_TOKEN }}
+
       - name: Закомітити зміни
         id: commit
         run: |
-          git add archive.json posters d sitemap.xml 2>/dev/null || true
+          # поштучно: git add з відсутнім шляхом (ще нема постерів чи зборів) не додав би й решту
+          for f in archive.json posters d sitemap.xml fundraisers.json; do
+            if [ -e "$f" ]; then git add -- "$f"; fi
+          done
           if git diff --cached --quiet; then
             echo "Без змін."
             exit 0
