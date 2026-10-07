@@ -1254,7 +1254,7 @@
         S.funds.forEach(f => {
             let why = fundWhy(f, today), n = fundNow(f);
             let src = n.live ? `з банки (fundraisers.json, ${esc(FUNDS_LIVE.updated || 'час невідомий')})`
-                : f.jar && !isSample(f.url) ? 'вручну (raised) — суми з банки ще нема: їх підтягує GitHub Action раз на годину' : 'вручну (raised)';
+                : f.jar && !isSample(f.url) ? 'з seasons.json (raised) — живі суми з банки підтягує GitHub Action раз на годину' : 'з seasons.json (raised)';
             rows += `<li><b>Збір</b> «${esc(f.title || '—')}» (#f-${esc(f.id)}) — ${why ? esc(why) : '✓ на сайті'}; ` +
                 `зібрано ${fmtMoney(n.raised)}${n.goal ? ' з ' + fmtMoney(n.goal) : ', без цілі'} — ${src}</li>`;
         });

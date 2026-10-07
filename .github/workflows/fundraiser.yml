@@ -1,0 +1,126 @@
+# Збір із бота: Гавриїл (або форма Actions → «Збір із бота» → Run workflow) додає, закриває чи показує збори на сайті.
+# Бот робить один запит до GitHub API (workflow_dispatch) з текстом команди — див. README, «Збір через бота Гавриїла».
+# tools/zbir.mjs змінює seasons.json → support.fundraisers, задача комітить і просить GitHub Pages оновити сайт,
+# а потім (якщо є секрет TG_BOT_TOKEN і chat_id) відписує в Telegram: що вийшло, посилання на збір, скільки зібрано.
+# Ручний запуск і запуск ботом працюють лише з гілки за замовчуванням (main).
+name: Збір із бота
+
+on:
+  workflow_dispatch:
+    inputs:
+      text:
+        description: 'Текст команди, як у боті: /zbir https://send.monobank.ua/jar/… (назва, опис, «ціль 50000», «до 31.12» — з нових рядків)'
+        required: false
+        type: string
+      action:
+        description: 'add — додати/оновити, close — закрити, list — показати (порожньо — з команди в тексті)'
+        required: false
+        type: string
+      url:
+        description: 'Посилання на банку monobank'
+        required: false
+        type: string
+      title:
+        description: 'Назва (порожньо — з банки)'
+        required: false
+        type: string
+      about:
+        description: 'Навіщо збираємо (порожньо — з банки)'
+        required: false
+        type: string
+      goal:
+        description: 'Ціль, грн (порожньо — з банки)'
+        required: false
+        type: string
+      until:
+        description: 'Останній день збору: 31.12 або 2026-12-31'
+        required: false
+        type: string
+      kind:
+        description: 'charity (благодійний) або channel (на канал)'
+        required: false
+        type: string
+      chat_id:
+        description: 'Telegram chat_id, куди відписати (заповнює бот)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  zbir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Усе, що прийшло від бота, — лише через env: ніколи не підставляємо ${{ inputs.* }} прямо в команди
+    env:
+      ZBIR_TEXT: ${{ inputs.text }}
+      ZBIR_ACTION: ${{ inputs.action }}
+      ZBIR_URL: ${{ inputs.url }}
+      ZBIR_TITLE: ${{ inputs.title }}
+      ZBIR_ABOUT: ${{ inputs.about }}
+      ZBIR_GOAL: ${{ inputs.goal }}
+      ZBIR_UNTIL: ${{ inputs.until }}
+      ZBIR_KIND: ${{ inputs.kind }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Змінити збори
+        id: zbir
+        env:
+          MONO_TOKEN: ${{ secrets.MONO_TOKEN }}
+        run: ZBIR_MESSAGE="$RUNNER_TEMP/zbir-message.txt" node tools/zbir.mjs
+
+      # Хтось устиг закомітити раніше (архів, інша команда) — беремо свіжу гілку й застосовуємо команду ще раз
+      - name: Закомітити й опублікувати
+        id: commit
+        if: steps.zbir.outputs.changed == '1'
+        env:
+          COMMIT_MSG: ${{ steps.zbir.outputs.commit }}
+          MONO_TOKEN: ${{ secrets.MONO_TOKEN }}
+        run: |
+          git config user.name "zbir-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for i in 1 2 3; do
+            git add seasons.json
+            git diff --cached --quiet && { echo "Без змін."; exit 0; }
+            git commit -q -m "$COMMIT_MSG"
+            if git push -q origin "HEAD:${GITHUB_REF_NAME}"; then echo "pushed=1" >> "$GITHUB_OUTPUT"; exit 0; fi
+            sleep $((i * 5))
+            git fetch -q origin "${GITHUB_REF_NAME}"
+            git reset -q --hard "origin/${GITHUB_REF_NAME}"
+            ZBIR_MESSAGE="$RUNNER_TEMP/zbir-message.txt" GITHUB_OUTPUT=/dev/null node tools/zbir.mjs
+          done
+          echo "❌ Збір не опубліковано: GitHub тричі відхилив зміни. Спробуй ще раз за хвилину." > "$RUNNER_TEMP/zbir-message.txt"
+          exit 1
+
+      # Комміти від GITHUB_TOKEN можуть не запускати збірку Pages — просимо її явно
+      - name: Оновити сайт (GitHub Pages)
+        if: steps.commit.outputs.pushed == '1'
+        continue-on-error: true
+        run: |
+          curl -sS -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages/builds" > /dev/null
+
+      - name: Відповісти в Telegram
+        if: always()
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          CHAT_ID: ${{ inputs.chat_id }}
+          RESULT: ${{ job.status }}
+        run: |
+          f="$RUNNER_TEMP/zbir-message.txt"
+          [ -s "$f" ] && msg=$(cat "$f") || msg=""
+          if [ "$RESULT" != "success" ] && ! printf '%s' "$msg" | grep -q '^❌'; then
+            msg="❌ Збір не опубліковано: щось пішло не так. Подробиці — GitHub → Actions → «Збір із бота»."
+          fi
+          [ -n "$msg" ] && echo "$msg" >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "$TG_BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then exit 0; fi
+          curl -sS --max-time 15 "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${CHAT_ID}" --data-urlencode "text=${msg}" \
+            --data-urlencode "disable_web_page_preview=true" > /dev/null || true

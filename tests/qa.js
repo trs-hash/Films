@@ -80,6 +80,27 @@ const SUP = (o = {}) => Object.assign(CAL({ start: '2026-09-20' }), { support: O
 const API1 = { UU1: [vid('c1', 'Перше', '2026-09-21T10:00:00Z', 'Опис #подорожі'), vid('c2', 'Друге', '2026-09-22T10:00:00Z')], SH: [] };
 const REAL_API = { 'UURSKTGA5a2hLrai_MXNaoUQ': '404', 'PLS50DDpfd-9w': [] };
 const noHScroll = async r => r.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+// Збір із бота: tools/zbir.mjs у тимчасовій копії репозиторію; банки — з підмінних даних, «сьогодні» — як у браузерних тестах
+const ZFX = { AbC123xyz: { raised: 18500.5, goal: 50000, title: 'Дрон для бригади', about: 'Мавік для побратимів.' }, Bad0001: 'fail' };
+function zbirRepo(seasons) {
+  const os = require('os'), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zbir-'));
+  fs.mkdirSync(path.join(dir, 'tools'));
+  ['zbir.mjs', 'mono.mjs'].forEach(f => fs.copyFileSync(path.join(ROOT, 'tools', f), path.join(dir, 'tools', f)));
+  fs.writeFileSync(path.join(dir, 'seasons.json'), typeof seasons === 'string' ? seasons : JSON.stringify(seasons, null, 2));
+  fs.writeFileSync(path.join(dir, 'fx.json'), JSON.stringify(ZFX));
+  const cfgText = () => fs.readFileSync(path.join(dir, 'seasons.json'), 'utf8');
+  const run = (text, extra = {}) => {
+    const msgF = path.join(dir, 'msg.txt'), outF = path.join(dir, 'gh.txt');
+    [msgF, outF].forEach(f => fs.rmSync(f, { force: true }));
+    const p = require('child_process').spawnSync('node', [path.join(dir, 'tools/zbir.mjs')], { encoding: 'utf8', env: Object.assign({}, process.env,
+      { MONO_FIXTURE: path.join(dir, 'fx.json'), MONO_TOKEN: '', ZBIR_TODAY: '2026-09-29', ZBIR_TEXT: text, ZBIR_MESSAGE: msgF, GITHUB_OUTPUT: outF }, extra) });
+    const read = f => fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : '';
+    let cfg = null; try { cfg = JSON.parse(cfgText()); } catch (e) {}   // битий файл лишається битим — це теж перевіряємо
+    return { code: p.status, msg: read(msgF), gh: read(outF), text: cfgText(), cfg };
+  };
+  return { dir, run, cfgText };
+}
+const REAL_CFG = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'seasons.json'), 'utf8'));
 
 // ── Запуск одного сценарію ──────────────────────────────────────────────────
 async function scenario(browser, o) {
@@ -111,6 +132,7 @@ async function scenario(browser, o) {
   await ctx.route(/youtube\.com\/embed/, r => r.fulfill({ body: '<body style="background:#000"></body>', contentType: 'text/html' }));
   const json = (pat, v) => ctx.route(pat, r => v === 404 ? r.fulfill({ status: 404 })
     : r.fulfill({ contentType: 'application/json', body: typeof v === 'string' ? v : JSON.stringify(v) }));
+  if (typeof o.seasons === 'function') o.seasons = o.seasons();      // лінивий конфіг (напр. результат tools/zbir.mjs)
   if (o.seasons !== undefined) await json(/seasons\.json/, o.seasons);
   if (!o.realFiles) await json(/archive\.json/, o.archive !== undefined ? o.archive : { base: '', days: {} });   // realFiles — справжні файли сайту
   if (o.state !== undefined) await json(/state\.json/, o.state);
@@ -588,16 +610,16 @@ const CASES = [
     async () => {
       const os = require('os'), cp = require('child_process'), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'funds-')), out = path.join(dir, 'out');
       const run = fx => { fs.writeFileSync(path.join(dir, 'fx.json'), JSON.stringify(fx));
-        return cp.execFileSync('node', [path.join(ROOT, 'tools/fundraisers.mjs')], { env: Object.assign({}, process.env, { FUNDS_OUT: out, FUNDS_FIXTURE: path.join(dir, 'fx.json'), MONO_TOKEN: '' }) }).toString(); };
+        return cp.execFileSync('node', [path.join(ROOT, 'tools/fundraisers.mjs')], { env: Object.assign({}, process.env, { FUNDS_OUT: out, MONO_FIXTURE: path.join(dir, 'fx.json'), MONO_TOKEN: '' }) }).toString(); };
       // справжній seasons.json — лише приклад XXXXXXXXXX: ні запитів, ні файлу
       const first = run({});
       if (fs.existsSync(path.join(out, 'fundraisers.json')) || !first.includes('нічого робити')) return false;
       // підміняємо seasons.json копією з двома банками (скрипт читає seasons.json із кореня, тож — тимчасова копія репо)
       const repo = path.join(dir, 'repo'); fs.mkdirSync(path.join(repo, 'tools'), { recursive: true });
-      fs.copyFileSync(path.join(ROOT, 'tools/fundraisers.mjs'), path.join(repo, 'tools/fundraisers.mjs'));
+      ['fundraisers.mjs', 'mono.mjs'].forEach(f => fs.copyFileSync(path.join(ROOT, 'tools', f), path.join(repo, 'tools', f)));
       fs.writeFileSync(path.join(repo, 'seasons.json'), JSON.stringify({ support: { fundraisers: [{ url: 'https://send.monobank.ua/jar/Aaa111' }, { url: 'send.monobank.ua/jar/Bbb222' }, { url: 'https://send.monobank.ua/jar/XXXXXXXXXX' }, 'сміття'] } }));
       const run2 = fx => { fs.writeFileSync(path.join(dir, 'fx.json'), JSON.stringify(fx));
-        return cp.execFileSync('node', [path.join(repo, 'tools/fundraisers.mjs')], { env: Object.assign({}, process.env, { FUNDS_OUT: out, FUNDS_FIXTURE: path.join(dir, 'fx.json'), MONO_TOKEN: '' }) }).toString(); };
+        return cp.execFileSync('node', [path.join(repo, 'tools/fundraisers.mjs')], { env: Object.assign({}, process.env, { FUNDS_OUT: out, MONO_FIXTURE: path.join(dir, 'fx.json'), MONO_TOKEN: '' }) }).toString(); };
       run2({ Aaa111: { raised: 1234.5, goal: 50000 }, Bbb222: { raised: 10, goal: 0 } });
       const a = JSON.parse(fs.readFileSync(path.join(out, 'fundraisers.json'), 'utf8'));
       const same = run2({ Aaa111: { raised: 1234.5, goal: 50000 }, Bbb222: { raised: 10, goal: 0 } });
@@ -605,6 +627,78 @@ const CASES = [
       const b = JSON.parse(fs.readFileSync(path.join(out, 'fundraisers.json'), 'utf8'));
       return a.jars.Aaa111.raised === 1234.5 && a.jars.Bbb222.raised === 10 && !a.jars.XXXXXXXXXX && /\+0[23]:00$/.test(a.updated)
         && same.includes('без змін') && b.jars.Aaa111.raised === 1234.5 && b.jars.Bbb222.raised === 20;
+    }],
+  // --- 🤖 Збір із бота (Гавриїл → GitHub → seasons.json)
+  ['Z01 /zbir + лише посилання: назва, опис, ціль і сума — з банки; блок увімкнено, приклад прибрано, решта не чіпана', {},
+    async () => {
+      const z = zbirRepo(REAL_CFG()), r = z.run('/zbir https://send.monobank.ua/jar/AbC123xyz'), sp = r.cfg.support, f = sp.fundraisers;
+      return r.code === 0 && f.length === 1 && f[0].id === 'dron-dlia-bryhady' && f[0].title === 'Дрон для бригади' && f[0].about === 'Мавік для побратимів.'
+        && f[0].goal === 50000 && f[0].raised === 18500.5 && f[0].enabled === true && sp.enabled === true && sp.membership.enabled === false
+        && r.cfg.calendar.playlist === 'UURSKTGA5a2hLrai_MXNaoUQ' && r.msg.startsWith('✅ Збір «Дрон для бригади» додано')
+        && r.msg.includes('https://taras.kyiv.ua/#f-dron-dlia-bryhady') && r.msg.includes('18 500 ₴ з 50 000 ₴ (37%)')
+        && /changed=1/.test(r.gh) && r.gh.includes('commit=збір: додано «Дрон для бригади»');
+    }],
+  ['Z02 своя назва й опис, @бот у команді, «ціль 50 000 грн, до 15.01, благодійний»; банка не читається — збір усе одно додано', {},
+    async () => {
+      const r = zbirRepo(REAL_CFG()).run('/zbir@GavriilBot https://send.monobank.ua/jar/Bad0001\nГенератор для лікарні\nЩоб світло було завжди.\nціль 50 000 грн, до 15.01, благодійний');
+      const f = r.cfg.support.fundraisers[0];
+      return r.code === 0 && f.title === 'Генератор для лікарні' && f.about === 'Щоб світло було завжди.' && f.goal === 50000 && f.until === '2027-01-15'
+        && f.kind === 'charity' && f.raised === 0 && f.id === 'henerator-dlia-likarni' && r.msg.includes('підтягнеться автоматично');
+    }],
+  ['Z03 в один рядок через « | », «60к», «до 31 грудня»; повторна банка — оновлення без дубля, якір той самий', {},
+    async () => {
+      const z = zbirRepo(REAL_CFG()); z.run('/zbir https://send.monobank.ua/jar/AbC123xyz');
+      const r = z.run('/zbir send.monobank.ua/jar/AbC123xyz | Дрон для 3-ї бригади | ціль 60к | до 31 грудня'), f = r.cfg.support.fundraisers;
+      return r.code === 0 && f.length === 1 && f[0].id === 'dron-dlia-bryhady' && f[0].title === 'Дрон для 3-ї бригади' && f[0].goal === 60000
+        && f[0].until === '2026-12-31' && f[0].about === 'Мавік для побратимів.' && r.msg.includes('оновлено') && r.msg.includes('до 31 грудня');
+    }],
+  ['Z04 помилки: нема посилання, дата минула, банка не читається й нема назви, криві ціль і дія — ❌, файл не змінено', {},
+    async () => {
+      const z = zbirRepo(REAL_CFG()), before = z.cfgText();
+      const rs = [z.run('/zbir просто текст'), z.run('/zbir https://send.monobank.ua/jar/AbC123xyz до 01.09.2026'), z.run('/zbir https://send.monobank.ua/jar/Bad0001'),
+        z.run('/zbir https://send.monobank.ua/jar/AbC123xyz', { ZBIR_GOAL: 'багато' }), z.run('', { ZBIR_ACTION: 'видалити все' })];
+      return rs.every(r => r.code === 1 && r.msg.startsWith('❌') && /changed=0/.test(r.gh)) && z.cfgText() === before
+        && rs[0].msg.includes('Нема посилання') && rs[1].msg.includes('вже минула') && rs[2].msg.includes('Надішли назву другим рядком')
+        && rs[3].msg.includes('Не розумію ціль') && rs[4].msg.includes('Не знаю дії');
+    }],
+  ['Z05 /zakryty: єдиний — без уточнення; кілька — просить уточнити; за id і частиною назви; /zbory', {},
+    async () => {
+      const z = zbirRepo(REAL_CFG());
+      z.run('/zbir https://send.monobank.ua/jar/AbC123xyz'); z.run('/zbir https://send.monobank.ua/jar/Bad0001\nГенератор для лікарні');
+      const list2 = z.run('/zbory'), amb = z.run('/zakryty'), byName = z.run('/zakryty генератор'), list1 = z.run('/zbory');
+      const one = z.run('/zakryty'), none = z.run('/zakryty'), list0 = z.run('/zbory');
+      return list2.msg.includes('На сайті 2 збори') && amb.code === 1 && amb.msg.includes('/zakryty dron-dlia-bryhady') && amb.msg.includes('/zakryty henerator-dlia-likarni')
+        && byName.code === 0 && byName.msg.includes('«Генератор для лікарні» закрито') && list1.msg.includes('На сайті один збір') && !list1.msg.includes('Генератор')
+        && one.code === 0 && one.msg.includes('«Дрон для бригади» закрито') && /changed=1/.test(one.gh) && none.code === 1 && list0.msg.includes('нема жодного збору')
+        && one.cfg.support.fundraisers.length === 2 && one.cfg.support.fundraisers.every(f => f.enabled === false) && /changed=0/.test(list0.gh);
+    }],
+  ['Z06 «Стати спонсором» був увімкнений під вимкненим блоком — бот вмикає блок, але спонсорство лишає невидимим', {},
+    async () => {
+      const cfg = REAL_CFG(); cfg.support.membership.enabled = true;
+      const r = zbirRepo(cfg).run('/zbir https://send.monobank.ua/jar/AbC123xyz');
+      return r.code === 0 && r.cfg.support.enabled === true && r.cfg.support.membership.enabled === false && r.msg.includes('«Стати спонсором» лишаю вимкненим');
+    }],
+  ['Z07 seasons.json з кривою комою — бот виправляє формат; безнадійно битий — не чіпає', {},
+    async () => {
+      const ok = zbirRepo('{"calendar": {"start": "2026-09-30", "playlist": "UU1",},\n "support": {"fundraisers": {"enabled": false, "url": "x"}},}').run('/zbir https://send.monobank.ua/jar/AbC123xyz');
+      const z = zbirRepo('{"calendar": {"start": '), bad = z.run('/zbir https://send.monobank.ua/jar/AbC123xyz');
+      return ok.code === 0 && ok.cfg.calendar.playlist === 'UU1' && ok.cfg.support.fundraisers.length === 2 && ok.text.endsWith('}\n')
+        && bad.code === 1 && bad.msg.includes('зіпсований') && z.cfgText() === '{"calendar": {"start": ';
+    }],
+  ['Z08 те, що записав бот, сайт показує: збір над стіною, сума, якір; ?check без помилок', { path: '?check', api: API1, shot: 'Z08-bot-site',
+      seasons: () => { const c = REAL_CFG(); c.calendar = CAL({ start: '2026-09-20' }).calendar;
+        return zbirRepo(c).run('/zbir https://send.monobank.ua/jar/AbC123xyz\nДрон для бригади\nціль 50000, до 31.10, благодійний').text; } },
+    async r => await r.page.locator('#f-dron-dlia-bryhady.fund:not(.off)').count() === 1 && has(r, '18 500 ₴ з 50 000 ₴ · 37%')
+      && has(r, 'Благодійний збір · до 31 жовтня') && has(r, 'Помилок не знайдено') && !has(r, 'Назва збору')],
+  ['Z09 workflow: усе від бота — лише через env (без ${{ inputs }} у командах), ≤ 10 полів; шматки для бота компілюються', {},
+    async () => {
+      const y = fs.readFileSync(path.join(ROOT, '.github/workflows/fundraiser.yml'), 'utf8');
+      const runs = [...y.matchAll(/^(\s*)run: \|\n((?:\1\s+.*\n|\s*\n)*)|^\s*run: (.*)$/gm)].map(m => m[2] || m[3] || '');
+      const inputs = (y.match(/^ {6}\w+:\n {8}description:/gm) || []).length;
+      const cp = require('child_process');
+      cp.execFileSync('python3', ['-m', 'py_compile', path.join(ROOT, 'tools/gavriil/films_zbir.py')]);
+      cp.execFileSync('node', ['--check', path.join(ROOT, 'tools/gavriil/films-zbir.mjs')]);
+      return runs.length >= 4 && runs.every(t => !/\$\{\{\s*(inputs|github\.event|steps)\./.test(t)) && inputs === 9 && /ZBIR_TEXT: \$\{\{ inputs\.text \}\}/.test(y);
     }],
 ];
 
