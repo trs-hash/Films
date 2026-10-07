@@ -696,7 +696,7 @@ const CASES = [
       const runs = [...y.matchAll(/^(\s*)run: \|\n((?:\1\s+.*\n|\s*\n)*)|^\s*run: (.*)$/gm)].map(m => m[2] || m[3] || '');
       const inputs = (y.match(/^ {6}\w+:\n {8}description:/gm) || []).length;
       const cp = require('child_process');
-      cp.execFileSync('python3', ['-m', 'py_compile', path.join(ROOT, 'tools/gavriil/films_zbir.py')]);
+      cp.execFileSync('python3', ['-c', 'import ast, sys; ast.parse(open(sys.argv[1], encoding="utf-8").read())', path.join(ROOT, 'tools/gavriil/films_zbir.py')]);   // без __pycache__
       cp.execFileSync('node', ['--check', path.join(ROOT, 'tools/gavriil/films-zbir.mjs')]);
       return runs.length >= 4 && runs.every(t => !/\$\{\{\s*(inputs|github\.event|steps)\./.test(t)) && inputs === 9 && /ZBIR_TEXT: \$\{\{ inputs\.text \}\}/.test(y);
     }],
