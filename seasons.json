@@ -11,12 +11,6 @@
   "seasons": [],
   "support": {
     "enabled": false,
-    "membership": {
-      "enabled": false,
-      "url": "https://www.youtube.com/channel/UCRSKTGA5a2hLrai_MXNaoUQ/join",
-      "label": "Стати спонсором",
-      "about": "Ранній доступ до днів, закулісся і голос у виборі тем."
-    },
     "donate": {
       "enabled": false,
       "url": "",

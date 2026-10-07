@@ -10,8 +10,8 @@
 //   /zbory                                                  — що зараз на сайті
 //
 // Повторний /zbir з тією самою банкою оновлює збір, а не дублює. Змінює лише seasons.json → support:
-// вмикає support.enabled і сам збір; «Стати спонсором» / «Підтримати», які глядачі досі не бачили, так і лишаються
-// невидимими. Приклад-заготовку (…/jar/XXXXXXXXXX) прибирає.
+// вмикає support.enabled і сам збір; «Підтримати», якого глядачі досі не бачили, так і лишається невидимим.
+// Приклад-заготовку (…/jar/XXXXXXXXXX) прибирає.
 //
 // Змінні: ZBIR_ACTION (add | close | list; можна й командою в тексті), ZBIR_TEXT (текст повідомлення),
 // ZBIR_URL, ZBIR_TITLE, ZBIR_ABOUT, ZBIR_GOAL, ZBIR_UNTIL, ZBIR_KIND — те саме окремими полями (форма в GitHub),
@@ -188,7 +188,7 @@ sup.fundraisers = funds.filter(x => !isSample(x));                     // при
 // Вмикаємо весь блок підтримки — але глядачі мають побачити лише збір, а не те, що досі ховалось за вимкненим блоком
 let hidden = [];
 if (!on(sup.enabled)) {
-    [['membership', 'Стати спонсором'], ['donate', 'Підтримати']].forEach(([k, name]) => {
+    [['donate', 'Підтримати']].forEach(([k, name]) => {
         if (isObj(sup[k]) && on(sup[k].enabled)) { sup[k].enabled = false; hidden.push(`«${sup[k].label || name}»`); }
     });
     sup.enabled = true;

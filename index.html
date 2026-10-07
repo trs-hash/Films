@@ -47,7 +47,7 @@
         .main{flex:1;min-height:100vh}   /* підвал одразу нижче першого екрана — не «їде» вниз, коли зʼявляється календар (CLS) */
         .intro{margin:10px 0 50px}
         .intro .name{font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin:0 0 18px}
-        .intro .links{display:flex;flex-wrap:wrap;gap:10px}
+        .intro .links{display:flex;align-items:center;gap:10px}
         /* Іконки без підписів: символи впізнавані самі по собі (05.08.2026) */
         .intro .links a{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;padding:10px;border-radius:8px;transition:.2s}
         .intro .links a.primary{background:var(--txt);color:var(--bg)}
@@ -184,23 +184,16 @@
         .note-tags .chip:hover{color:#fff;border-color:var(--red);background:var(--red)}
         .note-tags .chip.share{font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 
-        /* ── Підтримка (seasons.json → support): кнопки в шапці, збори над стіною, рядок у плеєрі. Типово вимкнено ── */
-        .sup{display:contents}
-        .intro .links a.sup-btn{gap:8px;min-height:38px;box-sizing:border-box;padding:9px 14px;border:1px solid var(--div);color:var(--txt);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
-        .intro .links a.sup-btn:hover{color:var(--red);border-color:var(--red)}
-        .sup-btn svg{color:var(--red);flex:none}
-        .intro .links a.sup-btn.off{border:1px dashed var(--red);opacity:.75}
-        .off-tag{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--red)}
-        /* Збір — одне тихе посилання під кнопками в шапці: крапка, назва, ↗. Без карток, прогресу й закликів */
-        .fund-links{display:flex;flex-direction:column;align-items:flex-start;margin-top:10px}
-        .fund-links:empty{display:none}
-        .fund-link{display:inline-flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:12px;letter-spacing:.3px;line-height:1.4;color:var(--mut);text-decoration:none;transition:color .2s;overflow-wrap:anywhere}
+        /* ── Підтримка (seasons.json → support). Типово вимкнено ──
+           Шапка — один ряд: іконка Instagram і поруч тихі посилання «● Збір: Назва ↗» (та «Підтримати ↗», якщо увімкнено).
+           Без кнопок, карток, прогресу й закликів у плеєрі. */
+        .q-links{display:flex;flex-wrap:wrap;align-items:center;gap:2px 18px;min-width:0;margin-left:6px}
+        .q-links:empty{display:none}
+        .intro .links a.q-link,.q-link{display:inline-flex;align-items:flex-start;justify-content:flex-start;gap:8px;padding:4px 0;border-radius:0;font-size:12px;letter-spacing:.3px;line-height:1.4;color:var(--mut);text-decoration:none;transition:color .2s;overflow-wrap:anywhere}
         .fund-link::before{content:'';flex:none;width:6px;height:6px;margin-top:calc(.7em - 3px);border-radius:50%;background:var(--red)}   /* навпроти першого рядка */
-        a.fund-link:hover,.fund-link.hl{color:var(--red)}
-        .fund-link.off{opacity:.7}
-        .note-sup{margin:14px 0 0;font-size:14px;line-height:1.5;color:rgba(255,255,255,.75)}
-        .note-sup a{color:#fff;font-weight:700;text-decoration:underline;text-decoration-color:var(--red);text-underline-offset:3px}
-        .note-sup a:hover{color:var(--red)}
+        .intro .links a.q-link:hover,.intro .links .q-link.hl{color:var(--red)}
+        .q-link.off{opacity:.7}
+        .off-tag{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--red)}
 
         /* ?check — самоперевірка після правок seasons.json (бачить лише той, хто відкрив з ?check) */
         .chk{border:2px dashed var(--red);border-radius:10px;padding:16px 20px 6px;margin:0 0 50px;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
@@ -275,9 +268,8 @@
             <a class="primary" href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
             </a>
-            <span class="sup" id="sup"></span><!-- «Стати спонсором» / «Підтримати» — зʼявляються, коли увімкнені в seasons.json → support -->
+            <div class="q-links" id="sup"></div><!-- збори й «Підтримати» — тихі посилання, коли увімкнені в seasons.json → support -->
         </div>
-        <div class="fund-links" id="funds"></div><!-- актуальні збори — тихі посилання (seasons.json → support.fundraisers) -->
         <div class="mail"><a href="mailto:hello@taras.kyiv.ua">hello@taras.kyiv.ua</a></div>
         <button id="install" class="install" type="button" hidden onclick="installApp()">Встановити застосунок</button>
     </header>
@@ -336,7 +328,7 @@
     let PLAY = [];               // реєстр програвання: PLAY[idx] = {key,y,v} (без крихких inline-id)
     let EAGER = 0;               // скільки перших мініатюр вантажити одразу (перший екран), решта — ліниво
     let FIRST_IMG = true;        // найперша мініатюра — з найвищим пріоритетом (це LCP сторінки)
-    let SUPPORT = { enabled: false, membership: null, donate: null, funds: [] };   // seasons.json → support (типово все вимкнено)
+    let SUPPORT = { enabled: false, donate: null, funds: [] };   // seasons.json → support (типово все вимкнено)
     let FUNDS_LIVE = null;       // fundraisers.json: {updated, jars: {ID банки: {raised, goal}}} — суми з monobank (GitHub Action)
     const CHECK = /[?&]check\b/.test(location.search);
     const BOOT = window.BOOT || {};
@@ -576,11 +568,10 @@
     }
 
     // ── Підтримка: seasons.json → "support" ─────────────────────────────────────
-    // membership — платна підписка (типово YouTube «Стати спонсором», …/join; можна й Mono Base чи Patreon);
-    // donate — разова підтримка (Mono Base, банка); fundraisers — актуальні збори (тихе посилання в шапці).
+    // fundraisers — актуальні збори; donate — разова підтримка (Mono Base, банка). Обидва — тихі посилання в шапці.
     // Глядач бачить пункт, лише коли увімкнено І весь блок (support.enabled), І сам пункт (enabled).
-    // ?check показує все одразу на своїх місцях — з пунктирною рамкою й позначкою «вимкнено».
-    const SUP_KEYS = ['enabled', 'membership', 'donate', 'fundraisers'];
+    // ?check показує все одразу на своєму місці — з позначкою «вимкнено».
+    const SUP_KEYS = ['enabled', 'donate', 'fundraisers'];
     const LINK_KEYS = ['enabled', 'url', 'label', 'about'];
     const FUND_KEYS = ['enabled', 'id', 'title', 'about', 'url', 'goal', 'raised', 'until', 'kind'];
     const FUND_KINDS = { charity: 'charity', 'благодійний': 'charity', 'благодійність': 'charity', channel: 'channel', 'канал': 'channel' };
@@ -610,26 +601,22 @@
     // ID банки з посилання send.monobank.ua/jar/… — за ним GitHub Action підтягує суму (fundraisers.json)
     function jarOf(url) { let m = String(url || '').match(/send\.monobank\.ua\/jar\/([A-Za-z0-9]+)/); return m ? m[1] : ''; }
     const isSample = url => /^X+$/i.test(jarOf(url));
-    function supLink(raw, what, label, isMembership) {
+    function supLink(raw, what, label) {
         if (raw == null) return null;
         if (typeof raw === 'string') raw = { enabled: true, url: raw };   // скорочено: просто посилання
         if (!isObj(raw)) { issue(`${what}: очікую обʼєкт {"enabled": …, "url": …}`); return null; }
         Object.keys(raw).forEach(k => { if (!LINK_KEYS.includes(k)) issue(`${what}: невідоме поле «${k}» — описка? Відомі: ${LINK_KEYS.join(', ')}`); });
-        let enabled = flag(raw.enabled, what), url = normUrl(raw.url, what, 'кнопку сховано');
-        // Канал YouTube без /join відкриває головну каналу, а не сторінку спонсорства — додаємо /join
-        let m = isMembership && url.match(/^(https?:\/\/(?:www\.|m\.)?youtube\.com\/(?:channel\/UC[\w-]{22}|@[\w.\-]+|c\/[\w.\-]+))\/?(?:[?#].*)?$/i);
-        if (m) { url = m[1] + '/join'; issue(`${what}: посилання на канал без /join — веду на сторінку спонсорства: ${url}`); }
-        if (enabled && !url) issue(`${what}: увімкнено, але нема url — кнопку сховано`);
+        let enabled = flag(raw.enabled, what), url = normUrl(raw.url, what, 'посилання сховано');
+        if (enabled && !url) issue(`${what}: увімкнено, але нема url — посилання сховано`);
         return { enabled, url, label: str(raw.label) || label, about: str(raw.about) };
     }
     function normSupport(raw) {
-        let out = { enabled: false, membership: null, donate: null, funds: [] };
+        let out = { enabled: false, donate: null, funds: [] };
         if (raw == null) return out;
-        if (!isObj(raw)) { issue('seasons.json, support: очікую обʼєкт {"enabled": …, "membership": …, "fundraisers": […]}'); return out; }
+        if (!isObj(raw)) { issue('seasons.json, support: очікую обʼєкт {"enabled": …, "fundraisers": […]}'); return out; }
         Object.keys(raw).forEach(k => { if (!SUP_KEYS.includes(k)) issue(`seasons.json, support: невідоме поле «${k}» — описка? Відомі: ${SUP_KEYS.join(', ')}`); });
         out.enabled = flag(raw.enabled, 'seasons.json, support');
-        out.membership = supLink(raw.membership, 'seasons.json, support.membership', 'Стати спонсором', true);
-        out.donate = supLink(raw.donate, 'seasons.json, support.donate', 'Підтримати', false);
+        out.donate = supLink(raw.donate, 'seasons.json, support.donate', 'Підтримати');
         let list = raw.fundraisers == null ? [] : raw.fundraisers;
         if (isObj(list)) { issue('seasons.json, support.fundraisers: очікую список [ … ] — один збір теж беру в [ ]'); list = [list]; }
         if (!Array.isArray(list)) { issue('seasons.json, support.fundraisers: очікую список [ … ]'); list = []; }
@@ -907,7 +894,7 @@
 
     // ── Малювання ──────────────────────────────────────────────────────────────
     // Порядок: теми → вибрана тема → стіна днів → сезони (поточний → анонси → завершені).
-    let LAST_HTML = '', SUP_HTML = '', FUND_HTML = '', HASH_DONE = false, DAY_DONE = '';
+    let LAST_HTML = '', SUP_HTML = '', HASH_DONE = false, DAY_DONE = '';
     function render() {
         // Телефон: на першому екрані одна картка — решта не повинна відбирати в неї канал; ширший екран — перший ряд
         PLAY = []; EAGER = matchMedia('(max-width:600px)').matches ? 1 : 3; FIRST_IMG = true;
@@ -924,9 +911,8 @@
                     `<a class="nav-seg" href="#${s.id}">Сезон ${s.n}</a>`).join('') + '</nav>';
             list.forEach(({ s, st }) => { html += seasonHtml(s, st, today); });
         }
-        let sup = supHeaderHtml(), fl = fundLinksHtml(today);   // підтримка й збори — у шапці (поза #app)
+        let sup = fundLinksHtml(today) + donateHtml();   // збори й «Підтримати» — у шапці поруч з Instagram (поза #app)
         if (sup !== SUP_HTML) { SUP_HTML = sup; let el = document.getElementById('sup'); if (el) el.innerHTML = sup; }
-        if (fl !== FUND_HTML) { FUND_HTML = fl; let el = document.getElementById('funds'); if (el) el.innerHTML = fl; }
         loadFunds();
         if (html === LAST_HTML) return;                // нічого не змінилось — не чіпаємо DOM (без миготіння)
         LAST_HTML = html;
@@ -951,32 +937,25 @@
         }
     }
 
-    // ── Підтримка: шапка, збори, рядок у плеєрі ──────────────────────────────────
-    const HEART_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.2 3 4.5 6.6 4.5c2.1 0 3.5 1.1 4.4 2.4.9-1.3 2.3-2.4 4.4-2.4 3.6 0 5.7 3.7 4.2 7.2C19.5 16.4 12 21 12 21z"/></svg>';
+    // ── Підтримка: тихі посилання в шапці ─────────────────────────────────────────
     const offTag = why => why ? ` <span class="off-tag">${esc(why.startsWith('вимкнено') ? 'вимкнено' : why)}</span>` : '';
-    function supHeaderHtml() {
-        return [['membership', HEART_SVG], ['donate', '']].map(([k, icon]) => {
-            let l = SUPPORT[k], why = linkWhy(l);
-            if (why && !(CHECK && l && l.url)) return '';   // глядач бачить лише увімкнене; ?check — усе з адресою
-            return `<a class="sup-btn${why ? ' off' : ''}" data-sup="${k}" href="${esc(l.url)}" target="_blank" rel="noopener"` +
-                (l.about ? ` title="${esc(l.about)}"` : '') + `>${icon}${esc(l.label)}${offTag(why)}</a>`;
-        }).join('');
-    }
-    // Збір — лише тихе посилання в шапці: «● Збір: Назва ↗» одразу на банку; «навіщо» — підказкою при наведенні.
-    // Після until зникає сам. id="f-…" — якір для посилань із бота (taras.kyiv.ua/#f-dron підсвічує збір).
+    // Збір: «● Збір: Назва ↗» одразу на банку; «навіщо» — підказкою при наведенні. Після until зникає сам.
+    // id="f-…" — якір для посилань із бота (taras.kyiv.ua/#f-dron підсвічує збір).
     function fundLinksHtml(today) {
         return SUPPORT.funds.filter(f => !fundWhy(f, today) || (CHECK && f.title)).map(f => {
             // :target не спрацьовує на посиланні, яке зʼявилось уже після завантаження, — підсвічуємо за адресою самі
             let hl = decodeURIComponent(location.hash) === '#f-' + f.id ? ' hl' : '';
-            let why = fundWhy(f, today), attrs = ` class="fund-link${why ? ' off' : ''}${hl}" id="f-${esc(f.id)}"` + (f.about ? ` title="${esc(f.about)}"` : '');
+            let why = fundWhy(f, today), attrs = ` class="q-link fund-link${why ? ' off' : ''}${hl}" id="f-${esc(f.id)}"` + (f.about ? ` title="${esc(f.about)}"` : '');
             let body = `Збір: ${esc(f.title)} ↗${offTag(why)}`;
             return f.url && !isSample(f.url) ? `<a${attrs} href="${esc(f.url)}" target="_blank" rel="noopener">${body}</a>` : `<span${attrs}>${body}</span>`;
         }).join('');
     }
-    // У плеєрі (компʼютер) — один спокійний рядок про платну підписку, коли вона увімкнена. Збори туди не лізуть.
-    function noteSupHtml() {
-        let m = SUPPORT.membership;
-        return m && !linkWhy(m) ? `<p class="note-sup">${m.about ? esc(m.about) + ' ' : ''}<a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.label)} ↗</a></p>` : '';
+    // «Підтримати ↗» (Mono Base чи банка) — тим самим тихим посиланням; глядач бачить лише увімкнене, ?check — усе з адресою
+    function donateHtml() {
+        let l = SUPPORT.donate, why = linkWhy(l);
+        if (why && !(CHECK && l && l.url)) return '';
+        return `<a class="q-link${why ? ' off' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener"` +
+            (l.about ? ` title="${esc(l.about)}"` : '') + `>${esc(l.label)} ↗${offTag(why)}</a>`;
     }
     // Суми з банок (fundraisers.json, оновлює GitHub Action) глядачам не показуємо — лише на ?check, для звірки
     let FUNDS_ASKED = false;
@@ -1232,9 +1211,8 @@
             let why = linkWhy(l);
             return `<li><b>${name}</b> — ${why ? esc(why) : '✓ на сайті'}${l && l.url ? ': ' + esc(l.url) : ''}</li>`;
         };
-        if (!S.membership && !S.donate && !S.funds.length) return '';
-        rows += `<li><b>Підтримка</b> — ${S.enabled ? 'увімкнено (support.enabled)' : 'вимкнено: глядачі не бачать нічого з цього; тут — попередній перегляд у пунктирних рамках'}</li>`;
-        if (S.membership) rows += link('Платна підписка', S.membership);
+        if (!S.donate && !S.funds.length) return '';
+        rows += `<li><b>Підтримка</b> — ${S.enabled ? 'увімкнено (support.enabled)' : 'вимкнено: глядачі не бачать нічого з цього; тут — попередній перегляд з позначкою «вимкнено»'}</li>`;
         if (S.donate) rows += link('Підтримати', S.donate);
         S.funds.forEach(f => {
             let why = fundWhy(f, today), n = fundNow(f);
@@ -1315,8 +1293,7 @@
               (meta.time ? `<div class="note-foot">🕒 ${esc(meta.time)}</div>` : '') + `</div>`
             : '') + ((topics.length || p.date) ? '<div class="note-tags">' +
               (p.date ? `<button type="button" class="chip share" onclick="shareDay('${p.date}', this)">🔗 Посилання на день</button>` : '') +
-              topics.map(t => `<a class="chip" href="#t=${encodeURIComponent(t)}">${esc(topicLabel(t))}</a>`).join('') + '</div>' : '') +
-            noteSupHtml();
+              topics.map(t => `<a class="chip" href="#t=${encodeURIComponent(t)}">${esc(topicLabel(t))}</a>`).join('') + '</div>' : '');
         // Плеєр: локальне відео (судний день, Фаза 5) якщо є base+v, інакше YouTube-ембед за id.
         let iframe = document.getElementById('ytIframe'), loc = document.getElementById('locVideo');
         let local = hasLocal ? (BASE.replace(/\/+$/, '') + '/' + p.v.replace(/^\/+/, '')) : '';
