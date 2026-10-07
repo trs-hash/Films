@@ -474,6 +474,21 @@ const CASES = [
     async r => { await r.page.evaluate(() => { location.hash = 't=%E0%A4%A'; }); await r.page.waitForTimeout(200); await r.page.evaluate(() => { location.hash = 'd='; }); await r.page.waitForTimeout(200);
       return r.errs.length === 0 && await r.page.locator('#cal .v-lnk').count() === 4; }],
 
+  ['H40 відкрили посилання з кривим %-кодуванням (#t=%E0%A4%A, #%) — і вперше, і повторно з кешу: без помилок, свіжі дані підтягуються', {
+      path: '#t=%E0%A4%A', seasons: SUP(), api: API1, initScript: cacheInit(60 * 60 * 1000) },
+    async r => { const calls = r.apiCalls.length; await r.page.goto('http://localhost:8766/?again#%'); await r.page.waitForTimeout(600);   // ?again — справжнє перезавантаження, а не зміна #
+      return r.errs.length === 0 && calls > 0 && r.apiCalls.length > calls && await r.page.locator('#f-dron').count() === 1; }],
+
+  ['H41 нерозривне «слово» на 3000 літер в описі сезону, назві й описі теми — без горизонтального скролу (телефон і компʼютер), задовга тема — з «…»', {
+      path: '#t=' + encodeURIComponent('дуже'.repeat(10)), viewport: { width: 768, height: 800 },
+      seasons: Object.assign(CAL({ start: '2026-09-20' }), { topics: [{ tag: 'дуже'.repeat(10), title: 'Ж'.repeat(300), about: 'ж'.repeat(3000) }],
+        seasons: [S1({ about: 'ж'.repeat(3000), schedule: 'ж'.repeat(3000) })] }),
+      api: { UU1: [vid('w1', 'Довге', '2026-09-21T10:00:00Z', '#' + 'дуже'.repeat(10) + ' ' + 'ж'.repeat(3000))], SH: [], PL1: TWO } },
+    async r => { const wide = async () => r.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+      const ok768 = await wide(), ell = await r.page.$eval('.topics .chip-l', e => e.scrollWidth > e.clientWidth && getComputedStyle(e).textOverflow === 'ellipsis');
+      await r.page.setViewportSize({ width: 320, height: 700 }); await r.page.waitForTimeout(150);
+      return ok768 && ell && await wide(); }],
+
   // --- Людські помилки в новому блоці календаря й тем
   ['H31 calendar.start у форматі 20.09.2026', { path: '?check', seasons: { calendar: { start: '20.09.2026', playlist: 'UU1', exclude: ['SH'] } }, api: { UU1: TAGGED, SH: [] } },
     async r => has(r, 'прочитано як 2026-09-20') && await r.page.locator('#cal .v-lnk').count() === 4],
@@ -556,7 +571,7 @@ const CASES = [
   ['S02 ?check на справжньому seasons.json: попередній перегляд «вимкнено», пояснення, помилок нема', { path: '?check', api: REAL_API, shot: 'S02-check-preview' },
     async r => await r.page.locator('#sup .fund-link.off').count() === 1 && await r.page.locator('#sup a').count() === 0
       && has(r, 'вимкнено: глядачі не бачать') && has(r, 'у url ще приклад') && has(r, 'Помилок не знайдено') && !has(r, 'спонсор')],
-  ['S03 шапка — один ряд: Instagram і поруч тихе посилання на збір; без спонсорства, картки, прогресу й рядка в плеєрі', { seasons: SUP(), api: API1, shot: 'S03-support-on' },
+  ['S03 шапка — один ряд: Instagram і поруч тихе посилання на збір; без спонсорства, картки й рядка в плеєрі', { seasons: SUP(), api: API1, shot: 'S03-support-on' },
     async r => {
       const f = r.page.locator('#sup a.fund-link'), ig = r.page.locator('.links a.primary');
       const look = await f.evaluate(e => { const c = getComputedStyle(e); return { size: parseFloat(c.fontSize), bg: c.backgroundColor, h: e.getBoundingClientRect().height }; });
@@ -564,12 +579,28 @@ const CASES = [
       await r.page.click('#cal .v-lnk'); await r.page.waitForTimeout(200);
       const note = await r.page.innerText('#modNote');
       return await f.count() === 1 && await f.getAttribute('href') === 'https://send.monobank.ua/jar/AbC123xyz' && await f.getAttribute('target') === '_blank'
-        && await f.getAttribute('id') === 'f-dron' && await f.getAttribute('title') === 'Збираємо на мавік для побратимів.'
-        && (await f.innerText()).trim() === 'Збір: Дрон для бригади ↗' && look.size <= 12 && look.bg === 'rgba(0, 0, 0, 0)' && look.h >= 24
+        && await f.getAttribute('id') === 'f-dron' && (await f.getAttribute('title')).replace(/[\u00a0\u202f]/g, ' ') === 'Збираємо на мавік для побратимів.\n18 500 ₴ з 50 000 ₴ (37%)'
+        && (await f.innerText()).trim().startsWith('Збір: Дрон для бригади ↗') && look.size <= 12 && look.bg === 'rgba(0, 0, 0, 0)' && look.h >= 24
         && Math.abs((bi.y + bi.height / 2) - (bf.y + bf.height / 2)) <= 2 && bf.x > bi.x + bi.width        // той самий ряд, праворуч від іконки
         && await r.page.locator('.links > *').count() === 2 && !has(r, 'спонсор')
-        && await r.page.locator('#app .funds, #app .fund, [role=progressbar], .note-sup').count() === 0 && !has(r, '18 500') && !has(r, 'Долучитися')
-        && !note.includes('Дрон') && !r.fileUrls.some(u => u.includes('fundraisers'));
+        && await r.page.locator('#app .funds, #app .fund, .note-sup').count() === 0 && !has(r, '18 500') && !has(r, 'Долучитися')
+        && !note.includes('Дрон');
+    }],
+  ['S14 шкала збору: тонка смужка під назвою (не під крапкою), на ширину тексту, 37%; для читачів екрана — «зібрано 37%»', { seasons: SUP(), api: API1 },
+    async r => {
+      const g = await r.page.$eval('#f-dron', a => { const t = a.querySelector('.fund-body > span:first-child').getBoundingClientRect(), b = a.querySelector('.fund-bar').getBoundingClientRect(),
+        i = a.querySelector('.fund-bar i').getBoundingClientRect(); return { tl: t.left, tb: t.bottom, tw: t.width, bl: b.left, bt: b.top, bw: b.width, bh: b.height, iw: i.width,
+        sr: a.querySelector('.sr-only').textContent, hidden: a.querySelector('.fund-bar').getAttribute('aria-hidden') }; });
+      return Math.abs(g.tl - g.bl) < 1 && g.bt >= g.tb && Math.abs(g.bw - g.tw) < 1 && g.bh === 3 && Math.abs(g.iw / g.bw - 0.37) < 0.01
+        && g.sr.includes('зібрано 37%') && g.hidden === 'true';
+    }],
+  ['S15 шкала — за свіжими сумами з банки (fundraisers.json); ціль досягнута — повна, не ширша; без цілі — шкали нема', {
+      seasons: SUP({ fundraisers: [FUND(), FUND({ id: 'b', title: 'Генератор', url: 'https://send.monobank.ua/jar/Other1', goal: 1000 }), FUND({ id: 'c', title: 'Без цілі', url: 'https://send.monobank.ua/jar/NoGoal1', goal: 0 })] }), api: API1,
+      funds: { updated: '2026-09-29T14:17:00+03:00', jars: { AbC123xyz: { raised: 41000, goal: 60000 }, Other1: { raised: 1500, goal: 0 } } } },
+    async r => {
+      const w = id => r.page.$eval(`#${id} .fund-bar i`, i => i.getBoundingClientRect().width / i.parentElement.getBoundingClientRect().width);
+      return Math.abs(await w('f-dron') - 0.82) < 0.01 && Math.abs(await w('f-b') - 1) < 0.001 && await r.page.locator('#f-c .fund-bar').count() === 0
+        && (await r.page.getAttribute('#f-b', 'title')).replace(/[\u00a0\u202f]/g, ' ').includes('1 500 ₴ з 1 000 ₴ (150%)') && r.fileUrls.filter(u => u.includes('fundraisers')).length === 1;
     }],
   ['S04 збір після until зникає сам — у шапці лишається тільки Instagram', { seasons: SUP({ fundraisers: [FUND({ until: '2026-09-28' })] }), api: API1 },
     async r => await r.page.locator('.q-link').count() === 0 && !has(r, 'Дрон') && await r.page.locator('#sup').evaluate(e => getComputedStyle(e).display) === 'none'],

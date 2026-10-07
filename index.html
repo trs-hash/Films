@@ -67,8 +67,8 @@
         @keyframes pulse{50%{opacity:.25}}
         .s-title{font-size:48px;font-weight:800;line-height:1.02;letter-spacing:-1px;margin:0 0 18px;overflow-wrap:anywhere}
         .season.live .s-title{font-size:72px;letter-spacing:-2.5px}
-        .s-about{font-size:17px;line-height:1.55;color:var(--mut);max-width:640px;margin:0 0 22px;white-space:pre-line}
-        .s-meta{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13px;font-weight:600;letter-spacing:.3px;color:var(--mut);margin-bottom:26px}
+        .s-about{font-size:17px;line-height:1.55;color:var(--mut);max-width:640px;margin:0 0 22px;white-space:pre-line;overflow-wrap:anywhere}
+        .s-meta{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13px;font-weight:600;letter-spacing:.3px;color:var(--mut);margin-bottom:26px;overflow-wrap:anywhere}
         .s-meta a{color:inherit;text-decoration:none;transition:.2s;display:inline-block;padding:6px 0;margin:-6px 0}
         .s-meta a:hover,.s-meta a.hot{color:var(--red)}
         .prog{max-width:640px;margin:0 0 44px}
@@ -155,6 +155,8 @@
         .topics-lbl{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-right:6px}
         .chip{display:inline-flex;align-items:center;gap:7px;min-height:36px;box-sizing:border-box;padding:7px 14px;border:1px solid var(--div);border-radius:999px;font-size:13px;font-weight:600;color:var(--txt);text-decoration:none;background:var(--bg);transition:.2s;white-space:nowrap}
         .chip span{font-size:11px;color:var(--mut);font-variant-numeric:tabular-nums}
+        .chip{flex-shrink:0;max-width:100%}                                   /* задовгий хештег — «…», а не скрол сторінки */
+        .chip .chip-l,.chip.on .chip-l{font-size:inherit;color:inherit;opacity:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
         .chip:hover{border-color:var(--red);color:var(--red)}
         .chip.on{background:var(--red);border-color:var(--red);color:#fff}
         .chip.on span{color:#fff;opacity:.85}
@@ -193,6 +195,10 @@
         .fund-link::before{content:'';flex:none;width:6px;height:6px;margin-top:calc(.7em - 3px);border-radius:50%;background:var(--red)}   /* навпроти першого рядка */
         .intro .links a.q-link:hover,.intro .links .q-link.hl{color:var(--red)}
         .q-link.off{opacity:.7}
+        /* Шкала збору під текстом: тонка, на ширину назви; червоне — зібране */
+        .fund-body{display:inline-flex;flex-direction:column}
+        .fund-bar{display:block;height:3px;margin:5px 0 2px;border-radius:2px;background:var(--div);overflow:hidden}
+        .fund-bar i{display:block;height:100%;max-width:100%;border-radius:inherit;background:var(--red)}
         .off-tag{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--red)}
 
         /* ?check — самоперевірка після правок seasons.json (бачить лише той, хто відкрив з ?check) */
@@ -343,6 +349,8 @@
 
     function issue(msg) { ISSUES.push(msg); console.warn('[сезони] ' + msg); }
 
+    // Криве %-кодування в адресі (#t=%E0%A4%A) не має валити сторінку
+    function safeDecode(s) { try { return decodeURIComponent(s); } catch (e) { return s; } }
     function esc(s) {
         return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
@@ -409,7 +417,7 @@
     function ymd(t) { return t.getFullYear() + '-' + pad2(t.getMonth() + 1) + '-' + pad2(t.getDate()); }
     function todayStr() { return ymd(new Date()); }
     // Момент публікації → день за місцевим часом глядача (відео о 00:30 за Києвом — це вже новий день, а не вчорашній UTC)
-    function localDay(iso) { let t = new Date(iso); return isNaN(t) ? String(iso).slice(0, 10) : ymd(t); }
+    function localDay(iso) { let t = new Date(iso); return isNaN(t) ? '' : ymd(t); }   // крива дата → '' (відео пропускаємо)
     function dayNum(s) { let [y, m, d] = s.split('-').map(Number); return Date.UTC(y, m - 1, d) / DAY_MS; }
     function fromDayNum(n) { let t = new Date(n * DAY_MS); return t.getUTCFullYear() + '-' + pad2(t.getUTCMonth() + 1) + '-' + pad2(t.getUTCDate()); }
     function fmtDay(s, withYear) {
@@ -733,9 +741,12 @@
 
     // Мініатюри: браузер сам бере розмір під картку (320…1280 px) — телефон не тягне 1280, коли вистачає 640
     const THUMB_KEYS = ['medium', 'high', 'standard', 'maxres'];
+    // srcset — лише чисті https-адреси (пробіл чи кома його зламали б); src — ще й вбудовані data:image. Не-рядок — відкидаємо.
+    const okImg = u => typeof u === 'string' && /^https:\/\/[^\s,]+$/.test(u);
+    const okSrc = u => okImg(u) || (typeof u === 'string' && /^data:image\//.test(u));
     function thumbSet(t) {
-        let src = (t.high || t.medium || t.standard || t.maxres || t.default || {}).url || '';
-        let set = THUMB_KEYS.filter(k => t[k] && t[k].url && t[k].width).map(k => t[k].url + ' ' + t[k].width + 'w').join(', ');
+        let src = [t.high, t.medium, t.standard, t.maxres, t.default].map(x => x && x.url).find(okSrc) || '';
+        let set = THUMB_KEYS.filter(k => t[k] && okImg(t[k].url) && +t[k].width > 0).map(k => t[k].url + ' ' + Math.round(t[k].width) + 'w').join(', ');
         return { thumb: src, srcset: set };
     }
 
@@ -745,7 +756,7 @@
         hidden[pid] = 0;
         return items.reduce((out, i) => {
             let sn = i.snippet, cd = i.contentDetails || {};
-            if (!sn || !cd.videoPublishedAt || (i.status || {}).privacyStatus === 'private') { hidden[pid]++; return out; }
+            if (!sn || !localDay(cd.videoPublishedAt) || (i.status || {}).privacyStatus === 'private') { hidden[pid]++; return out; }
             let vid = cd.videoId || (sn.resourceId || {}).videoId;
             let pd = parseDesc(sn.description);
             out.push(Object.assign({ key: vid, title: sn.title, y: vid, v: '', imp: pd.important, tags: tagsOf(sn.title, sn.description),
@@ -913,7 +924,7 @@
         }
         let sup = fundLinksHtml(today) + donateHtml();   // збори й «Підтримати» — у шапці поруч з Instagram (поза #app)
         if (sup !== SUP_HTML) { SUP_HTML = sup; let el = document.getElementById('sup'); if (el) el.innerHTML = sup; }
-        loadFunds();
+        loadFunds(today);
         if (html === LAST_HTML) return;                // нічого не змінилось — не чіпаємо DOM (без миготіння)
         LAST_HTML = html;
         let app = document.getElementById('app');
@@ -928,7 +939,7 @@
         }
         // Глибоке посилання (#s-2, #s-3-2026-09) — прокрутити, коли серії вже на місці (інакше макет ще «поїде»)
         if (!HASH_DONE && !LOADING && location.hash.length > 1) {
-            let el = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+            let el = document.getElementById(safeDecode(location.hash.slice(1)));
             if (el) {
                 HASH_DONE = true;
                 let d = el.closest('details'); if (d) d.open = true;
@@ -939,14 +950,21 @@
 
     // ── Підтримка: тихі посилання в шапці ─────────────────────────────────────────
     const offTag = why => why ? ` <span class="off-tag">${esc(why.startsWith('вимкнено') ? 'вимкнено' : why)}</span>` : '';
-    // Збір: «● Збір: Назва ↗» одразу на банку; «навіщо» — підказкою при наведенні. Після until зникає сам.
+    // Збір: «● Збір: Назва ↗» одразу на банку, під назвою — тонка шкала зібраного (коли є ціль).
+    // «навіщо» і суми — підказкою при наведенні. Після until зникає сам.
     // id="f-…" — якір для посилань із бота (taras.kyiv.ua/#f-dron підсвічує збір).
     function fundLinksHtml(today) {
+        let hash = safeDecode(location.hash);
         return SUPPORT.funds.filter(f => !fundWhy(f, today) || (CHECK && f.title)).map(f => {
             // :target не спрацьовує на посиланні, яке зʼявилось уже після завантаження, — підсвічуємо за адресою самі
-            let hl = decodeURIComponent(location.hash) === '#f-' + f.id ? ' hl' : '';
-            let why = fundWhy(f, today), attrs = ` class="q-link fund-link${why ? ' off' : ''}${hl}" id="f-${esc(f.id)}"` + (f.about ? ` title="${esc(f.about)}"` : '');
-            let body = `Збір: ${esc(f.title)} ↗${offTag(why)}`;
+            let hl = hash === '#f-' + f.id ? ' hl' : '';
+            let n = fundNow(f), pct = n.goal ? Math.floor(n.raised / n.goal * 100) : 0;
+            if (n.goal && n.raised > 0 && pct < 1) pct = 1;
+            let sums = n.goal ? `${fmtMoney(n.raised)} з ${fmtMoney(n.goal)} (${pct}%)` : '';
+            let tip = [f.about, sums].filter(Boolean).join('\n');
+            let why = fundWhy(f, today), attrs = ` class="q-link fund-link${why ? ' off' : ''}${hl}" id="f-${esc(f.id)}"` + (tip ? ` title="${esc(tip)}"` : '');
+            let bar = n.goal ? `<span class="fund-bar" aria-hidden="true"><i style="width:${Math.min(pct, 100)}%"></i></span><span class="sr-only"> — зібрано ${pct}%</span>` : '';
+            let body = `<span class="fund-body"><span>Збір: ${esc(f.title)} ↗${offTag(why)}</span>${bar}</span>`;
             return f.url && !isSample(f.url) ? `<a${attrs} href="${esc(f.url)}" target="_blank" rel="noopener">${body}</a>` : `<span${attrs}>${body}</span>`;
         }).join('');
     }
@@ -957,10 +975,11 @@
         return `<a class="q-link${why ? ' off' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener"` +
             (l.about ? ` title="${esc(l.about)}"` : '') + `>${esc(l.label)} ↗${offTag(why)}</a>`;
     }
-    // Суми з банок (fundraisers.json, оновлює GitHub Action) глядачам не показуємо — лише на ?check, для звірки
+    // Свіжі суми для шкали — fundraisers.json (оновлює GitHub Action): лише коли на сторінці є збір із банкою monobank.
+    // Доки файл не прийшов (чи його нема) — шкала за raised із seasons.json (бот записує туди знімок суми).
     let FUNDS_ASKED = false;
-    function loadFunds() {
-        if (FUNDS_ASKED || !CHECK || !SUPPORT.funds.some(f => f.jar && !isSample(f.url))) return;
+    function loadFunds(today) {
+        if (FUNDS_ASKED || !SUPPORT.funds.some(f => f.jar && !isSample(f.url) && (CHECK || !fundWhy(f, today)))) return;
         FUNDS_ASKED = true;
         getFile('fundraisers.json').then(r => r.ok ? r.json() : null).then(d => {
             if (isObj(d) && isObj(d.jars)) { FUNDS_LIVE = d; LAST_HTML = ''; render(); }
@@ -1061,6 +1080,7 @@
         return Object.entries(m).sort((a, b) => b[1].n - a[1].n || (a[1].last < b[1].last ? 1 : -1));
     }
     // Каталог тем — ряд «чипів» над календарем; вибрана тема — у адресі (#t=…), тож нею можна поділитися
+    const chipLabel = t => `<span class="chip-l" title="${esc(topicLabel(t))}">${esc(topicLabel(t))}</span>`;
     function topicsBar(all) {
         let list = topicCounts(all);
         if (!list.length) return '';
@@ -1068,7 +1088,7 @@
         const MAX = 12, extra = list.length - MAX;
         return '<nav class="topics" aria-label="Теми"><span class="topics-lbl">Теми</span>' + list.map(([t, e], i) => {
             let on = t === TOPIC;
-            return `<a class="chip${on ? ' on' : ''}${i >= MAX && !on ? ' extra' : ''}" href="${on ? '#' : '#t=' + encodeURIComponent(t)}"${on ? ' aria-current="true"' : ''}>${esc(topicLabel(t))}<span>${e.n}</span></a>`;
+            return `<a class="chip${on ? ' on' : ''}${i >= MAX && !on ? ' extra' : ''}" href="${on ? '#' : '#t=' + encodeURIComponent(t)}"${on ? ' aria-current="true"' : ''}>${chipLabel(t)}<span>${e.n}</span></a>`;
         }).join('') + (extra > 0 ? `<button type="button" class="chip more" onclick="this.parentNode.classList.add('all')">ще ${extra}</button>` : '') + '</nav>';
     }
     // Вибрана тема: усі її відео (найновіші першими) + календар нижче приглушує інші
@@ -1292,8 +1312,8 @@
               (meta.body ? `<div class="note-body">${esc(meta.body)}</div>` : '') +
               (meta.time ? `<div class="note-foot">🕒 ${esc(meta.time)}</div>` : '') + `</div>`
             : '') + ((topics.length || p.date) ? '<div class="note-tags">' +
-              (p.date ? `<button type="button" class="chip share" onclick="shareDay('${p.date}', this)">🔗 Посилання на день</button>` : '') +
-              topics.map(t => `<a class="chip" href="#t=${encodeURIComponent(t)}">${esc(topicLabel(t))}</a>`).join('') + '</div>' : '');
+              (DATE_RE.test(p.date || '') ? `<button type="button" class="chip share" onclick="shareDay('${p.date}', this)">🔗 Посилання на день</button>` : '') +
+              topics.map(t => `<a class="chip" href="#t=${encodeURIComponent(t)}">${chipLabel(t)}</a>`).join('') + '</div>' : '');
         // Плеєр: локальне відео (судний день, Фаза 5) якщо є base+v, інакше YouTube-ембед за id.
         let iframe = document.getElementById('ytIframe'), loc = document.getElementById('locVideo');
         let local = hasLocal ? (BASE.replace(/\/+$/, '') + '/' + p.v.replace(/^\/+/, '')) : '';
