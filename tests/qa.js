@@ -554,58 +554,58 @@ const CASES = [
   ['S01 справжній seasons.json: підтримку підготовлено, але глядач не бачить нічого; fundraisers.json не запитується', { api: REAL_API },
     async r => await r.page.locator('#sup a').count() === 0 && await r.page.locator('.funds, .fund').count() === 0
       && !has(r, 'Стати спонсором') && !has(r, 'Назва збору') && !r.fileUrls.some(u => u.includes('fundraisers'))],
-  ['S02 ?check на справжньому seasons.json: попередній перегляд у пунктирі, пояснення, помилок нема', { path: '?check', api: REAL_API, shot: 'S02-check-preview' },
-    async r => await r.page.locator('#sup a.sup-btn.off').count() === 1 && await r.page.locator('.fund.off').count() === 1
-      && await r.page.locator('.fund-go').count() === 0 && has(r, 'вимкнено: глядачі не бачать') && has(r, 'у url ще приклад')
+  ['S02 ?check на справжньому seasons.json: попередній перегляд «вимкнено», пояснення, помилок нема', { path: '?check', api: REAL_API, shot: 'S02-check-preview' },
+    async r => await r.page.locator('#sup a.sup-btn.off').count() === 1 && await r.page.locator('#funds .fund-link.off').count() === 1
+      && await r.page.locator('#funds a').count() === 0 && has(r, 'вимкнено: глядачі не бачать') && has(r, 'у url ще приклад')
       && has(r, 'Помилок не знайдено')],
-  ['S03 увімкнено: «Стати спонсором» у шапці → /join у новій вкладці; збір над стіною з прогресом; рядок у плеєрі', { seasons: SUP(), api: API1, shot: 'S03-support-on' },
+  ['S03 увімкнено: «Стати спонсором» у шапці → /join; збір — лише тихе посилання на банку, без картки, прогресу й рядка в плеєрі', { seasons: SUP(), api: API1, shot: 'S03-support-on' },
     async r => {
-      const a = r.page.locator('#sup a.sup-btn'), href = await a.getAttribute('href');
-      const bar = await r.page.$eval('.fund-bar i', i => i.style.width);
-      const before = await r.page.evaluate(() => !!(document.querySelector('.funds').compareDocumentPosition(document.getElementById('cal')) & Node.DOCUMENT_POSITION_FOLLOWING));
+      const a = r.page.locator('#sup a.sup-btn'), href = await a.getAttribute('href'), f = r.page.locator('#funds a.fund-link');
+      const look = await f.evaluate(e => { const c = getComputedStyle(e); return { size: parseFloat(c.fontSize), bg: c.backgroundColor, h: e.getBoundingClientRect().height }; });
       await r.page.click('#cal .v-lnk'); await r.page.waitForTimeout(200);
       const note = await r.page.innerText('#modNote');
       return await a.count() === 1 && href.endsWith('UCRSKTGA5a2hLrai_MXNaoUQ/join') && await a.getAttribute('target') === '_blank'
-        && has(r, 'Благодійний збір · до 31 жовтня') && has(r, '18 500 ₴ з 50 000 ₴ · 37%') && bar === '37%' && before
-        && await r.page.locator('#f-dron .fund-go[href="https://send.monobank.ua/jar/AbC123xyz"]').count() === 1
-        && note.includes('Зараз збираємо: Дрон для бригади') && !has(r, 'вимкнено');
+        && await f.count() === 1 && await f.getAttribute('href') === 'https://send.monobank.ua/jar/AbC123xyz' && await f.getAttribute('target') === '_blank'
+        && await f.getAttribute('id') === 'f-dron' && await f.getAttribute('title') === 'Збираємо на мавік для побратимів.'
+        && (await f.innerText()).trim() === 'Збір: Дрон для бригади ↗' && look.size <= 12 && look.bg === 'rgba(0, 0, 0, 0)' && look.h >= 24
+        && await r.page.locator('#app .funds, #app .fund, [role=progressbar]').count() === 0 && !has(r, '18 500') && !has(r, 'Долучитися')
+        && !note.includes('Дрон') && note.includes('Стати спонсором ↗') && !r.fileUrls.some(u => u.includes('fundraisers'));
     }],
-  ['S04 збір після until зникає сам; у плеєрі — тоді платна підписка', { seasons: SUP({ fundraisers: [FUND({ until: '2026-09-28' })] }), api: API1 },
-    async r => { await r.page.click('#cal .v-lnk'); await r.page.waitForTimeout(200); const note = await r.page.innerText('#modNote');
-      return await r.page.locator('.fund').count() === 0 && note.includes('Ранній доступ і закулісся. Стати спонсором ↗')
-        && await r.page.locator('#modNote .note-sup a[href$="/join"]').count() === 1; }],
-  ['S05 ?check: завершений збір — «завершився», але видно в пунктирі', { path: '?check', seasons: SUP({ fundraisers: [FUND({ until: '2026-09-28' })] }), api: API1 },
-    async r => has(r, 'завершився 28 вересня 2026') && await r.page.locator('.fund.off').count() === 1],
-  ['S06 суми з банки (fundraisers.json) важливіші за raised; ціль з банки, коли goal нема; ціль досягнута', {
+  ['S04 збір після until зникає сам', { seasons: SUP({ fundraisers: [FUND({ until: '2026-09-28' })] }), api: API1 },
+    async r => await r.page.locator('.fund-link').count() === 0 && !has(r, 'Дрон')],
+  ['S05 ?check: завершений збір — «завершився», але видно з позначкою', { path: '?check', seasons: SUP({ fundraisers: [FUND({ until: '2026-09-28' })] }), api: API1 },
+    async r => has(r, 'завершився 28 вересня 2026') && await r.page.locator('#funds .fund-link.off').count() === 1],
+  ['S06 ?check: суми з банки (fundraisers.json) важливіші за raised; ціль з банки, коли goal нема', { path: '?check',
       seasons: SUP({ fundraisers: [FUND({ goal: '' }), FUND({ id: 'b', title: 'Другий', url: 'https://send.monobank.ua/jar/Other1', goal: 1000, raised: 0 })] }), api: API1,
       funds: { updated: '2026-09-29T14:17:00+03:00', jars: { AbC123xyz: { raised: 41234.56, goal: 60000 }, Other1: { raised: 1000, goal: 0 } } } },
-    r => has(r, '41 234 ₴ з 60 000 ₴ · 68%') && has(r, 'Ціль досягнуто — дякую! · 1 000 ₴ з 1 000 ₴ · 100%') && r.fileUrls.filter(u => u.includes('fundraisers')).length === 1],
-  ['S07 fundraisers.json нема або він битий → суми з seasons.json, без помилок', { seasons: SUP(), api: API1, funds: '{"jars": {"AbC123xyz": {"raised": "багато"' },
-    r => has(r, '18 500 ₴ з 50 000 ₴ · 37%') && r.errs.length === 0],
+    r => has(r, 'зібрано 41 234 ₴ з 60 000 ₴ — з банки (fundraisers.json, 2026-09-29T14:17:00+03:00)') && has(r, 'зібрано 1 000 ₴ з 1 000 ₴')
+      && r.fileUrls.filter(u => u.includes('fundraisers')).length === 1],
+  ['S07 ?check: fundraisers.json битий → суми з seasons.json, без помилок', { path: '?check', seasons: SUP(), api: API1, funds: '{"jars": {"AbC123xyz": {"raised": "багато"' },
+    r => has(r, 'зібрано 18 500 ₴ з 50 000 ₴ — з seasons.json (raised)') && r.errs.length === 0],
   ['S08 ручні помилки: enabled "так", суми рядком, url без https, канал без /join, описка в полі, збір не в списку', { path: '?check', api: API1,
       seasons: SUP({ membership: { enabled: 'true', url: 'youtube.com/@Taras.maksymiak' }, fundraisers: { enabled: 'так', title: 'Генератор', url: 'send.monobank.ua/jar/AbC123xyz',
         goal: '50 000 грн', raised: '1 500,50', kind: 'благодійний', until: '31.10.2026', tittle: 'x' } }) },
-    async r => await r.page.locator('.fund:not(.off)').count() === 1 && has(r, '1 500 ₴ з 50 000 ₴ · 3%')
+    async r => await r.page.locator('#funds a.fund-link:not(.off)[href="https://send.monobank.ua/jar/AbC123xyz"]').count() === 1 && has(r, 'зібрано 1 500 ₴ з 50 000 ₴')
       && await r.page.getAttribute('#sup a.sup-btn', 'href') === 'https://youtube.com/@Taras.maksymiak/join' && has(r, 'Стати спонсором')
-      && await r.page.locator('.fund-go[href="https://send.monobank.ua/jar/AbC123xyz"]').count() === 1
       && has(r, 'enabled «так» прочитано як true') && has(r, '«50 000 грн» прочитано як 50 000 ₴') && has(r, 'посилання на канал без /join')
       && has(r, 'невідоме поле «tittle»') && has(r, 'один збір теж беру в [ ]') && has(r, '«31.10.2026» прочитано як 2026-10-31')],
   ['S09 небезпечне й недороблене не показується: javascript:, приклад XXXXXXXXXX, без назви', {
       seasons: SUP({ membership: { enabled: true, url: 'javascript:alert(1)' }, fundraisers: [FUND({ url: 'javascript:alert(1)' }), FUND({ id: 's', url: 'https://send.monobank.ua/jar/XXXXXXXXXX' }), FUND({ id: 't', title: '' })] }), api: API1 },
-    async r => await r.page.locator('.fund').count() === 0 && await r.page.locator('#sup a').count() === 0
+    async r => await r.page.locator('.fund-link').count() === 0 && await r.page.locator('#sup a').count() === 0
       && await r.page.locator('a[href^="javascript"]').count() === 0 && !r.fileUrls.some(u => u.includes('fundraisers'))],
   ['S10 ?check: пункти увімкнено, а весь блок — ні → пояснення; гроші з копійками й «50к»', { path: '?check',
       seasons: SUP({ enabled: false, fundraisers: [FUND({ goal: '50к', raised: 12345.678 })] }), api: API1 },
     async r => has(r, 'вимкнено весь блок (support.enabled)') && await r.page.locator('#sup a.sup-btn.off').count() === 1
-      && has(r, '12 345 ₴ з 50 000 ₴ · 24%') && has(r, '«50к» прочитано як 50 000 ₴')],
-  ['S11 телефон 320px, темна тема: усе увімкнено — без горизонтального скролу, кнопки ≥ 38 px', { seasons: SUP({ donate: { enabled: true, url: 'https://send.monobank.ua/jar/AbC123xyz' },
-      fundraisers: [FUND({ title: 'Дуже довга назва збору, яка не вміщується в один рядок на маленькому телефоні' })] }), api: API1,
+      && await r.page.locator('#funds .fund-link.off').count() === 1 && has(r, 'зібрано 12 345 ₴ з 50 000 ₴') && has(r, '«50к» прочитано як 50 000 ₴')],
+  ['S11 телефон 320px, темна тема: усе увімкнено, довга назва збору — без горизонтального скролу, кнопки ≥ 38 px', { seasons: SUP({ donate: { enabled: true, url: 'https://send.monobank.ua/jar/AbC123xyz' },
+      fundraisers: [FUND({ title: 'Дуже довга назва збору, яка не вміщується в один рядок на маленькому телефоні' }), FUND({ id: 'b', title: 'Генератор', url: 'https://send.monobank.ua/jar/Other1' })] }), api: API1,
       viewport: { width: 320, height: 640 }, dark: true, shot: 'S11-mobile' },
-    async r => await noHScroll(r) && await r.page.locator('#sup a').count() === 2
-      && (await r.page.$eval('.fund-go', e => e.getBoundingClientRect().height)) >= 38
-      && Math.min(...await r.page.$$eval('#sup a', l => l.map(e => e.getBoundingClientRect().height))) >= 38],
-  ['S12 посилання на збір #f-dron прокручує до нього', { path: '#f-dron', seasons: SUP(), api: API1, viewport: { width: 1280, height: 500 } },
-    async r => (await r.page.$eval('#f-dron', e => e.getBoundingClientRect().top)) < 60],
+    async r => await noHScroll(r) && await r.page.locator('#sup a').count() === 2 && await r.page.locator('#funds a.fund-link').count() === 2
+      && Math.min(...await r.page.$$eval('#sup a', l => l.map(e => e.getBoundingClientRect().height))) >= 38
+      && Math.min(...await r.page.$$eval('#funds a', l => l.map(e => e.getBoundingClientRect().height))) >= 24],
+  ['S12 посилання #f-dron (з відповіді бота) підсвічує збір у шапці', { path: '#f-dron', seasons: SUP(), api: API1 },
+    async r => (await r.page.$eval('#f-dron', e => e.classList.contains('hl') && getComputedStyle(e).color)) === 'rgb(230, 33, 23)'
+      && await r.page.locator('.fund-link.hl').count() === 1],
   ['S13 генератор зборів: банки з seasons.json, гривні з копійками, чужа помилка не стирає суми, без зайвих перезаписів', {},
     async () => {
       const os = require('os'), cp = require('child_process'), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'funds-')), out = path.join(dir, 'out');
@@ -685,11 +685,11 @@ const CASES = [
       return ok.code === 0 && ok.cfg.calendar.playlist === 'UU1' && ok.cfg.support.fundraisers.length === 2 && ok.text.endsWith('}\n')
         && bad.code === 1 && bad.msg.includes('зіпсований') && z.cfgText() === '{"calendar": {"start": ';
     }],
-  ['Z08 те, що записав бот, сайт показує: збір над стіною, сума, якір; ?check без помилок', { path: '?check', api: API1, shot: 'Z08-bot-site',
+  ['Z08 те, що записав бот, сайт показує: тихе посилання на банку з якорем; ?check без помилок', { path: '?check', api: API1, shot: 'Z08-bot-site',
       seasons: () => { const c = REAL_CFG(); c.calendar = CAL({ start: '2026-09-20' }).calendar;
         return zbirRepo(c).run('/zbir https://send.monobank.ua/jar/AbC123xyz\nДрон для бригади\nціль 50000, до 31.10, благодійний').text; } },
-    async r => await r.page.locator('#f-dron-dlia-bryhady.fund:not(.off)').count() === 1 && has(r, '18 500 ₴ з 50 000 ₴ · 37%')
-      && has(r, 'Благодійний збір · до 31 жовтня') && has(r, 'Помилок не знайдено') && !has(r, 'Назва збору')],
+    async r => await r.page.locator('#funds a#f-dron-dlia-bryhady.fund-link:not(.off)[href="https://send.monobank.ua/jar/AbC123xyz"]').count() === 1
+      && has(r, 'Збір: Дрон для бригади ↗') && has(r, 'зібрано 18 500 ₴ з 50 000 ₴') && has(r, 'Помилок не знайдено') && !has(r, 'Назва збору')],
   ['Z09 workflow: усе від бота — лише через env (без ${{ inputs }} у командах), ≤ 10 полів; шматки для бота компілюються', {},
     async () => {
       const y = fs.readFileSync(path.join(ROOT, '.github/workflows/fundraiser.yml'), 'utf8');

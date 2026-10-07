@@ -189,20 +189,15 @@
         .intro .links a.sup-btn{gap:8px;min-height:38px;box-sizing:border-box;padding:9px 14px;border:1px solid var(--div);color:var(--txt);font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
         .intro .links a.sup-btn:hover{color:var(--red);border-color:var(--red)}
         .sup-btn svg{color:var(--red);flex:none}
-        .intro .links a.sup-btn.off,.fund.off{border:1px dashed var(--red);opacity:.75}
+        .intro .links a.sup-btn.off{border:1px dashed var(--red);opacity:.75}
         .off-tag{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--red)}
-        .funds{display:grid;gap:12px;margin:0 0 36px}
-        .fund{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,340px);grid-template-areas:"txt bar" "txt foot";gap:10px 36px;align-items:center;background:var(--cell);border:1px solid var(--div);border-left:3px solid var(--red);border-radius:10px;padding:16px 20px;scroll-margin-top:20px}
-        .fund-txt{grid-area:txt;min-width:0}
-        .fund-k{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut)}
-        .fund-t{font-size:18px;font-weight:700;line-height:1.3;margin-top:4px;overflow-wrap:anywhere}
-        .fund-a{font-size:14px;line-height:1.45;color:var(--mut);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-        .fund-bar{grid-area:bar;align-self:end;height:8px;border-radius:99px;background:var(--div);overflow:hidden}
-        .fund-bar i{display:block;height:100%;background:var(--red);border-radius:inherit}
-        .fund-f{grid-area:foot;align-self:start;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px}
-        .fund-s{font-size:13px;font-variant-numeric:tabular-nums}
-        .fund-go{display:inline-flex;align-items:center;min-height:38px;box-sizing:border-box;padding:9px 14px;border-radius:8px;background:var(--red);color:#fff;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-decoration:none;white-space:nowrap}
-        .fund-go:hover{background:var(--txt);color:var(--bg)}
+        /* Збір — одне тихе посилання під кнопками в шапці: крапка, назва, ↗. Без карток, прогресу й закликів */
+        .fund-links{display:flex;flex-direction:column;align-items:flex-start;margin-top:10px}
+        .fund-links:empty{display:none}
+        .fund-link{display:inline-flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:12px;letter-spacing:.3px;line-height:1.4;color:var(--mut);text-decoration:none;transition:color .2s;overflow-wrap:anywhere}
+        .fund-link::before{content:'';flex:none;width:6px;height:6px;margin-top:calc(.7em - 3px);border-radius:50%;background:var(--red)}   /* навпроти першого рядка */
+        a.fund-link:hover,.fund-link.hl{color:var(--red)}
+        .fund-link.off{opacity:.7}
         .note-sup{margin:14px 0 0;font-size:14px;line-height:1.5;color:rgba(255,255,255,.75)}
         .note-sup a{color:#fff;font-weight:700;text-decoration:underline;text-decoration-color:var(--red);text-underline-offset:3px}
         .note-sup a:hover{color:var(--red)}
@@ -254,8 +249,6 @@
             .close{right:10px;top:-25px}
             .nav-seg{font-size:10px;letter-spacing:.5px;padding:11px 10px}
             .footer{padding:50px 0}
-            .fund{grid-template-columns:1fr;grid-template-areas:"txt" "bar" "foot";gap:10px;padding:14px 16px}
-            .fund-t{font-size:17px}
         }
         @media (prefers-reduced-motion:reduce){
             html{scroll-behavior:auto}
@@ -284,6 +277,7 @@
             </a>
             <span class="sup" id="sup"></span><!-- «Стати спонсором» / «Підтримати» — зʼявляються, коли увімкнені в seasons.json → support -->
         </div>
+        <div class="fund-links" id="funds"></div><!-- актуальні збори — тихі посилання (seasons.json → support.fundraisers) -->
         <div class="mail"><a href="mailto:hello@taras.kyiv.ua">hello@taras.kyiv.ua</a></div>
         <button id="install" class="install" type="button" hidden onclick="installApp()">Встановити застосунок</button>
     </header>
@@ -583,7 +577,7 @@
 
     // ── Підтримка: seasons.json → "support" ─────────────────────────────────────
     // membership — платна підписка (типово YouTube «Стати спонсором», …/join; можна й Mono Base чи Patreon);
-    // donate — разова підтримка (Mono Base, банка); fundraisers — актуальні збори з прогресом.
+    // donate — разова підтримка (Mono Base, банка); fundraisers — актуальні збори (тихе посилання в шапці).
     // Глядач бачить пункт, лише коли увімкнено І весь блок (support.enabled), І сам пункт (enabled).
     // ?check показує все одразу на своїх місцях — з пунктирною рамкою й позначкою «вимкнено».
     const SUP_KEYS = ['enabled', 'membership', 'donate', 'fundraisers'];
@@ -913,12 +907,12 @@
 
     // ── Малювання ──────────────────────────────────────────────────────────────
     // Порядок: теми → вибрана тема → стіна днів → сезони (поточний → анонси → завершені).
-    let LAST_HTML = '', SUP_HTML = '', HASH_DONE = false, DAY_DONE = '';
+    let LAST_HTML = '', SUP_HTML = '', FUND_HTML = '', HASH_DONE = false, DAY_DONE = '';
     function render() {
         // Телефон: на першому екрані одна картка — решта не повинна відбирати в неї канал; ширший екран — перший ряд
         PLAY = []; EAGER = matchMedia('(max-width:600px)').matches ? 1 : 3; FIRST_IMG = true;
         let today = todayStr(), rank = { live: 0, soon: 1, done: 2 };
-        let html = (CHECK ? checkHtml(today) : '') + fundsHtml(today);
+        let html = CHECK ? checkHtml(today) : '';
         if (CAL) html += homeHtml(today);
         if (!SEASONS.length) {
             if (!CAL) html += '<div class="msg-empty">Скоро тут зʼявиться перший сезон.</div>';
@@ -930,9 +924,10 @@
                     `<a class="nav-seg" href="#${s.id}">Сезон ${s.n}</a>`).join('') + '</nav>';
             list.forEach(({ s, st }) => { html += seasonHtml(s, st, today); });
         }
-        let sup = supHeaderHtml();                     // кнопки підтримки в шапці (поза #app)
+        let sup = supHeaderHtml(), fl = fundLinksHtml(today);   // підтримка й збори — у шапці (поза #app)
         if (sup !== SUP_HTML) { SUP_HTML = sup; let el = document.getElementById('sup'); if (el) el.innerHTML = sup; }
-        loadFunds(today);
+        if (fl !== FUND_HTML) { FUND_HTML = fl; let el = document.getElementById('funds'); if (el) el.innerHTML = fl; }
+        loadFunds();
         if (html === LAST_HTML) return;                // нічого не змінилось — не чіпаємо DOM (без миготіння)
         LAST_HTML = html;
         let app = document.getElementById('app');
@@ -967,36 +962,26 @@
                 (l.about ? ` title="${esc(l.about)}"` : '') + `>${icon}${esc(l.label)}${offTag(why)}</a>`;
         }).join('');
     }
-    // Збори — над стіною днів, компактно: назва, навіщо, прогрес, «Долучитися». Після until — зникають самі.
-    function fundsHtml(today) {
-        let list = SUPPORT.funds.filter(f => !fundWhy(f, today) || (CHECK && f.title));
-        if (!list.length) return '';
-        return '<section class="funds" aria-label="Збори">' + list.map(f => {
-            let why = fundWhy(f, today), n = fundNow(f), pct = n.goal ? Math.floor(n.raised / n.goal * 100) : 0;
-            if (n.goal && n.raised > 0 && pct < 1) pct = 1;
-            let year = f.until && f.until.slice(0, 4) !== today.slice(0, 4);
-            let head = [f.kind === 'charity' ? 'Благодійний збір' : f.kind === 'channel' ? 'Збір на канал' : 'Збір',
-                f.until ? 'до ' + fmtDay(f.until, year) : ''].filter(Boolean).join(' · ');
-            let sum = n.goal ? `${fmtMoney(n.raised)} з ${fmtMoney(n.goal)} · ${pct}%` : n.raised ? 'Зібрано ' + fmtMoney(n.raised) : '';
-            if (n.goal && n.raised >= n.goal) sum = 'Ціль досягнуто — дякую! · ' + sum;
-            return `<div class="fund${why ? ' off' : ''}" id="f-${esc(f.id)}"><div class="fund-txt"><div class="fund-k">${esc(head)}${offTag(why)}</div>` +
-                `<div class="fund-t">${esc(f.title)}</div>${f.about ? `<div class="fund-a">${esc(f.about)}</div>` : ''}</div>` +
-                (n.goal ? `<div class="fund-bar" role="progressbar" aria-label="Зібрано" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.min(pct, 100)}"><i style="width:${Math.min(pct, 100)}%"></i></div>` : '') +
-                `<div class="fund-f"><span class="fund-s">${sum}</span>` +
-                (f.url && !isSample(f.url) ? `<a class="fund-go" href="${esc(f.url)}" target="_blank" rel="noopener">Долучитися ↗</a>` : '') + '</div></div>';
-        }).join('') + '</section>';
+    // Збір — лише тихе посилання в шапці: «● Збір: Назва ↗» одразу на банку; «навіщо» — підказкою при наведенні.
+    // Після until зникає сам. id="f-…" — якір для посилань із бота (taras.kyiv.ua/#f-dron підсвічує збір).
+    function fundLinksHtml(today) {
+        return SUPPORT.funds.filter(f => !fundWhy(f, today) || (CHECK && f.title)).map(f => {
+            // :target не спрацьовує на посиланні, яке зʼявилось уже після завантаження, — підсвічуємо за адресою самі
+            let hl = decodeURIComponent(location.hash) === '#f-' + f.id ? ' hl' : '';
+            let why = fundWhy(f, today), attrs = ` class="fund-link${why ? ' off' : ''}${hl}" id="f-${esc(f.id)}"` + (f.about ? ` title="${esc(f.about)}"` : '');
+            let body = `Збір: ${esc(f.title)} ↗${offTag(why)}`;
+            return f.url && !isSample(f.url) ? `<a${attrs} href="${esc(f.url)}" target="_blank" rel="noopener">${body}</a>` : `<span${attrs}>${body}</span>`;
+        }).join('');
     }
-    // У плеєрі (компʼютер) — один спокійний рядок: актуальний збір, а якщо його нема — платна підписка
-    function noteSupHtml(today) {
-        let f = SUPPORT.funds.find(x => !fundWhy(x, today)), m = SUPPORT.membership;
-        if (f) return `<p class="note-sup">Зараз збираємо: ${esc(f.title)} — <a href="${esc(f.url)}" target="_blank" rel="noopener">долучитися ↗</a></p>`;
-        if (m && !linkWhy(m)) return `<p class="note-sup">${m.about ? esc(m.about) + ' ' : ''}<a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.label)} ↗</a></p>`;
-        return '';
+    // У плеєрі (компʼютер) — один спокійний рядок про платну підписку, коли вона увімкнена. Збори туди не лізуть.
+    function noteSupHtml() {
+        let m = SUPPORT.membership;
+        return m && !linkWhy(m) ? `<p class="note-sup">${m.about ? esc(m.about) + ' ' : ''}<a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.label)} ↗</a></p>` : '';
     }
-    // Суми з банок: fundraisers.json (оновлює GitHub Action) — лише коли на сторінці є збір із банкою monobank
+    // Суми з банок (fundraisers.json, оновлює GitHub Action) глядачам не показуємо — лише на ?check, для звірки
     let FUNDS_ASKED = false;
-    function loadFunds(today) {
-        if (FUNDS_ASKED || !SUPPORT.funds.some(f => f.jar && !isSample(f.url) && (!fundWhy(f, today) || CHECK))) return;
+    function loadFunds() {
+        if (FUNDS_ASKED || !CHECK || !SUPPORT.funds.some(f => f.jar && !isSample(f.url))) return;
         FUNDS_ASKED = true;
         getFile('fundraisers.json').then(r => r.ok ? r.json() : null).then(d => {
             if (isObj(d) && isObj(d.jars)) { FUNDS_LIVE = d; LAST_HTML = ''; render(); }
@@ -1331,7 +1316,7 @@
             : '') + ((topics.length || p.date) ? '<div class="note-tags">' +
               (p.date ? `<button type="button" class="chip share" onclick="shareDay('${p.date}', this)">🔗 Посилання на день</button>` : '') +
               topics.map(t => `<a class="chip" href="#t=${encodeURIComponent(t)}">${esc(topicLabel(t))}</a>`).join('') + '</div>' : '') +
-            noteSupHtml(todayStr());
+            noteSupHtml();
         // Плеєр: локальне відео (судний день, Фаза 5) якщо є base+v, інакше YouTube-ембед за id.
         let iframe = document.getElementById('ytIframe'), loc = document.getElementById('locVideo');
         let local = hasLocal ? (BASE.replace(/\/+$/, '') + '/' + p.v.replace(/^\/+/, '')) : '';
@@ -1423,6 +1408,7 @@
     window.addEventListener('hashchange', () => {
         let d = dayFromHash();
         if (d && d !== DAY_DONE) { DAY_DONE = d; closeModal(); showDay(d, '', !OPEN_IN_APP); return; }
+        if (location.hash.startsWith('#f-')) render();  // посилання на збір — підсвітити його в шапці
         let t = topicFromHash();
         if (t === TOPIC) return;
         TOPIC = t; closeModal(); render();
