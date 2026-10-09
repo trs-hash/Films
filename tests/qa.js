@@ -13,8 +13,11 @@ const OUT = path.join(__dirname, 'qa-shots');
 fs.mkdirSync(OUT, { recursive: true });
 const ONLY = process.argv[2] ? new RegExp(process.argv[2]) : null;
 
+// Підміна файлів на рівні сервера (o.serve) — для сервіс-воркера, повз який перехоплення Playwright не працює
+let SERVE = {};
 const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split('?')[0]);
+  if (SERVE[p] !== undefined) { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(SERVE[p]); }
   if (p === '/') p = '/index.html';
   let f = path.join(ROOT, p);
   if (!fs.existsSync(f) || fs.statSync(f).isDirectory() && !fs.existsSync(f = path.join(f, 'index.html'))) {   // як GitHub Pages: 404.html
@@ -100,6 +103,8 @@ function zbirRepo(seasons) {
   return { dir, run, cfgText };
 }
 const REAL_CFG = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'seasons.json'), 'utf8'));
+// Справжній seasons.json, але календар показано (у репо він зараз схований про запас — calendar.enabled: false)
+const REAL_ON = () => { const c = REAL_CFG(); c.calendar.enabled = true; return c; };
 // Повернення на сайт: минулий захід (lv.cur) — у заданий момент; лише при першому завантаженні вкладки
 const visitedAt = iso => `(() => { try { if (!sessionStorage.getItem('__lv')) { sessionStorage.setItem('__lv', '1');
   localStorage.setItem('lv', JSON.stringify({ prev: 0, cur: Date.parse('${iso}') })); } } catch (e) {} })()`;
@@ -137,6 +142,7 @@ const SHARE_DENIED = () => { navigator.canShare = () => true; navigator.share = 
 
 // ── Запуск одного сценарію ──────────────────────────────────────────────────
 async function scenario(browser, o) {
+  SERVE = o.serve || {};
   const ctx = await browser.newContext({ viewport: o.viewport || { width: 1280, height: 900 }, deviceScaleFactor: o.dpr || 1, userAgent: o.ua, hasTouch: !!o.ua, isMobile: !!o.mobile,
     storageState: o.storageState, colorScheme: o.dark ? 'dark' : 'light', timezoneId: o.tz || 'Europe/Kyiv', serviceWorkers: o.sw ? 'allow' : 'block' });
   if (o.clipboard) await ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
@@ -486,7 +492,8 @@ const CASES = [
           it('sh', 'Шортс', '2026-10-01T10:00:00Z'), it('pr', 'Private video', '', '', true), it('old', 'Проба', '2026-09-20T10:00:00Z')],
         'PLS50DDpfd-9w': [it('sh', 'Шортс', '2026-10-01T10:00:00Z')] }));
       fs.writeFileSync(path.join(out, 'archive.json'), JSON.stringify({ base: 'https://video.example', days: { '2026-09-30': [{ t: 'стара', y: 'a1', v: 'a1.mp4', d: 7 }], '2026-09-01': 'зіпсовано' } }));
-      const run = () => cp.execFileSync('node', [path.join(ROOT, 'tools/archive.mjs')], { env: Object.assign({}, process.env, { ARCHIVE_OUT: out, ARCHIVE_FIXTURE: path.join(dir, 'fx.json'), ARCHIVE_NO_POSTERS: '1' }) }).toString();
+      fs.writeFileSync(path.join(dir, 'seasons.json'), JSON.stringify(REAL_ON()));   // календар показано
+      const run = () => cp.execFileSync('node', [path.join(ROOT, 'tools/archive.mjs')], { env: Object.assign({}, process.env, { ARCHIVE_OUT: out, ARCHIVE_FIXTURE: path.join(dir, 'fx.json'), ARCHIVE_NO_POSTERS: '1', ARCHIVE_SEASONS: path.join(dir, 'seasons.json') }) }).toString();
       run(); const second = run();
       const a = JSON.parse(fs.readFileSync(path.join(out, 'archive.json'), 'utf8')), page = fs.readFileSync(path.join(out, 'd/2026-10-01/index.html'), 'utf8');
       return a.days['2026-10-01'][0].y === 'n1' && a.days['2026-09-30'][0].v === 'a1.mp4' && a.days['2026-09-30'][0].d === 7 && a.days['2026-09-30'][0].t === 'Перша'
@@ -497,7 +504,7 @@ const CASES = [
     }],
 
   // --- 📱 PWA
-  ['P09 PWA: маніфест з іконками, сервіс-воркер, офлайн — стіна з кешу', { sw: true, now: '2026-10-05T12:00:00+03:00', api: { 'UURSKTGA5a2hLrai_MXNaoUQ': TAGGED.map((v, i) => Object.assign({}, v, { contentDetails: { videoId: 'g' + (i + 1), videoPublishedAt: `2026-10-0${i + 1}T10:00:00Z` } })), 'PLS50DDpfd-9w': [] }, realFiles: true, wait: 1000 },
+  ['P09 PWA: маніфест з іконками, сервіс-воркер, офлайн — стіна з кешу', { sw: true, now: '2026-10-05T12:00:00+03:00', api: { 'UURSKTGA5a2hLrai_MXNaoUQ': TAGGED.map((v, i) => Object.assign({}, v, { contentDetails: { videoId: 'g' + (i + 1), videoPublishedAt: `2026-10-0${i + 1}T10:00:00Z` } })), 'PLS50DDpfd-9w': [] }, realFiles: true, serve: { '/seasons.json': JSON.stringify(REAL_ON()) }, wait: 1000 },
     async r => {
       const man = await r.page.evaluate(async () => { const l = document.querySelector('link[rel=manifest]'); const m = await (await fetch(l.href)).json();
         const icons = await Promise.all(m.icons.map(async i => (await fetch(i.src)).status)); return { name: m.short_name, display: m.display, icons, maskable: m.icons.some(i => i.purpose === 'maskable') }; });
@@ -966,6 +973,43 @@ const CASES = [
       viewport: { width: 320, height: 640 }, seasons: CAL({ start: '2026-09-20' }), api: V_API, initScript: visitedAt('2026-09-27T12:00:00Z'), now: '2026-09-29T15:00:00+03:00', shot: 'U05-mobile' },
     async r => { const a = await noHScroll(r); await r.page.tap('.cal-acts .act:has-text("Мій день")'); await r.page.waitForTimeout(100);
       return a && await noHScroll(r) && await r.page.locator('#since .since-new').count() === 1 && await r.page.locator('#myday select').count() === 2; }],
+
+  // --- 🗄 Календар схований про запас (calendar.enabled: false) і повертається одним рядком
+  ['E01 справжній seasons.json (календар сховано): глядач бачить заглушку з YouTube, запитів до YouTube нема, підтримка не зламалась', { api: REAL_API, shot: 'E01-hidden' },
+    async r => has(r, 'Скоро тут буде нове') && await r.page.getAttribute('.msg-empty a', 'href') === 'https://www.youtube.com/@Taras.maksymiak'
+      && r.apiCalls.length === 0 && await r.page.locator('#cal, .cal-hidden, .cal-acts').count() === 0 && !has(r, 'Стіна днів') && r.errs.length === 0],
+  ['E02 ?check на справжньому seasons.json: календар у попередньому перегляді з позначкою «сховано», помилок нема', { path: '?check', api: REAL_API },
+    async r => await r.page.locator('.cal-hidden').count() === 1 && await r.page.locator('#cal').count() === 1 && has(r, 'сховано від глядачів')
+      && has(r, 'Помилок не знайдено') && !has(r, 'Скоро тут буде нове')],
+  ['E03 сховано, але є сезон — показано сезон, без заглушки; посилання #d= і «мій день» тихо нічого не роблять', { path: '#d=2026-09-21',
+      seasons: Object.assign(CAL({ start: '2026-09-20', enabled: false }), { seasons: [S1()] }), api: { UU1: TAGGED, SH: [], PL1: TWO } },
+    async r => has(r, '2 серії') && !has(r, 'Скоро тут буде нове') && await r.page.locator('#cal').count() === 0 && !r.apiCalls.includes('UU1') && r.errs.length === 0],
+  ['E04 ручні помилки в enabled: «ні» — сховано, «так» — показано, «може» — сховано; кожне — пояснення в ?check', { path: '?check',
+      seasons: CAL({ start: '2026-09-20', enabled: 'ні' }), api: { UU1: TAGGED, SH: [] } },
+    async r => {
+      const a = has(r, 'enabled «ні» прочитано як false') && await r.page.locator('.cal-hidden').count() === 1;
+      await r.page.route(/seasons\.json/, rr => rr.fulfill({ contentType: 'application/json', body: JSON.stringify(CAL({ start: '2026-09-20', enabled: 'так' })) }));
+      await r.page.reload(); await r.page.waitForTimeout(600);
+      const b = (await r.page.innerText('body')).includes('enabled «так» прочитано як true') && await r.page.locator('.cal-hidden').count() === 0 && await r.page.locator('#cal .v-lnk').count() === 4;
+      await r.page.unroute(/seasons\.json/);
+      await r.page.route(/seasons\.json/, rr => rr.fulfill({ contentType: 'application/json', body: JSON.stringify(CAL({ start: '2026-09-20', enabled: 'може' })) }));
+      await r.page.goto('http://localhost:8766/'); await r.page.waitForTimeout(600);
+      const c = (await r.page.innerText('body')).includes('Скоро тут буде нове');
+      return a && b && c;
+    }],
+  ['E05 повернути календар — один рядок: enabled: true (усе працює, як до сховання)', { seasons: Object.assign(REAL_ON(), { calendar: Object.assign(REAL_ON().calendar, { playlist: 'UU1', exclude: ['SH'], start: '2026-09-20' }) }),
+      api: { UU1: TAGGED, SH: [] } },
+    async r => await r.page.locator('#cal .v-lnk').count() === 4 && await r.page.locator('.cal-hidden').count() === 0 && !has(r, 'Скоро тут буде нове')],
+  ['E06 генератор архіву з схованим календарем: відео архівуються, а сторінок днів і днів у sitemap нема', {},
+    async () => {
+      const os = require('os'), cp = require('child_process'), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'arch-hid-')), out = path.join(dir, 'out');
+      fs.mkdirSync(out);
+      const it = (id, t, pub) => ({ snippet: { title: t, description: '', resourceId: { videoId: id }, thumbnails: {} }, contentDetails: { videoId: id, videoPublishedAt: pub }, status: { privacyStatus: 'public' } });
+      fs.writeFileSync(path.join(dir, 'fx.json'), JSON.stringify({ UURSKTGA5a2hLrai_MXNaoUQ: [it('h1', 'Сховане', '2026-10-01T10:00:00Z')], 'PLS50DDpfd-9w': [] }));
+      cp.execFileSync('node', [path.join(ROOT, 'tools/archive.mjs')], { env: Object.assign({}, process.env, { ARCHIVE_OUT: out, ARCHIVE_FIXTURE: path.join(dir, 'fx.json'), ARCHIVE_NO_POSTERS: '1' }) });   // справжній seasons.json
+      const a = JSON.parse(fs.readFileSync(path.join(out, 'archive.json'), 'utf8')), sm = fs.readFileSync(path.join(out, 'sitemap.xml'), 'utf8');
+      return REAL_CFG().calendar.enabled === false && a.days['2026-10-01'][0].y === 'h1' && !fs.existsSync(path.join(out, 'd')) && !sm.includes('/d/') && sm.includes('<loc>https://taras.kyiv.ua/</loc>');
+    }],
 
 ];
 

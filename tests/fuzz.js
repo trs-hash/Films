@@ -36,7 +36,7 @@ function config() {
   if (chance(0.05)) return [{ n: pick([1, '1', nasty()]), title: nasty(), playlist: 'PL1', start: pick([day(), nasty()]) }];
   let c = {};
   if (chance(0.9)) c.calendar = chance(0.1) ? nasty() : { start: pick([day(), '2026-08-01', nasty()]), playlist: pick(['UU1', 'UU1', 'UCabcdefghijklmnopqrstuv', nasty()]),
-    exclude: pick([['SH'], 'SH', nasty()]) };
+    exclude: pick([['SH'], 'SH', nasty()]), enabled: maybe(pick([true, false, 'ні', 'так', nasty()]), 0.3) };
   if (chance(0.5)) c.topics = chance(0.2) ? nasty() : [{ tag: pick(['подорожі', nasty()]), title: maybe(nasty()), about: maybe(nasty()), aliases: maybe(pick([['мандри'], nasty()])) }];
   if (chance(0.3)) c.ignore_tags = pick([['shorts'], nasty()]);
   if (chance(0.3)) c.seasons = chance(0.2) ? nasty() : [{ n: pick([1, '2', nasty()]), format: pick(['weekly', 'daily', nasty()]), title: nasty(), about: maybe(nasty()),

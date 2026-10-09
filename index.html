@@ -212,7 +212,7 @@
         .mnav:hover:not([disabled]){color:var(--red)}
         .mnav[disabled]{visibility:hidden}
         .mnav-pos{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.55);text-align:center;overflow-wrap:anywhere}
-        .mod-poster,.iframe-wrap .mod-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+        .mod-poster{position:absolute;inset:0;background:#000 center/cover no-repeat}
         .mod-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;display:inline-flex;align-items:center;min-height:44px;box-sizing:border-box;padding:12px 20px;border-radius:999px;background:var(--red);color:#fff;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.45)}
         .mod-poster[hidden],.mod-play[hidden]{display:none}
         .note-tags .chip.card{font:inherit;font-size:13px;font-weight:600;cursor:pointer}
@@ -241,6 +241,8 @@
         .md-msg:empty{display:none}
         .md-msg button{background:none;border:0;padding:4px 2px;font:inherit;font-weight:700;color:var(--red);cursor:pointer}
 
+        .cal-hidden{border:2px dashed var(--red);border-radius:10px;padding:12px 16px;margin:0 0 30px;font-size:13px;font-weight:600;line-height:1.5;color:var(--red)}
+        .msg-empty a{color:var(--red)}
         /* ?check — самоперевірка після правок seasons.json (бачить лише той, хто відкрив з ?check) */
         .chk{border:2px dashed var(--red);border-radius:10px;padding:16px 20px 6px;margin:0 0 50px;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
         .chk-h{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);margin:4px 0 8px}
@@ -339,7 +341,7 @@
         <div class="iframe-wrap">
             <iframe id="ytIframe" title="Відео" allow="autoplay; encrypted-media" allowfullscreen></iframe>
             <video id="locVideo" controls playsinline preload="none"></video>
-            <img id="modPoster" class="mod-poster" alt="" hidden>
+            <div id="modPoster" class="mod-poster" hidden></div>
             <a id="modPlay" class="mod-play" href="#" onclick="playSheet(event)" hidden>▶ Дивитися в YouTube</a>
         </div>
         <div id="modNav" class="mod-nav"></div>
@@ -369,6 +371,7 @@
     let TOPICS = { cfg: {}, alias: {}, ignore: new Set() };   // теми з seasons.json: назви/описи, синоніми, ігноровані хештеги
     let TOPIC = '';              // вибрана тема з адреси (#t=подорожі)
     let CAL_NOTE = '';           // чому календар порожній (для ?check)
+    let CAL_HIDDEN = false;      // календар сховано (seasons.json → calendar.enabled: false): глядачі його не бачать, ?check — бачить
     let SEASONS = [];            // нормалізовані сезони: {k,id,n,format,title,about,start,end,schedule,playlist,episodes,support}
     let EPS = {};                // {k: [rec]} відео календаря (k='cal') і сезонів, rec = {key,title,thumb,srcset,imp,tags,y,v,date,ts}
     let metaById = {};           // {key: {title,time,body,important}}
@@ -571,7 +574,7 @@
 
     // Увесь seasons.json: календар, теми, сезони. Старий формат (просто список сезонів) теж розуміємо.
     const TOP_KEYS = ['calendar', 'topics', 'ignore_tags', 'seasons', 'support'];
-    const CAL_KEYS = ['start', 'playlist', 'exclude'];
+    const CAL_KEYS = ['enabled', 'start', 'playlist', 'exclude'];
     const TOPIC_KEYS = ['tag', 'title', 'about', 'aliases'];
     const bareTag = v => str(v).replace(/^#/, '').toLowerCase();
     // Найімовірніша ручна помилка в календарі — вставити канал замість плейлиста.
@@ -590,7 +593,7 @@
         return normPlaylist(s, 'seasons.json, calendar');
     }
     function normConfig(raw) {
-        CAL = null; TOPICS = { cfg: {}, alias: {}, ignore: new Set(IGNORE_TAGS) }; SUPPORT = normSupport(null);
+        CAL = null; CAL_HIDDEN = false; TOPICS = { cfg: {}, alias: {}, ignore: new Set(IGNORE_TAGS) }; SUPPORT = normSupport(null);
         if (Array.isArray(raw)) { SEASONS = normSeasons(raw); return; }
         if (!raw || typeof raw !== 'object') { issue('seasons.json: очікую обʼєкт {…}'); SEASONS = []; return; }
         Object.keys(raw).forEach(k => { if (!TOP_KEYS.includes(k)) issue(`seasons.json: невідоме поле «${k}» — описка? Відомі: ${TOP_KEYS.join(', ')}`); });
@@ -598,11 +601,16 @@
         if (c != null && (typeof c !== 'object' || Array.isArray(c))) issue('seasons.json, calendar: очікую обʼєкт {"start": …, "playlist": …}');
         else if (c != null) {
             Object.keys(c).forEach(k => { if (!CAL_KEYS.includes(k)) issue(`seasons.json, calendar: невідоме поле «${k}» — відомі: ${CAL_KEYS.join(', ')}`); });
+            // Сховати календар про запас (щоденний формат — пізніше): "enabled": false. Глядачі бачать заглушку,
+            // ?check — попередній перегляд календаря, як він виглядатиме, коли повернеш "enabled": true.
+            CAL_HIDDEN = c.enabled != null && !flag(c.enabled, 'seasons.json, calendar');
             let ex = Array.isArray(c.exclude) ? c.exclude : (c.exclude ? [c.exclude] : []);
-            CAL = { k: 'cal', id: 'cal', format: 'daily', end: '', start: normDate(c.start, 'seasons.json, calendar.start'),
-                playlist: calPlaylist(c.playlist),
-                exclude: ex.map(pl => normPlaylist(pl, 'seasons.json, calendar.exclude')).filter(Boolean) };
-            if (!CAL.playlist) issue('seasons.json, calendar: нема playlist — календар не знає, звідки брати відео (усі завантаження каналу — ID на UU…)');
+            if (!CAL_HIDDEN || CHECK) {
+                CAL = { k: 'cal', id: 'cal', format: 'daily', end: '', start: normDate(c.start, 'seasons.json, calendar.start'),
+                    playlist: calPlaylist(c.playlist),
+                    exclude: ex.map(pl => normPlaylist(pl, 'seasons.json, calendar.exclude')).filter(Boolean) };
+                if (!CAL.playlist) issue('seasons.json, calendar: нема playlist — календар не знає, звідки брати відео (усі завантаження каналу — ID на UU…)');
+            }
         }
         let tl = raw.topics == null ? [] : raw.topics;
         if (!Array.isArray(tl)) { issue('seasons.json, topics: очікую список [ … ]'); tl = []; }
@@ -959,7 +967,8 @@
         let html = CHECK ? checkHtml(today) : '';
         if (CAL) html += homeHtml(today);
         if (!SEASONS.length) {
-            if (!CAL) html += '<div class="msg-empty">Скоро тут зʼявиться перший сезон.</div>';
+            if (CAL_HIDDEN && !CAL) html += `<div class="msg-empty">Скоро тут буде нове.<br>А поки всі відео — на <a href="${CHANNEL_URL}" target="_blank" rel="noopener">YouTube ↗</a></div>`;
+            else if (!CAL) html += '<div class="msg-empty">Скоро тут зʼявиться перший сезон.</div>';
         } else {
             let list = SEASONS.map(s => ({ s, st: seasonState(s, today) })).sort((a, b) => rank[a.st] - rank[b.st] ||
                 (a.st === 'soon' ? (a.s.start < b.s.start ? -1 : 1) : ((a.s.start || '') > (b.s.start || '') ? -1 : 1)));
@@ -1096,6 +1105,10 @@
 
     // Головна: теми (коли вже є хештеги) → панель вибраної теми → стіна днів
     function homeHtml(today) {
+        return (CAL_HIDDEN ? '<p class="cal-hidden">Сховано: глядачі цієї стіни не бачать (seasons.json → calendar.enabled: false). Це попередній перегляд; повернути — "enabled": true.</p>' : '') +
+            homeInner(today);
+    }
+    function homeInner(today) {
         let s = CAL, soon = '<div class="s-lbl">Стіна днів</div><p class="cal-soon">Скоро тут зʼявиться перша стрічка.</p>';
         if (s.start && today < s.start)                // ще до першого дня — спокійна заглушка (без відліку й дедлайну)
             return `<section class="cal-home" id="cal">${soon}</section>`;
@@ -1257,7 +1270,7 @@
         if (CAL) {
             let n = (EPS.cal || []).length, h = HIDDEN[CAL.playlist] || 0, tl = topicCounts(allRecs());
             let first = (EPS.cal || []).reduce((m, r) => !m || r.date < m ? r.date : m, '');
-            rows += `<li><b>Календар</b> — відлік від першого відео${first ? ' (' + fmtDay(first, true) + ')' : ' (його ще нема)'}` +
+            rows += `<li><b>Календар</b>${CAL_HIDDEN ? ' — <b>сховано від глядачів</b> (calendar.enabled: false), нижче попередній перегляд;' : ' —'} відлік від першого відео${first ? ' (' + fmtDay(first, true) + ')' : ' (його ще нема)'}` +
                 (CAL.start ? `, старіші за ${fmtDay(CAL.start, true)} не беремо` : '') + `; джерело ${esc(CAL.playlist || '—')}: ` +
                 `на сайті ${n} відео` + (h ? `, ще ${h} приховано (приватні / заплановані)` : '') +
                 (CAL.exclude.length ? `; без відео з ${esc(CAL.exclude.join(', '))}` : '') + (CAL_NOTE ? ` — ${esc(CAL_NOTE)}` : '') +
@@ -1431,7 +1444,7 @@
         poster.hidden = play.hidden = true;
         stopPlayers();
         if (sheet) {
-            if (p.thumb) { poster.src = p.thumb; poster.hidden = false; }
+            if (p.thumb) { poster.style.backgroundImage = 'url("' + p.thumb.replace(/["\\\n]/g, '') + '")'; poster.hidden = false; }
             play.href = ytWatch(p); play.hidden = false;
         } else if (BASE && p.v) {
             loc.src = BASE.replace(/\/+$/, '') + '/' + p.v.replace(/^\/+/, ''); loc.style.display = 'block';
