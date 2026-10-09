@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарас Максимʼяк</title>
-    <meta name="description" content="Фільмотека Тараса Максимʼяка: кожне відео — окремий фільм зі своєю афішею, за датою виходу.">
+    <meta name="description" content="Фільми Тараса Максимʼяка: кожне відео — окремий фільм зі своєю афішею, за датою виходу.">
 
-    <meta property="og:title" content="Тарас Максимʼяк — фільмотека">
+    <meta property="og:title" content="Тарас Максимʼяк — фільми">
     <meta property="og:description" content="Кожне відео — окремий фільм зі своєю афішею.">
     <meta property="og:image" content="https://taras.kyiv.ua/image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
@@ -24,7 +24,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
     <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://i.ytimg.com">
-    <!-- Oswald (SIL OFL, fonts/OFL.txt) — вузький шрифт афіш: імʼя, «Фільмотека», роки, назви на афішах. Свій файл, без Google Fonts -->
+    <!-- Oswald (SIL OFL, fonts/OFL.txt) — вузький шрифт афіш: імʼя, роки, назви й номери на афішах. Свій файл, без Google Fonts -->
     <link rel="preload" href="fonts/oswald-cyrillic-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="fonts/oswald-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <script>
@@ -193,44 +193,38 @@
         .note-tags .chip:hover{color:#fff;border-color:var(--red);background:var(--red)}
         .note-tags .chip.share{font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 
-        /* ── 🎞 Фільмотека: кожне відео — фільм з афішею 2:3; каталог за датою виходу (роки — від найновішого) ──
-           Афіша: кадр на весь лист (16:9 → обрізаємо по центру; 4:3 зі смугами — .lb ховає смуги), зерно плівки,
-           згори № у каталозі й автор, знизу назва вузьким шрифтом, дата виходу й «титри». Розміри — від ширини афіші (cqw). */
+        /* ── 🎞 Фільми: кожне відео — фільм із горизонтальною афішею (як кінокартка з кадром); каталог за датою виходу ──
+           Кадр — превʼю відео цілком, 16:9, у найвищій якості (maxres 1280×720). Превʼю 4:3 з чорними смугами
+           (sddefault/hqdefault) object-fit:cover обрізає рівно по смугах. Під кадром — темна смуга з № у каталозі,
+           датою виходу, назвою вузьким шрифтом і «титрами». Розміри тексту — від ширини картки (cqw). */
         .films{margin:0 0 80px;scroll-margin-top:20px}
-        .fl-mast{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 24px;margin:0 0 30px;padding-bottom:16px;border-bottom:2px solid var(--txt)}
-        .fl-title{font-family:var(--disp);font-size:clamp(46px,10vw,124px);font-weight:600;line-height:.85;letter-spacing:-.01em;text-transform:uppercase;margin:0}
-        .fl-meta{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);padding-bottom:4px;font-variant-numeric:tabular-nums}
         .fl-year{display:flex;align-items:center;gap:16px;font-family:var(--disp);font-size:40px;font-weight:500;line-height:1;margin:0 0 22px;scroll-margin-top:20px}
         .fl-year::after{content:'';order:1;flex:1;height:1px;background:var(--div)}
         .fl-yc{order:2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut)}
-        .fl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:36px 22px;margin:0 0 64px}
+        .fl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:40px 24px;margin:0 0 64px}
         .fl-topic{margin:-8px 0 30px;font-size:15px;line-height:1.5;color:var(--mut);max-width:640px;overflow-wrap:anywhere}
         .fl-topic a{color:var(--red);text-decoration:none;white-space:nowrap;margin-left:6px}
-        .film{position:relative;min-width:0}
-        .poster{position:relative;display:block;aspect-ratio:2/3;overflow:hidden;border-radius:3px;background:#1b1916;color:#fff;text-decoration:none;container-type:inline-size;
+        .film{position:relative;min-width:0;display:flex}
+        .poster{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden;border-radius:4px;background:#1b1916;color:#fff;text-decoration:none;container-type:inline-size;
             box-shadow:0 1px 2px rgba(0,0,0,.14),0 16px 30px -18px rgba(0,0,0,.6);transition:transform .25s,box-shadow .25s}
-        .pst-img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;display:block;transition:filter .3s}
-        .pst-img.lb{top:-16.667%;height:133.334%}
-        .poster::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
-            background:linear-gradient(to bottom,rgba(0,0,0,.6) 0%,rgba(0,0,0,0) 24%,rgba(0,0,0,.08) 36%,rgba(0,0,0,.6) 56%,rgba(0,0,0,.9) 76%,rgba(0,0,0,.95) 100%)}
-        .poster::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.28;mix-blend-mode:overlay;
+        .pst-frame{position:relative;display:block;aspect-ratio:16/9;overflow:hidden;background:#000}
+        .pst-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:filter .3s}
+        .pst-frame::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.2;mix-blend-mode:overlay;
             background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-        .pst-top{position:absolute;z-index:3;top:0;left:0;right:0;display:flex;justify-content:space-between;gap:8px;padding:12px 12px 0;padding:7cqw 7cqw 0;
-            font-family:var(--disp);font-size:10px;font-size:5.2cqw;font-weight:500;letter-spacing:.16em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,.5)}
-        .pst-by{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85}
-        .pst-foot{position:absolute;z-index:3;left:0;right:0;bottom:0;display:flex;flex-direction:column;padding:0 12px 12px;padding:0 7cqw 7cqw}
-        .pst-t{font-family:var(--disp);font-weight:600;line-height:1.02;letter-spacing:.005em;text-shadow:0 2px 14px rgba(0,0,0,.5);text-transform:uppercase;overflow-wrap:anywhere;
-            display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance;padding-bottom:.04em}
-        .pst-date{margin-top:4.5cqw;padding-top:4cqw;border-top:1px solid rgba(255,255,255,.28);font-family:var(--disp);font-size:12px;font-size:6.2cqw;font-weight:500;letter-spacing:.1em;text-transform:uppercase}
-        .pst-bill{margin-top:1.5cqw;font-family:var(--disp);font-size:9px;font-size:4.4cqw;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.62);font-variant-numeric:tabular-nums}
-        .pst-new{position:absolute;z-index:4;top:17cqw;left:0;padding:1.4cqw 4cqw 1.4cqw 7cqw;background:var(--red);color:#fff;font-family:var(--disp);font-size:5cqw;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+        .pst-band{flex:1;display:flex;flex-direction:column;padding:16px 18px 16px;padding:4.6cqw 5cqw 4.4cqw}
+        .pst-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-family:var(--disp);font-size:12px;font-size:3.5cqw;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.72);font-variant-numeric:tabular-nums}
+        .pst-no{color:#fff}
+        .pst-t{margin-top:1.8cqw;font-family:var(--disp);font-weight:600;line-height:1.04;letter-spacing:.005em;text-transform:uppercase;overflow-wrap:anywhere;
+            display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance;padding-bottom:.04em}
+        .pst-bill{margin-top:auto;padding-top:3cqw;font-family:var(--disp);font-size:10px;font-size:3cqw;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6);font-variant-numeric:tabular-nums}
+        .pst-new{position:absolute;z-index:4;top:4cqw;left:0;padding:1cqw 2.6cqw 1cqw 4cqw;background:var(--red);color:#fff;font-family:var(--disp);font-size:3.2cqw;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
         /* Переглянуте — штамп, як у власному каталозі: «відмічено» */
-        .pst-seen{display:none;position:absolute;z-index:4;top:36%;left:50%;transform:translate(-50%,-50%) rotate(-11deg);padding:1.6cqw 4cqw;border:.9cqw solid var(--red);border-radius:1.6cqw;
-            background:rgba(0,0,0,.4);color:#ff5146;font-family:var(--disp);font-size:8cqw;font-weight:700;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;transition:opacity .2s}
+        .pst-seen{display:none;position:absolute;z-index:4;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-8deg);padding:1.2cqw 3cqw;border:.6cqw solid var(--red);border-radius:1.2cqw;
+            background:rgba(0,0,0,.4);color:#ff5146;font-family:var(--disp);font-size:5.4cqw;font-weight:700;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;transition:opacity .2s}
         .poster.watched .pst-seen{display:block}
         .poster.watched .pst-img{filter:grayscale(.7) brightness(.85)}
-        .pst-play{position:absolute;z-index:4;top:42%;left:50%;width:17cqw;height:17cqw;border-radius:50%;background:var(--red);opacity:0;transform:translate(-50%,-50%) scale(.8);transition:opacity .2s,transform .2s;pointer-events:none}
-        .pst-play::before{content:'';position:absolute;left:39%;top:30%;border-style:solid;border-width:4.4cqw 0 4.4cqw 7cqw;border-color:transparent transparent transparent #fff;width:0;height:0}
+        .pst-play{position:absolute;z-index:4;top:50%;left:50%;width:12cqw;height:12cqw;border-radius:50%;background:var(--red);opacity:0;transform:translate(-50%,-50%) scale(.8);transition:opacity .2s,transform .2s;pointer-events:none}
+        .pst-play::before{content:'';position:absolute;left:39%;top:30%;border-style:solid;border-width:3.1cqw 0 3.1cqw 4.9cqw;border-color:transparent transparent transparent #fff;width:0;height:0}
         @media (hover:hover) and (pointer:fine){
             .poster:hover{transform:translateY(-4px);box-shadow:0 2px 4px rgba(0,0,0,.16),0 24px 40px -18px rgba(0,0,0,.7)}
             .poster:hover .pst-play{opacity:1;transform:translate(-50%,-50%) scale(1)}
@@ -238,17 +232,17 @@
         }
         .poster:focus-visible .pst-play{opacity:1;transform:translate(-50%,-50%) scale(1)}
         .film .v-more{top:0;bottom:auto;align-items:flex-start;padding:7px 7px 0 0}
-        .film.has-more .pst-by{visibility:hidden}
         .films.filtering .film:not(.hit){display:none}
         .film.flash .poster{animation:flash 1.4s ease-out 2}
         /* Порожньо / ще вантажиться */
-        .poster.sk{background:var(--cell);box-shadow:none}
-        .poster.sk::before,.poster.sk::after,.poster.soon::before,.poster.soon::after{display:none}
+        .poster.sk{aspect-ratio:10/9;background:var(--cell);box-shadow:none}
         .poster.soon{background:transparent;border:2px dashed var(--div);box-sizing:border-box;color:var(--mut);box-shadow:none}
-        .poster.soon .pst-top,.poster.soon .pst-t{text-shadow:none}
-        .poster.soon .pst-date{border-top-color:var(--div)}
-        .poster.soon .pst-bill{color:var(--mut)}
-        .fl-soon{align-self:center;font-size:15px;line-height:1.55;color:var(--mut);max-width:340px}
+        .poster.soon .pst-frame{background:transparent;border-bottom:2px dashed var(--div);display:flex;align-items:center;justify-content:center}
+        .poster.soon .pst-frame::after{display:none}
+        .soon-t{font-family:var(--disp);font-size:44px;font-size:13cqw;font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+        .poster.soon .pst-top,.poster.soon .pst-bill{color:var(--mut)}
+        .poster.soon .pst-no{color:var(--txt)}
+        .fl-soon{align-self:center;font-size:15px;line-height:1.55;color:var(--mut);max-width:340px;margin:0}
         .fl-soon a{color:var(--red);text-decoration:none}
 
         /* ── Підтримка (seasons.json → support). Типово вимкнено ──
@@ -338,8 +332,7 @@
             .season{margin-bottom:80px}
             .grid{grid-template-columns:repeat(2,1fr)}
             .eps.compact{grid-template-columns:repeat(2,1fr)}
-            .fl-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 14px;margin-bottom:48px}
-            .fl-mast{margin-bottom:24px;padding-bottom:12px}
+            .fl-grid{grid-template-columns:minmax(0,1fr);gap:28px;margin-bottom:48px}
             .fl-year{font-size:32px;margin-bottom:16px}
             .intro .name{font-size:17px}
             /* теми на телефоні — один рядок з прокруткою: календар лишається на першому екрані */
@@ -390,10 +383,9 @@
     </header>
 
     <main class="main" id="app">
-        <!-- Скелет першого показу у формі фільмотеки: місце під афіші є одразу, без стрибків макета -->
+        <!-- Скелет першого показу у формі афіш: місце під них є одразу, без стрибків макета -->
         <div aria-hidden="true">
-            <div class="fl-mast"><div class="fl-title">Фільмотека</div></div>
-            <div class="fl-grid"><div class="film"><div class="poster sk"></div></div><div class="film"><div class="poster sk"></div></div><div class="film"><div class="poster sk"></div></div><div class="film"><div class="poster sk"></div></div><div class="film"><div class="poster sk"></div></div></div>
+            <div class="fl-grid"><div class="film"><div class="poster sk"></div></div><div class="film"><div class="poster sk"></div></div><div class="film"><div class="poster sk"></div></div></div>
         </div>
         <noscript><p class="msg-empty">Сторінці потрібен JavaScript. Усі відео — на <a href="https://www.youtube.com/@Taras.maksymiak">YouTube-каналі</a>.</p></noscript>
     </main>
@@ -875,7 +867,9 @@
     function thumbSet(t) {
         let src = [t.high, t.medium, t.standard, t.maxres, t.default].map(x => x && x.url).find(okSrc) || '';
         let set = THUMB_KEYS.filter(k => t[k] && okImg(t[k].url) && +t[k].width > 0).map(k => t[k].url + ' ' + Math.round(t[k].width) + 'w').join(', ');
-        let pst = [t.maxres, t.standard, t.high, t.medium, t.default].map(x => x && x.url).find(okSrc) || '';   // афіші — найбільший кадр
+        // Афіші, аркуш і картка — завжди найбільше превʼю: maxres 1280×720 → sddefault 640×480 → hqdefault 480×360 (4:3 зі смугами
+        // кадр 16:9 обрізає рівно по смугах) → mqdefault 320×180. Без srcset: браузер не підмінить меншим
+        let pst = [t.maxres, t.standard, t.high, t.medium, t.default].map(x => x && x.url).find(okSrc) || '';
         return { thumb: src, srcset: set, pst: pst === src ? '' : pst };
     }
 
@@ -1237,12 +1231,13 @@
         return html + (wall && acts ? `<div class="cal-acts">${acts}</div>${mydayHtml()}` : '') + (wall || soon) + '</section>';
     }
 
-    // ── 🎞 Фільмотека ───────────────────────────────────────────────────────────
-    // Кожне відео — фільм з афішею. Каталог за датою виходу: роки від найновішого, у році — найновіші першими.
+    // ── 🎞 Фільми ───────────────────────────────────────────────────────────────
+    // Кожне відео — фільм із горизонтальною афішею: превʼю відео цілком + смуга з № у каталозі, датою, назвою й «титрами».
+    // Каталог за датою виходу: роки від найновішого, у році — найновіші першими.
     // № — порядковий номер від першого фільму (як у каталозі): з новими фільмами старі номери не змінюються.
     // Ні прем'єр, ні відліків, ні нагадувань — лише афіші того, що вже вийшло.
     // Апостроф на афіші — ’: у вузькому шрифті ʼ (U+02BC) і ' — широкий прямий штрих із дірою після нього
-    const FILM_BY = 'Тарас Максим’як', FILM_OF = 'Фільм Тараса Максим’яка', curly = t => t.replace(/[ʼ']/g, '’');
+    const FILM_OF = 'Фільм Тараса Максим’яка', curly = t => t.replace(/[ʼ']/g, '’');
     function fmtDur(sec) {
         if (!(sec > 0)) return '';
         let m = Math.max(1, Math.round(sec / 60));
@@ -1250,51 +1245,38 @@
     }
     const filmsSorted = () => (EPS.films || []).slice().sort(byTs);
     function filmNo(key) { return filmsSorted().findIndex(r => r.key === key) + 1; }
-    // Розмір назви — щоб найдовше слово влізло в рядок, а вся назва — у ~4 рядки (вузький шрифт: літера ≈ 0,55 кегля)
+    // Розмір назви — щоб найдовше слово влізло в рядок, а вся назва — у 2–3 рядки (вузький шрифт: літера ≈ 0,56 кегля)
     function titleSize(t) {
         let words = t.split(/\s+/), w = Math.max(...words.map(x => [...x].length)), n = [...t].length;
-        return Math.max(7, Math.min(20, 86 / (.56 * w), 560 / n)).toFixed(1);
+        return Math.max(4.4, Math.min(7.6, 90 / (.56 * w), 330 / n)).toFixed(1);
     }
-    // 4:3 зі смугами (hqdefault, sddefault): видно за адресою одразу, а для решти — за розміром, коли кадр завантажився
-    const LB_RE = /\/(?:hq|sd)?default(?:_live)?\.(?:jpg|webp)(?:[?#]|$)/;
-    document.addEventListener('load', e => {             // load не спливає — ловимо на етапі занурення, без inline-обробників
-        let im = e.target;
-        if (!im.classList || !im.classList.contains('pst-img')) return;
-        let r = im.naturalWidth / im.naturalHeight;
-        if (r) im.classList.toggle('lb', Math.abs(r - 4 / 3) < .04);
-    }, true);
     function posterHtml(rec, no, isNew) {
         let idx = playIdx(rec, 'films'), dur = fmtDur((metaById[rec.key] || {}).dur);
         let title = showTitle(rec.title) || 'Без назви', [y, m, d] = rec.date.split('-').map(Number), date = `${d} ${MONTHS_GEN[m - 1]} ${y}`;
-        let src = rec.pst || rec.thumb, img = '';
+        let src = rec.pst || rec.thumb, img = '';       // pst — найбільше превʼю (maxres 1280×720); thumb — запасне
         if (src) {
             let load = EAGER-- > 0 ? (FIRST_IMG ? ' fetchpriority="high"' : '') : ' loading="lazy"';
             if (load) FIRST_IMG = false;
-            img = `<img class="pst-img${LB_RE.test(src) ? ' lb' : ''}" src="${esc(src)}"${load} decoding="async" alt="">`;
+            img = `<img class="pst-img" src="${esc(src)}"${load} decoding="async" alt="">`;
         }
         let hit = TOPIC && recTopics(rec).includes(TOPIC) ? ' hit' : '', seen = watched.includes(rec.key) ? ' watched' : '';
-        return `<div class="film${hit}${OPEN_IN_APP ? ' has-more' : ''}" data-date="${rec.date}">` +
+        return `<div class="film${hit}" data-date="${rec.date}">` +
             `<a class="poster${seen}" href="${ytHref(rec)}" target="_blank" rel="noopener" data-k="${esc(rec.key)}" onclick="openVid(event, ${idx}, this)" aria-label="${esc(title)} — № ${no}, ${date}${dur ? ', ' + dur : ''}">` +
-            img + `<span class="pst-top"><span>№ ${pad2(no)}</span><span class="pst-by">${FILM_BY}</span></span>` +
-            (isNew ? '<span class="pst-new">Новий</span>' : '') + '<span class="pst-play"></span><span class="pst-seen">Переглянуто</span>' +
-            `<span class="pst-foot"><span class="pst-t" style="font-size:${titleSize(title)}cqw">${esc(curly(title))}</span>` +
-            `<span class="pst-date">${date}</span><span class="pst-bill">${FILM_OF}${dur ? ' · ' + dur : ''}</span></span></a>` +
+            `<span class="pst-frame">${img}` + (isNew ? '<span class="pst-new">Новий</span>' : '') + '<span class="pst-play"></span><span class="pst-seen">Переглянуто</span></span>' +
+            `<span class="pst-band"><span class="pst-top"><span class="pst-no">№ ${pad2(no)}</span><span>${date}</span></span>` +
+            `<span class="pst-t" style="font-size:${titleSize(title)}cqw">${esc(curly(title))}</span>` +
+            `<span class="pst-bill">${FILM_OF}${dur ? ' · ' + dur : ''}</span></span></a>` +
             (OPEN_IN_APP ? `<button type="button" class="v-more" onclick="daySheet(${idx}, this)" aria-label="Про фільм: ${esc(title)}"><span></span></button>` : '') +
             '</div>';
     }
-    function flMeta() {                                  // «8 фільмів · 3 переглянуто» — твій облік у цьому браузері
-        let all = (EPS.films || []).filter(playable), seen = all.filter(r => watched.includes(r.key)).length, n = (EPS.films || []).length;
-        return `${n} ${plural(n, 'фільм', 'фільми', 'фільмів')}` + (seen ? ` · ${seen} переглянуто` : '');
-    }
     function filmsHtml(today) {
         let all = filmsSorted(), list = TOPIC ? all.filter(r => recTopics(r).includes(TOPIC)) : all;
-        let html = (FILMS_HIDDEN ? '<p class="cal-hidden">Сховано: глядачі фільмотеки не бачать (seasons.json → films.enabled: false). Це попередній перегляд; повернути — "enabled": true.</p>' : '') +
-            `<section class="films${TOPIC ? ' filtering' : ''}" id="films" aria-label="Фільмотека"><div class="fl-mast"><h2 class="fl-title">Фільмотека</h2>` +
-            (all.length ? `<span class="fl-meta" id="fl-meta">${flMeta()}</span>` : '') + '</div>';
+        let html = (FILMS_HIDDEN ? '<p class="cal-hidden">Сховано: глядачі фільмів не бачать (seasons.json → films.enabled: false). Це попередній перегляд; повернути — "enabled": true.</p>' : '') +
+            `<section class="films${TOPIC ? ' filtering' : ''}" id="films" aria-label="Фільми"><h2 class="sr-only">Фільми</h2>`;
         if (LOAD_FAILED && !all.length) return html + '<p class="s-msg">Не вдалось завантажити фільми. Спробуйте оновити сторінку.</p></section>';
-        if (LOADING && !all.length) return html + '<div class="fl-grid">' + '<div class="film"><div class="poster sk"></div></div>'.repeat(5) + '</div></section>';
-        if (!all.length) return html + '<div class="fl-grid"><div class="film"><div class="poster soon"><span class="pst-top"><span>№ 01</span></span>' +
-            `<span class="pst-foot"><span class="pst-t" style="font-size:20cqw">Скоро</span><span class="pst-date">Перший фільм</span><span class="pst-bill">${FILM_OF}</span></span></div></div>` +
+        if (LOADING && !all.length) return html + '<div class="fl-grid">' + '<div class="film"><div class="poster sk"></div></div>'.repeat(3) + '</div></section>';
+        if (!all.length) return html + '<div class="fl-grid"><div class="film"><div class="poster soon"><span class="pst-frame"><span class="soon-t">Скоро</span></span>' +
+            `<span class="pst-band"><span class="pst-top"><span class="pst-no">№ 01</span></span><span class="pst-t" style="font-size:7.6cqw">Перший фільм</span><span class="pst-bill">${FILM_OF}</span></span></div></div>` +
             `<p class="fl-soon">Тут виходитимуть фільми — кожен зі своєю афішею. А поки всі відео — на <a href="${CHANNEL_URL}" target="_blank" rel="noopener">YouTube ↗</a></p></div></section>`;
         html += topicsBar(allRecs());
         if (TOPIC) {
@@ -1454,7 +1436,7 @@
         let rows = '';
         if (FILMS) {
             let n = (EPS.films || []).length, h = HIDDEN[FILMS.playlist] || 0, durs = (EPS.films || []).filter(r => (metaById[r.key] || {}).dur > 0).length;
-            rows += `<li><b>Фільмотека</b>${FILMS_HIDDEN ? ' — <b>сховано від глядачів</b> (films.enabled: false), нижче попередній перегляд;' : ' —'} джерело ${esc(FILMS.playlist || '—')}: ` +
+            rows += `<li><b>Фільми</b>${FILMS_HIDDEN ? ' — <b>сховано від глядачів</b> (films.enabled: false), нижче попередній перегляд;' : ' —'} джерело ${esc(FILMS.playlist || '—')}: ` +
                 `на сайті ${n} ${plural(n, 'фільм', 'фільми', 'фільмів')}` + (h ? `, ще ${h} приховано (приватні / заплановані)` : '') +
                 (n ? `, тривалість відома для ${durs}` : '') + (FILMS.exclude.length ? `; без відео з ${esc(FILMS.exclude.join(', '))}` : '') +
                 (FILMS.start ? `; старіші за ${fmtDay(FILMS.start, true)} не беремо` : '') + (FILMS_NOTE ? ` — ${esc(FILMS_NOTE)}` : '') + '</li>';
@@ -1551,7 +1533,7 @@
     // Телефон: дотик по дню — застосунок YouTube; «⋯» на дні відкриває «аркуш дня» без плеєра: кадр, записка,
     // картка для Stories, посилання, гортання; «▶ Дивитися в YouTube» — у застосунок.
     // Контекст гортання — звідки відкрили: стіна днів, вибрана тема, сезон або «з твого візиту» (черга нових днів).
-    const toP = (rec, ctx) => ({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [], date: rec.date, title: rec.title, thumb: rec.thumb || '', ctx });
+    const toP = (rec, ctx) => ({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [], date: rec.date, title: rec.title, thumb: rec.pst || rec.thumb || '', ctx });
     function playIdx(rec, ctx) { return PLAY.push(toP(rec, ctx)) - 1; }
     const byTs = (a, b) => a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0;
     const playable = r => !!(r && (r.y || r.v));
@@ -1744,7 +1726,7 @@
         let cal = (EPS[mainK()] || []).filter(playable);
         if (!cal.length) return '';
         let fresh = newRecs(), seen = cal.filter(r => watched.includes(r.key)).length, days = new Set(fresh.map(r => r.date)).size;
-        if (FILMS) seen = 0;                             // у фільмотеці «переглянуто» — у шапці каталогу
+        if (FILMS) seen = 0;                             // у фільмах «переглянуто» видно штампом на самій афіші
         if (!fresh.length && !seen) return '';
         let what = FILMS ? `${fresh.length} ${plural(fresh.length, 'новий фільм', 'нові фільми', 'нових фільмів')}` : `${days} ${plural(days, 'новий день', 'нових дні', 'нових днів')}`;
         return (fresh.length ? `<span class="since-new">З твого візиту — ${what}` +
@@ -1752,8 +1734,7 @@
             (seen ? `<span class="since-seen">Переглянуто ${seen} з ${cal.length}</span>` : '');
     }
     function updateSince() {
-        let html = sinceInner(), el = $('since'), cal = $(FILMS ? 'fl-body' : 'cal'), fm = $('fl-meta');
-        if (fm) fm.textContent = flMeta();
+        let html = sinceInner(), el = $('since'), cal = $(FILMS ? 'fl-body' : 'cal');
         if (el) el.innerHTML = html;
         else if (html && cal) cal.insertAdjacentHTML('beforebegin', `<div class="since" id="since">${html}</div>`);
     }

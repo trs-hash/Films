@@ -1018,7 +1018,7 @@ const CASES = [
 
   // --- 🗄 Календар схований про запас (calendar.enabled: false) і повертається одним рядком
   ['E01 справжній seasons.json (календар сховано, фільмотека — так): на каналі ще порожньо → афіша «Скоро» й YouTube; стіни днів нема', { api: REAL_API, shot: 'E01-hidden' },
-    async r => has(r, 'Фільмотека') && await r.page.locator('#films .poster.soon').count() === 1 && await r.page.getAttribute('.fl-soon a', 'href') === 'https://www.youtube.com/@Taras.maksymiak'
+    async r => !has(r, 'Фільмотека') && await r.page.locator('#films .poster.soon').count() === 1 && await r.page.getAttribute('.fl-soon a', 'href') === 'https://www.youtube.com/@Taras.maksymiak'
       && r.apiCalls.includes('UURSKTGA5a2hLrai_MXNaoUQ') && r.durCalls.length === 0 && await r.page.locator('#cal, .cal-hidden, .cal-acts').count() === 0 && !has(r, 'Стіна днів')
       && !has(r, 'Скоро тут буде нове') && r.errs.length === 0],
   ['E02 ?check на справжньому seasons.json: календар у попередньому перегляді з позначкою «сховано», помилок нема', { path: '?check', api: REAL_API },
@@ -1056,15 +1056,15 @@ const CASES = [
     }],
 
   // --- 🎞 Фільмотека: кожне відео — фільм з афішею, каталог за датою виходу
-  ['FM01 каталог: роки від новішого, у році — новіші першими; № від першого фільму; хвилини; без Shorts і приватних; «Новий» — один', { seasons: FILM(), api: F_API, durs: F_DURS, shot: 'FM01-films' },
+  ['FM01 каталог: роки від новішого, у році — новіші першими; № від першого фільму; хвилини; без Shorts і приватних; «Новий» — один; напису «Фільмотека» нема', { seasons: FILM(), api: F_API, durs: F_DURS, shot: 'FM01-films' },
     async r => {
       const years = await r.page.$$eval('#films .fl-year', h => h.map(x => x.id + ':' + x.textContent.replace(/\s+/g, ' ')));
-      const keys = await r.page.$$eval('#films .poster', a => a.map(x => x.dataset.k)), nums = await r.page.$$eval('#films .pst-top span:first-child', a => a.map(x => x.textContent));
-      const img = await r.page.getAttribute('[data-k="m3"] .pst-img', 'src'), lb = await r.page.locator('[data-k="m3"] .pst-img.lb').count();
+      const keys = await r.page.$$eval('#films .poster', a => a.map(x => x.dataset.k)), nums = await r.page.$$eval('#films .pst-no', a => a.map(x => x.textContent));
+      const img = await r.page.getAttribute('[data-k="m3"] .pst-img', 'src'), srcset = await r.page.getAttribute('[data-k="m3"] .pst-img', 'srcset');
       return years.join('|') === 'films-2026:20262 фільми|films-2025:20251 фільм' && keys.join() === 'm3,m2,m1' && nums.join() === '№ 03,№ 02,№ 01'
-        && (await r.page.innerText('#fl-meta')).toLowerCase() === '3 фільми' && has(r, 'Фільм Тараса Максим’яка · 1 хв') && has(r, '1 год 05 хв') && has(r, '13 хв')
+        && !has(r, 'Фільмотека') && has(r, 'Фільм Тараса Максим’яка · 1 хв') && has(r, '1 год 05 хв') && has(r, '13 хв')
         && has(r, '26 вересня 2026') && !has(r, 'Шортс') && !has(r, 'Private') && await r.page.locator('[data-k="m3"] .pst-new').count() === 1 && await r.page.locator('.pst-new').count() === 1
-        && r.durCalls.length === 1 && r.durCalls[0].sort().join() === 'm1,m2,m3' && img === 'https://i.ytimg.com/vi/m3/maxresdefault.jpg' && lb === 0;
+        && r.durCalls.length === 1 && r.durCalls[0].sort().join() === 'm1,m2,m3' && img === 'https://i.ytimg.com/vi/m3/maxresdefault.jpg' && srcset === null;
     }],
   ['FM02 тривалість: повторний візит не перепитує YouTube; квота на тривалість — афіші без хвилин, без помилок', { seasons: FILM(), api: F_API, durs: F_DURS,
       reload: async p => { await p.reload(); await p.waitForTimeout(700); } },
@@ -1074,7 +1074,7 @@ const CASES = [
       const b = r2.errs.length === 0 && await r2.page.locator('#films .poster').count() === 3 && !has(r2, ' хв') && has(r2, 'Фільм Тараса Максим’яка');
       await c2.close(); return a && b;
     }],
-  ['FM03 компʼютер: клік по афіші — плеєр, «№ 2 із 3», дата · день · тривалість; ← → гортають фільми; штамп «переглянуто» й лічильник; після оновлення — так само', {
+  ['FM03 компʼютер: клік по афіші — плеєр, «№ 2 із 3», дата · день · тривалість; ← → гортають фільми; штамп «переглянуто»; після оновлення — так само', {
       seasons: FILM(), api: F_API, durs: F_DURS, shot: 'FM03-watched' },
     async r => {
       await r.page.click('[data-k="m2"]'); await r.page.waitForTimeout(150);
@@ -1083,28 +1083,29 @@ const CASES = [
       await r.page.keyboard.press('ArrowRight'); await r.page.waitForTimeout(100);
       const src2 = await r.page.getAttribute('#ytIframe', 'src'), nav2 = await r.page.innerText('#modNav');
       await r.page.keyboard.press('Escape');
-      const meta = (await r.page.innerText('#fl-meta')).toLowerCase(), stamp = await r.page.locator('[data-k="m2"].watched .pst-seen').isVisible();
+      const stamp = await r.page.locator('[data-k="m2"].watched .pst-seen').isVisible();
       await r.page.reload(); await r.page.waitForTimeout(700);
       return nav.toLowerCase().includes('№ 2 із 3') && head.includes('21 вересня 2026 · понеділок · 1 год 05 хв') && head.includes('карпати восени')
         && note.includes('Посилання') && !note.includes('на день') && note.includes('Картка') && src.includes('/embed/m2') && src2.includes('/embed/m3') && nav2.toLowerCase().includes('№ 3 із 3')
-        && meta === '3 фільми · 2 переглянуто' && stamp && await r.page.locator('#films .poster.watched').count() === 2
-        && await r.page.locator('.pst-new').count() === 0 && (await r.page.innerText('#fl-meta')).toLowerCase() === '3 фільми · 2 переглянуто';
+        && stamp && await r.page.locator('#films .poster.watched').count() === 2 && await r.page.locator('.pst-new').count() === 0
+        && await r.page.locator('[data-k="m3"].watched .pst-seen').isVisible();
     }],
-  ['FM04 телефон: дотик по афіші — застосунок YouTube (Android intent); «⋯» — аркуш фільму без плеєра; на телефоні — дві колонки, без горизонтального скролу', {
+  ['FM04 телефон: дотик по афіші — застосунок YouTube (Android intent); «⋯» — аркуш фільму без плеєра, кадр у високій якості; одна колонка на всю ширину, без горизонтального скролу', {
       ua: UA_ANDROID, mobile: true, viewport: { width: 360, height: 780 }, seasons: FILM(), api: F_API, durs: F_DURS, shot: 'FM04-phone' },
     async r => {
       const boxes = await r.page.$$eval('#films .fl-grid:first-of-type .poster', a => a.map(x => { const b = x.getBoundingClientRect(); return [Math.round(b.top), Math.round(b.width)]; }));
       const more = await r.page.locator('#films .v-more >> nth=0').boundingBox();
       await r.page.tap('#films .v-more >> nth=0'); await r.page.waitForTimeout(150);
-      const sheet = await r.page.locator('#vidModal.show').count() === 1 && !(await r.page.getAttribute('#ytIframe', 'src')) && await r.page.getAttribute('#modPlay', 'href') === 'https://www.youtube.com/watch?v=m3';
+      const sheet = await r.page.locator('#vidModal.show').count() === 1 && !(await r.page.getAttribute('#ytIframe', 'src')) && await r.page.getAttribute('#modPlay', 'href') === 'https://www.youtube.com/watch?v=m3'
+        && (await r.page.$eval('#modPoster', e => e.style.backgroundImage)).includes('/vi/m3/maxresdefault.jpg');
       const note = await r.page.innerText('#modNote');
       await r.page.tap('#vidModal .close'); await r.page.waitForTimeout(100);
       await r.page.tap('[data-k="m2"]'); await r.page.waitForTimeout(150);
       const u = await r.page.evaluate(() => window.__opened || '');
-      return boxes.length === 2 && boxes[0][0] === boxes[1][0] && boxes[0][1] > 140 && more.width >= 40 && more.height >= 40 && sheet && note.includes('Картка для Stories')
+      return boxes.length === 2 && boxes[1][0] > boxes[0][0] && boxes[0][1] >= 320 && more.width >= 40 && more.height >= 40 && sheet && note.includes('Картка для Stories')
         && u.startsWith('intent://www.youtube.com/watch?v=m2#Intent;') && await r.page.locator('[data-k="m2"].watched').count() === 1 && await noHScroll(r);
     }],
-  ['FM05 повернення: «з твого візиту — 2 нові фільми» → «дивитися підряд» з найстарішого нового; «переглянуто» — у шапці каталогу', {
+  ['FM05 повернення: «з твого візиту — 2 нові фільми» → «дивитися підряд» з найстарішого нового; переглянуте — штампом на афіші', {
       seasons: FILM(), api: F_API, initScript: visitedAt('2026-09-20T12:00:00Z'), shot: 'FM05-since' },
     async r => {
       const line = await r.page.innerText('#since');
@@ -1112,7 +1113,7 @@ const CASES = [
       const src = await r.page.getAttribute('#ytIframe', 'src'), nav = (await r.page.innerText('#modNav')).toLowerCase();
       await r.page.keyboard.press('Escape');
       return line.includes('З твого візиту — 2 нові фільми') && !line.toLowerCase().includes('переглянуто') && src.includes('/embed/m2') && nav.includes('з твого візиту · 1 з 2')
-        && (await r.page.innerText('#since')).includes('1 новий фільм') && (await r.page.innerText('#fl-meta')).toLowerCase().includes('1 переглянуто');
+        && (await r.page.innerText('#since')).includes('1 новий фільм') && await r.page.locator('[data-k="m2"].watched').count() === 1;
     }],
   ['FM06 тема (#t=…): лише її фільми, № каталогу не змінюються; «× Усі фільми» повертає все', { path: '#t=' + encodeURIComponent('подорожі'), seasons: FILM(), api: F_API },
     async r => {
@@ -1124,7 +1125,7 @@ const CASES = [
   ['FM07 посилання на день (#d=…, сторінки /d/…/): афіша того дня підсвічена, на компʼютері — плеєр', { path: '#d=2026-09-21', seasons: FILM(), api: F_API, wait: 1200 },
     async r => await r.page.locator('#vidModal.show').count() === 1 && (await r.page.getAttribute('#ytIframe', 'src')).includes('/embed/m2')
       && await r.page.locator('.film.flash [data-k="m2"]').count() === 1],
-  ['FM08 кадр 4:3 з чорними смугами (hqdefault/sddefault) — смуги сховано (за адресою й за розміром); 16:9 — як є', { seasons: FILM(),
+  ['FM08 превʼю на афіші — цілком: кадр 16:9 без обрізання; 4:3 з чорними смугами (hqdefault/sddefault) — обрізано рівно по смугах', { seasons: FILM(),
       api: { UU1: [vid('a', 'Смуги в даних', '2026-09-21T10:00:00Z'), vid('b', 'Широкий', '2026-09-22T10:00:00Z'), vid('c', 'Лише hq', '2026-09-23T10:00:00Z')], SH: [] },
       initScript: () => {} },
     async r => {
@@ -1136,16 +1137,20 @@ const CASES = [
         items[0].snippet.thumbnails = { maxres: { url: lbData } }; items[2].snippet.thumbnails = { high: { url: 'https://i.ytimg.com/vi/c/hqdefault.jpg', width: 480, height: 360 } };
         return rr.fulfill({ contentType: 'application/json', body: JSON.stringify({ items: /UU1/.test(rr.request().url()) ? items : [] }) }); });
       await r.page.reload(); await r.page.waitForTimeout(900);
-      const ratio = k => r.page.$eval(`[data-k="${k}"]`, a => { const i = a.querySelector('img'); return { lb: i.classList.contains('lb'), k: i.getBoundingClientRect().height / a.getBoundingClientRect().height }; });
-      const a = await ratio('a'), b = await ratio('b'), c = await ratio('c');
-      return a.lb && Math.abs(a.k - 4 / 3) < .02 && !b.lb && Math.abs(b.k - 1) < .02 && c.lb && Math.abs(c.k - 4 / 3) < .02;
+      // object-fit: cover — яку частину картинки видно в рамці: зріз зверху/збоку в частках висоти/ширини картинки
+      const cut = k => r.page.$eval(`[data-k="${k}"] .pst-frame`, f => { const i = f.querySelector('img'), b = f.getBoundingClientRect(), nw = i.naturalWidth, nh = i.naturalHeight;
+        const sc = Math.max(b.width / nw, b.height / nh); return { ratio: b.width / b.height, top: (nh - b.height / sc) / 2 / nh, side: (nw - b.width / sc) / 2 / nw, nw }; });
+      const a = await cut('a'), b = await cut('b'), c = await cut('c');
+      return [a, b, c].every(x => x.nw > 0 && Math.abs(x.ratio - 16 / 9) < .02) && b.top < .002 && b.side < .002          // 16:9 — увесь кадр
+        && Math.abs(a.top - .125) < .004 && a.side < .002 && Math.abs(c.top - .125) < .004;                                // 4:3 — рівно без смуг (по 12,5%)
     }],
   ['FM09 назви: 100 символів і одне довге слово на 320 px — у межах афіші, без горизонтального скролу; хештеги з назви прибрано', { viewport: { width: 320, height: 700 }, seasons: FILM(),
       api: { UU1: [vid('l1', 'Що я зрозумів за рік, коли перестав відкладати мрії на потім і почав знімати те, що бачу щодня навколо себе', '2026-09-21T10:00:00Z'),
         vid('l2', 'Найдовшесловобезжоднихпробілівякемаєвлізтинаафішу #подорожі', '2026-09-22T10:00:00Z'), vid('l3', 'Я', '2026-09-23T10:00:00Z')], SH: [] }, shot: 'FM09-long-320' },
     async r => {
-      const fits = await r.page.$$eval('#films .poster', ps => ps.every(p => { const b = p.getBoundingClientRect(), t = p.querySelector('.pst-t'), f = p.querySelector('.pst-foot').getBoundingClientRect(),
-        top = p.querySelector('.pst-top').getBoundingClientRect(); return t.scrollWidth <= t.clientWidth + 1 && f.top > top.bottom && f.bottom <= b.bottom + 1 && f.left >= b.left; }));
+      const fits = await r.page.$$eval('#films .poster', ps => ps.every(p => { const b = p.getBoundingClientRect(), t = p.querySelector('.pst-t'), band = p.querySelector('.pst-band').getBoundingClientRect(),
+        bill = p.querySelector('.pst-bill').getBoundingClientRect(), tb = t.getBoundingClientRect();
+        return t.scrollWidth <= t.clientWidth + 1 && tb.bottom <= bill.top + 1 && band.bottom <= b.bottom + 1 && band.right <= b.right + 1; }));
       return fits && await noHScroll(r) && !has(r, '#подорожі Найдовше') && (await r.page.innerText('[data-k="l2"] .pst-t')).toLowerCase().startsWith('найдовше');
     }],
   ['FM10 films.enabled: false — глядач фільмотеки не бачить (і YouTube не питаємо); ?check — попередній перегляд з позначкою', {
@@ -1154,7 +1159,7 @@ const CASES = [
       const a = has(r, 'Скоро тут буде нове') && await r.page.locator('#films').count() === 0 && r.apiCalls.length === 0;
       await r.page.goto('http://localhost:8766/?check'); await r.page.waitForTimeout(800);
       const t = await r.page.innerText('body');
-      return a && await r.page.locator('#films .poster').count() === 3 && t.includes('глядачі фільмотеки не бачать') && t.includes('сховано від глядачів') && t.includes('Помилок не знайдено');
+      return a && await r.page.locator('#films .poster').count() === 3 && t.includes('глядачі фільмів не бачать') && t.includes('сховано від глядачів') && t.includes('Помилок не знайдено');
     }],
   ['FM11 ручні помилки у films: посилання на канал → його завантаження, невідоме поле, дата 21.09.2026, «так» — усе пояснено в ?check', { path: '?check',
       seasons: { films: { enabled: 'так', playlst: 'x', playlist: 'https://www.youtube.com/channel/UCRSKTGA5a2hLrai_MXNaoUQ', start: '21.09.2026', exclude: 'SH' } },
@@ -1184,18 +1189,33 @@ const CASES = [
       run(); const second = run();
       const a = JSON.parse(fs.readFileSync(path.join(out, 'archive.json'), 'utf8')), f = a.days['2026-10-01'][0], page = fs.readFileSync(path.join(out, 'd/2026-10-01/index.html'), 'utf8');
       return f.y === 'f1' && f.dur === 754 && f.ph === 'posters/f1-hd.jpg' && !JSON.stringify(a).includes('"sh"') && !JSON.stringify(a).includes('"old"')
-        && page.includes('Відкрити у фільмотеці') && page.includes('· фільмотека') && fs.readFileSync(path.join(out, 'sitemap.xml'), 'utf8').includes('/d/2026-10-01/') && /змінено файлів: 0/.test(second);
+        && page.includes('Відкрити на сайті') && page.includes('· фільми') && fs.readFileSync(path.join(out, 'sitemap.xml'), 'utf8').includes('/d/2026-10-01/') && /змінено файлів: 0/.test(second);
     }],
   ['FM16 характер: вузький шрифт афіш завантажено зі свого сайту; сірий текст ≥ 4.5:1 і в світлій, і в темній темі', { seasons: FILM(), api: F_API, wait: 1200 },
     async r => {
-      const font = await r.page.evaluate(() => document.fonts.check('600 40px Oswald') && getComputedStyle(document.querySelector('.fl-title')).fontFamily.startsWith('Oswald'));
+      const font = await r.page.evaluate(() => document.fonts.check('600 40px Oswald') && getComputedStyle(document.querySelector('.pst-t')).fontFamily.startsWith('Oswald'));
       const cr = () => r.page.evaluate(() => {
         const lum = c => { let [R, G, B] = c.match(/\d+/g).map(Number).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * R + .7152 * G + .0722 * B; };
         let bg = lum(getComputedStyle(document.body).backgroundColor);
-        return ['#fl-meta', '.fl-yc', '.footer'].map(q => { let fg = lum(getComputedStyle(document.querySelector(q)).color); return (Math.max(fg, bg) + .05) / (Math.min(fg, bg) + .05); });
+        return ['.fl-yc', '.footer', '.topics-lbl'].map(q => { let fg = lum(getComputedStyle(document.querySelector(q)).color); return (Math.max(fg, bg) + .05) / (Math.min(fg, bg) + .05); });
       });
       const light = await cr(); await r.page.emulateMedia({ colorScheme: 'dark' }); const dark = await cr();
       return font && light.every(x => x >= 4.5) && dark.every(x => x >= 4.5);
+    }],
+  ['FM18 якість превʼю: найбільше з того, що є (maxres → sddefault → hqdefault), без srcset; нижні афіші довантажуються при прокрутці', {
+      viewport: { width: 390, height: 844 }, seasons: FILM(), durs: F_DURS,
+      api: { UU1: [vidT('m1', 'Перший', '2026-09-20T10:00:00Z'), vidT('m2', 'Другий', '2026-09-21T10:00:00Z'), vidT('m3', 'Третій', '2026-09-22T10:00:00Z'), vidT('m4', 'Четвертий', '2026-09-23T10:00:00Z')].map((v, i) => {
+        if (i === 1) delete v.snippet.thumbnails.maxres;                                                   // без HD — береться sddefault
+        if (i === 2) { delete v.snippet.thumbnails.maxres; delete v.snippet.thumbnails.standard; }        // лише hq і mq — береться hqdefault
+        return v; }).reverse(), SH: [] } },
+    async r => {
+      const src = k => r.page.getAttribute(`[data-k="${k}"] .pst-img`, 'src');
+      const ok = await src('m1') === 'https://i.ytimg.com/vi/m1/maxresdefault.jpg' && await src('m2') === 'https://i.ytimg.com/vi/m2/sddefault.jpg'
+        && await src('m3') === 'https://i.ytimg.com/vi/m3/hqdefault.jpg' && await r.page.locator('#films .pst-img[srcset]').count() === 0;
+      const lazyBefore = await r.page.$eval('[data-k="m1"] .pst-img', i => i.getAttribute('loading'));
+      await r.page.evaluate(() => scrollTo(0, document.body.scrollHeight)); await r.page.waitForTimeout(500);
+      const loaded = await r.page.$$eval('#films .pst-img', a => a.every(i => i.complete && i.naturalWidth > 0));
+      return ok && lazyBefore === 'lazy' && loaded && await r.page.getAttribute('[data-k="m4"] .pst-img', 'fetchpriority') === 'high';
     }],
   ['FM17 клавіатура: Tab до афіші, Enter — плеєр, Esc — фокус назад на афішу; «Новий» — лише перші 14 днів', { seasons: FILM(), api: F_API, now: '2026-10-20T12:00:00+03:00' },
     async r => {

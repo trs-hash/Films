@@ -190,12 +190,12 @@ function dayPage(date, items, thumbOf) {
 img{width:100%;border-radius:8px}a{color:#e62117}.k{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#6f6f6f}</style>
 </head>
 <body>
-<p class="k"><a href="/">Тарас Максимʼяк</a> · ${filmsOn ? 'фільмотека' : 'стіна днів'}</p>
+<p class="k"><a href="/">Тарас Максимʼяк</a> · ${filmsOn ? 'фільми' : 'стіна днів'}</p>
 <h1>${esc(human)}</h1>
 ${items.map(v => `<h2>${esc(showTitle(v.t))}</h2>
 ${v.y ? `<p><a href="https://www.youtube.com/watch?v=${esc(v.y)}">Дивитися на YouTube</a></p>` : ''}
 ${cleanNote(v.desc) ? `<p>${esc(cleanNote(v.desc))}</p>` : ''}`).join('\n')}
-<p><a href="${hash}">${filmsOn ? 'Відкрити у фільмотеці' : 'Відкрити на стіні днів'} →</a></p>
+<p><a href="${hash}">${filmsOn ? 'Відкрити на сайті' : 'Відкрити на стіні днів'} →</a></p>
 </body>
 </html>
 `;
