@@ -105,6 +105,13 @@ function zbirRepo(seasons) {
 const REAL_CFG = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'seasons.json'), 'utf8'));
 // Справжній seasons.json, але календар показано (у репо він зараз схований про запас — calendar.enabled: false)
 const REAL_ON = () => { const c = REAL_CFG(); c.calendar.enabled = true; return c; };
+// Лише календар, як до фільмотеки (films.enabled: false) — для тестів стіни днів на справжньому конфігу
+const REAL_CAL = () => { const c = REAL_ON(); delete c.films; return c; };   // і схована фільмотека архівувалася б (на будь-який формат)
+// Фільмотека: n — відео (найновіші першими, як віддає список завантажень), SH — Shorts
+const FILM = (o = {}) => ({ films: Object.assign({ playlist: 'UU1', exclude: ['SH'] }, o) });
+const F_API = { UU1: [vidT('m1', 'Перший день у Києві', '2025-12-14T17:00:00Z'), vidT('m2', 'Карпати восени #подорожі', '2026-09-21T08:00:00Z'),
+  vidT('sh', 'Шортс', '2026-09-22T10:00:00Z'), priv('pp'), vidT('m3', 'Дорога додому', '2026-09-26T18:00:00Z')].reverse(), SH: [vidT('sh', 'Шортс', '2026-09-22T10:00:00Z')] };
+const F_DURS = { m1: 754, m2: 3905, m3: 59 };
 // Повернення на сайт: минулий захід (lv.cur) — у заданий момент; лише при першому завантаженні вкладки
 const visitedAt = iso => `(() => { try { if (!sessionStorage.getItem('__lv')) { sessionStorage.setItem('__lv', '1');
   localStorage.setItem('lv', JSON.stringify({ prev: 0, cur: Date.parse('${iso}') })); } } catch (e) {} })()`;
@@ -157,13 +164,20 @@ async function scenario(browser, o) {
   const page = await ctx.newPage();
   // «Сьогодні» в тестах — 29.09.2026 15:00 за Києвом (сценарії писались під цю дату); o.now — інша дата
   await page.clock.setFixedTime(new Date(o.now || '2026-09-29T15:00:00+03:00'));
-  const errs = [], warns = [], apiCalls = [], apiUrls = [], fileUrls = [];
+  const errs = [], warns = [], apiCalls = [], apiUrls = [], fileUrls = [], durCalls = [];
   page.on('request', q => { if (/localhost:8766\/.*\.json/.test(q.url())) fileUrls.push(q.url()); });
   page.on('pageerror', e => errs.push(e.message));
   page.on('console', m => { if (m.type() === 'warning') warns.push(m.text()); });
   if (o.initScript) await page.addInitScript(o.initScript);
   await page.addInitScript(() => { window.openApp = u => { window.__opened = u; }; });   // перехоплюємо відкриття застосунку
   await ctx.route(/googleapis\.com/, async r => {
+    // Тривалість фільмів (videos.list): o.durs = {id: секунди}; окремий облік запитів — durCalls (id через кому)
+    if (/\/youtube\/v3\/videos\?/.test(r.request().url())) {
+      const ids = (new URL(r.request().url()).searchParams.get('id') || '').split(',').filter(Boolean); durCalls.push(ids);
+      if (o.durs === 'quota') return r.fulfill({ status: 403, contentType: 'application/json', body: '{"error":{"code":403,"errors":[{"reason":"quotaExceeded"}]}}' });
+      const d = o.durs || {}, fmt = x => typeof x === 'string' ? x : `PT${Math.floor(x / 3600)}H${Math.floor(x % 3600 / 60)}M${x % 60}S`;
+      return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ items: ids.filter(id => d[id] != null).map(id => ({ id, contentDetails: { duration: fmt(d[id]) } })) }) });
+    }
     apiUrls.push(r.request().url());
     if (o.apiDelay) await new Promise(res => setTimeout(res, o.apiDelay));
     const pid = new URL(r.request().url()).searchParams.get('playlistId'), tok = new URL(r.request().url()).searchParams.get('pageToken');
@@ -194,7 +208,7 @@ async function scenario(browser, o) {
   await page.goto('http://localhost:8766/' + (o.path || ''));
   await page.waitForTimeout(o.wait || 700);
   if (o.reload) { await o.reload(page); }
-  const r = { page, ctx, browser, o, errs, warns, apiCalls, apiUrls, fileUrls, text: (await page.innerText('body')).replace(/\s+/g, ' ') };
+  const r = { page, ctx, browser, o, errs, warns, apiCalls, apiUrls, fileUrls, durCalls, text: (await page.innerText('body')).replace(/\s+/g, ' ') };
   if (o.shot) await page.screenshot({ path: `${OUT}/${o.shot}.png`, fullPage: true });
   return { r, ctx };
 }
@@ -235,7 +249,7 @@ const CASES = [
   ['F11 усе впало → сезон видно + повідомлення', { seasons: { seasons: [S1()] }, api: { PL1: 'abort' }, archive: 404 },
     r => has(r, 'Тема') && has(r, 'Не вдалось завантажити серії')],
   ['F12 темна тема без помилок', { seasons: { seasons: [S1()] }, api: { PL1: TWO }, dark: true, shot: 'F12-dark' },
-    async r => (await r.page.evaluate(() => getComputedStyle(document.body).backgroundColor)) === 'rgb(18, 18, 18)'],
+    async r => (await r.page.evaluate(() => getComputedStyle(document.body).backgroundColor)) === 'rgb(16, 15, 13)'],
   ['F13 мобільний 320px: без горизонтального скролу', { seasons: { seasons: [S1({ title: 'Дуже-довга-назва-без-пробілів-яка-не-влазить-у-рядок' })] }, api: { PL1: TWO }, viewport: { width: 320, height: 700 }, shot: 'F13-320' },
     async r => await r.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)],
   ['F14 12 сезонів: навігація не ламає ширину (мобільний)', { seasons: { seasons: Array.from({ length: 12 }, (_, i) => S1({ n: i + 1, start: `2025-${String(i + 1).padStart(2, '0')}-01`, end: `2025-${String(i + 1).padStart(2, '0')}-20`, playlist: '' })) }, viewport: { width: 390, height: 800 }, shot: 'F14' },
@@ -508,7 +522,7 @@ const CASES = [
           it('sh', 'Шортс', '2026-10-01T10:00:00Z'), it('pr', 'Private video', '', '', true), it('old', 'Проба', '2026-09-20T10:00:00Z')],
         'PLS50DDpfd-9w': [it('sh', 'Шортс', '2026-10-01T10:00:00Z')] }));
       fs.writeFileSync(path.join(out, 'archive.json'), JSON.stringify({ base: 'https://video.example', days: { '2026-09-30': [{ t: 'стара', y: 'a1', v: 'a1.mp4', d: 7 }], '2026-09-01': 'зіпсовано' } }));
-      fs.writeFileSync(path.join(dir, 'seasons.json'), JSON.stringify(REAL_ON()));   // календар показано
+      fs.writeFileSync(path.join(dir, 'seasons.json'), JSON.stringify(REAL_CAL()));   // календар показано (без фільмотеки)
       const run = () => cp.execFileSync('node', [path.join(ROOT, 'tools/archive.mjs')], { env: Object.assign({}, process.env, { ARCHIVE_OUT: out, ARCHIVE_FIXTURE: path.join(dir, 'fx.json'), ARCHIVE_NO_POSTERS: '1', ARCHIVE_SEASONS: path.join(dir, 'seasons.json') }) }).toString();
       run(); const second = run();
       const a = JSON.parse(fs.readFileSync(path.join(out, 'archive.json'), 'utf8')), page = fs.readFileSync(path.join(out, 'd/2026-10-01/index.html'), 'utf8');
@@ -701,7 +715,7 @@ const CASES = [
         && Math.min(...await r.page.$$eval('#sup a', l => l.map(e => e.getBoundingClientRect().height))) >= 24;
     }],
   ['S12 посилання #f-dron (з відповіді бота) підсвічує збір у шапці', { path: '#f-dron', seasons: SUP(), api: API1 },
-    async r => (await r.page.$eval('#f-dron', e => e.classList.contains('hl') && getComputedStyle(e).color)) === 'rgb(230, 33, 23)'
+    async r => (await r.page.$eval('#f-dron', e => e.classList.contains('hl') && getComputedStyle(e).color)) === 'rgb(208, 30, 20)'   // --red світлої теми (на теплому папері — темніший, контраст ≥ 4.5)
       && await r.page.locator('.q-link.hl').count() === 1],
   ['S13 генератор зборів: банки з seasons.json, гривні з копійками, чужа помилка не стирає суми, без зайвих перезаписів', {},
     async () => {
@@ -783,7 +797,7 @@ const CASES = [
       return ok.code === 0 && ok.cfg.calendar.playlist === 'UU1' && ok.cfg.support.fundraisers.length === 2 && ok.text.endsWith('}\n')
         && bad.code === 1 && bad.msg.includes('зіпсований') && z.cfgText() === '{"calendar": {"start": ';
     }],
-  ['Z08 те, що записав бот, сайт показує: тихе посилання на банку з якорем; ?check без помилок', { path: '?check', api: API1, shot: 'Z08-bot-site',
+  ['Z08 те, що записав бот, сайт показує: тихе посилання на банку з якорем; ?check без помилок', { path: '?check', api: Object.assign({}, REAL_API, API1), shot: 'Z08-bot-site',
       seasons: () => { const c = REAL_CFG(); c.calendar = CAL({ start: '2026-09-20' }).calendar;
         return zbirRepo(c).run('/zbir https://send.monobank.ua/jar/AbC123xyz\nДрон для бригади\nціль 50000, до 31.10, благодійний').text; } },
     async r => await r.page.locator('#sup a#f-dron-dlia-bryhady.fund-link:not(.off)[href="https://send.monobank.ua/jar/AbC123xyz"]').count() === 1
@@ -1003,9 +1017,10 @@ const CASES = [
       return a && await noHScroll(r) && await r.page.locator('#since .since-new').count() === 1 && await r.page.locator('#myday select').count() === 2; }],
 
   // --- 🗄 Календар схований про запас (calendar.enabled: false) і повертається одним рядком
-  ['E01 справжній seasons.json (календар сховано): глядач бачить заглушку з YouTube, запитів до YouTube нема, підтримка не зламалась', { api: REAL_API, shot: 'E01-hidden' },
-    async r => has(r, 'Скоро тут буде нове') && await r.page.getAttribute('.msg-empty a', 'href') === 'https://www.youtube.com/@Taras.maksymiak'
-      && r.apiCalls.length === 0 && await r.page.locator('#cal, .cal-hidden, .cal-acts').count() === 0 && !has(r, 'Стіна днів') && r.errs.length === 0],
+  ['E01 справжній seasons.json (календар сховано, фільмотека — так): на каналі ще порожньо → афіша «Скоро» й YouTube; стіни днів нема', { api: REAL_API, shot: 'E01-hidden' },
+    async r => has(r, 'Фільмотека') && await r.page.locator('#films .poster.soon').count() === 1 && await r.page.getAttribute('.fl-soon a', 'href') === 'https://www.youtube.com/@Taras.maksymiak'
+      && r.apiCalls.includes('UURSKTGA5a2hLrai_MXNaoUQ') && r.durCalls.length === 0 && await r.page.locator('#cal, .cal-hidden, .cal-acts').count() === 0 && !has(r, 'Стіна днів')
+      && !has(r, 'Скоро тут буде нове') && r.errs.length === 0],
   ['E02 ?check на справжньому seasons.json: календар у попередньому перегляді з позначкою «сховано», помилок нема', { path: '?check', api: REAL_API },
     async r => await r.page.locator('.cal-hidden').count() === 1 && await r.page.locator('#cal').count() === 1 && has(r, 'сховано від глядачів')
       && has(r, 'Помилок не знайдено') && !has(r, 'Скоро тут буде нове')],
@@ -1028,15 +1043,167 @@ const CASES = [
   ['E05 повернути календар — один рядок: enabled: true (усе працює, як до сховання)', { seasons: Object.assign(REAL_ON(), { calendar: Object.assign(REAL_ON().calendar, { playlist: 'UU1', exclude: ['SH'], start: '2026-09-20' }) }),
       api: { UU1: TAGGED, SH: [] } },
     async r => await r.page.locator('#cal .v-lnk').count() === 4 && await r.page.locator('.cal-hidden').count() === 0 && !has(r, 'Скоро тут буде нове')],
-  ['E06 генератор архіву з схованим календарем: відео архівуються, а сторінок днів і днів у sitemap нема', {},
+  ['E06 генератор архіву з схованими фільмотекою й календарем: відео архівуються, а сторінок днів і днів у sitemap нема', {},
     async () => {
       const os = require('os'), cp = require('child_process'), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'arch-hid-')), out = path.join(dir, 'out');
       fs.mkdirSync(out);
       const it = (id, t, pub) => ({ snippet: { title: t, description: '', resourceId: { videoId: id }, thumbnails: {} }, contentDetails: { videoId: id, videoPublishedAt: pub }, status: { privacyStatus: 'public' } });
       fs.writeFileSync(path.join(dir, 'fx.json'), JSON.stringify({ UURSKTGA5a2hLrai_MXNaoUQ: [it('h1', 'Сховане', '2026-10-01T10:00:00Z')], 'PLS50DDpfd-9w': [] }));
-      cp.execFileSync('node', [path.join(ROOT, 'tools/archive.mjs')], { env: Object.assign({}, process.env, { ARCHIVE_OUT: out, ARCHIVE_FIXTURE: path.join(dir, 'fx.json'), ARCHIVE_NO_POSTERS: '1' }) });   // справжній seasons.json
+      const cfg = REAL_CFG(); cfg.films.enabled = false; fs.writeFileSync(path.join(dir, 'seasons.json'), JSON.stringify(cfg));   // справжній, але й фільмотеку сховано
+      cp.execFileSync('node', [path.join(ROOT, 'tools/archive.mjs')], { env: Object.assign({}, process.env, { ARCHIVE_OUT: out, ARCHIVE_FIXTURE: path.join(dir, 'fx.json'), ARCHIVE_NO_POSTERS: '1', ARCHIVE_SEASONS: path.join(dir, 'seasons.json') }) });
       const a = JSON.parse(fs.readFileSync(path.join(out, 'archive.json'), 'utf8')), sm = fs.readFileSync(path.join(out, 'sitemap.xml'), 'utf8');
       return REAL_CFG().calendar.enabled === false && a.days['2026-10-01'][0].y === 'h1' && !fs.existsSync(path.join(out, 'd')) && !sm.includes('/d/') && sm.includes('<loc>https://taras.kyiv.ua/</loc>');
+    }],
+
+  // --- 🎞 Фільмотека: кожне відео — фільм з афішею, каталог за датою виходу
+  ['FM01 каталог: роки від новішого, у році — новіші першими; № від першого фільму; хвилини; без Shorts і приватних; «Новий» — один', { seasons: FILM(), api: F_API, durs: F_DURS, shot: 'FM01-films' },
+    async r => {
+      const years = await r.page.$$eval('#films .fl-year', h => h.map(x => x.id + ':' + x.textContent.replace(/\s+/g, ' ')));
+      const keys = await r.page.$$eval('#films .poster', a => a.map(x => x.dataset.k)), nums = await r.page.$$eval('#films .pst-top span:first-child', a => a.map(x => x.textContent));
+      const img = await r.page.getAttribute('[data-k="m3"] .pst-img', 'src'), lb = await r.page.locator('[data-k="m3"] .pst-img.lb').count();
+      return years.join('|') === 'films-2026:20262 фільми|films-2025:20251 фільм' && keys.join() === 'm3,m2,m1' && nums.join() === '№ 03,№ 02,№ 01'
+        && (await r.page.innerText('#fl-meta')).toLowerCase() === '3 фільми' && has(r, 'Фільм Тараса Максим’яка · 1 хв') && has(r, '1 год 05 хв') && has(r, '13 хв')
+        && has(r, '26 вересня 2026') && !has(r, 'Шортс') && !has(r, 'Private') && await r.page.locator('[data-k="m3"] .pst-new').count() === 1 && await r.page.locator('.pst-new').count() === 1
+        && r.durCalls.length === 1 && r.durCalls[0].sort().join() === 'm1,m2,m3' && img === 'https://i.ytimg.com/vi/m3/maxresdefault.jpg' && lb === 0;
+    }],
+  ['FM02 тривалість: повторний візит не перепитує YouTube; квота на тривалість — афіші без хвилин, без помилок', { seasons: FILM(), api: F_API, durs: F_DURS,
+      reload: async p => { await p.reload(); await p.waitForTimeout(700); } },
+    async r => {
+      const a = r.durCalls.length === 1 && (await r.page.innerText('#films')).toLowerCase().includes('1 год 05 хв');
+      const { r: r2, ctx: c2 } = await scenario(r.browser, { seasons: FILM(), api: F_API, durs: 'quota' });
+      const b = r2.errs.length === 0 && await r2.page.locator('#films .poster').count() === 3 && !has(r2, ' хв') && has(r2, 'Фільм Тараса Максим’яка');
+      await c2.close(); return a && b;
+    }],
+  ['FM03 компʼютер: клік по афіші — плеєр, «№ 2 із 3», дата · день · тривалість; ← → гортають фільми; штамп «переглянуто» й лічильник; після оновлення — так само', {
+      seasons: FILM(), api: F_API, durs: F_DURS, shot: 'FM03-watched' },
+    async r => {
+      await r.page.click('[data-k="m2"]'); await r.page.waitForTimeout(150);
+      const nav = await r.page.innerText('#modNav'), head = (await r.page.innerText('#modHead')).toLowerCase(), note = await r.page.innerText('#modNote');
+      const src = await r.page.getAttribute('#ytIframe', 'src');
+      await r.page.keyboard.press('ArrowRight'); await r.page.waitForTimeout(100);
+      const src2 = await r.page.getAttribute('#ytIframe', 'src'), nav2 = await r.page.innerText('#modNav');
+      await r.page.keyboard.press('Escape');
+      const meta = (await r.page.innerText('#fl-meta')).toLowerCase(), stamp = await r.page.locator('[data-k="m2"].watched .pst-seen').isVisible();
+      await r.page.reload(); await r.page.waitForTimeout(700);
+      return nav.toLowerCase().includes('№ 2 із 3') && head.includes('21 вересня 2026 · понеділок · 1 год 05 хв') && head.includes('карпати восени')
+        && note.includes('Посилання') && !note.includes('на день') && note.includes('Картка') && src.includes('/embed/m2') && src2.includes('/embed/m3') && nav2.toLowerCase().includes('№ 3 із 3')
+        && meta === '3 фільми · 2 переглянуто' && stamp && await r.page.locator('#films .poster.watched').count() === 2
+        && await r.page.locator('.pst-new').count() === 0 && (await r.page.innerText('#fl-meta')).toLowerCase() === '3 фільми · 2 переглянуто';
+    }],
+  ['FM04 телефон: дотик по афіші — застосунок YouTube (Android intent); «⋯» — аркуш фільму без плеєра; на телефоні — дві колонки, без горизонтального скролу', {
+      ua: UA_ANDROID, mobile: true, viewport: { width: 360, height: 780 }, seasons: FILM(), api: F_API, durs: F_DURS, shot: 'FM04-phone' },
+    async r => {
+      const boxes = await r.page.$$eval('#films .fl-grid:first-of-type .poster', a => a.map(x => { const b = x.getBoundingClientRect(); return [Math.round(b.top), Math.round(b.width)]; }));
+      const more = await r.page.locator('#films .v-more >> nth=0').boundingBox();
+      await r.page.tap('#films .v-more >> nth=0'); await r.page.waitForTimeout(150);
+      const sheet = await r.page.locator('#vidModal.show').count() === 1 && !(await r.page.getAttribute('#ytIframe', 'src')) && await r.page.getAttribute('#modPlay', 'href') === 'https://www.youtube.com/watch?v=m3';
+      const note = await r.page.innerText('#modNote');
+      await r.page.tap('#vidModal .close'); await r.page.waitForTimeout(100);
+      await r.page.tap('[data-k="m2"]'); await r.page.waitForTimeout(150);
+      const u = await r.page.evaluate(() => window.__opened || '');
+      return boxes.length === 2 && boxes[0][0] === boxes[1][0] && boxes[0][1] > 140 && more.width >= 40 && more.height >= 40 && sheet && note.includes('Картка для Stories')
+        && u.startsWith('intent://www.youtube.com/watch?v=m2#Intent;') && await r.page.locator('[data-k="m2"].watched').count() === 1 && await noHScroll(r);
+    }],
+  ['FM05 повернення: «з твого візиту — 2 нові фільми» → «дивитися підряд» з найстарішого нового; «переглянуто» — у шапці каталогу', {
+      seasons: FILM(), api: F_API, initScript: visitedAt('2026-09-20T12:00:00Z'), shot: 'FM05-since' },
+    async r => {
+      const line = await r.page.innerText('#since');
+      await r.page.click('#since .act'); await r.page.waitForTimeout(200);
+      const src = await r.page.getAttribute('#ytIframe', 'src'), nav = (await r.page.innerText('#modNav')).toLowerCase();
+      await r.page.keyboard.press('Escape');
+      return line.includes('З твого візиту — 2 нові фільми') && !line.toLowerCase().includes('переглянуто') && src.includes('/embed/m2') && nav.includes('з твого візиту · 1 з 2')
+        && (await r.page.innerText('#since')).includes('1 новий фільм') && (await r.page.innerText('#fl-meta')).toLowerCase().includes('1 переглянуто');
+    }],
+  ['FM06 тема (#t=…): лише її фільми, № каталогу не змінюються; «× Усі фільми» повертає все', { path: '#t=' + encodeURIComponent('подорожі'), seasons: FILM(), api: F_API },
+    async r => {
+      const keys = await r.page.$$eval('#films .poster', a => a.map(x => x.dataset.k)), num = await r.page.innerText('#films .pst-top span');
+      const t = await r.page.innerText('.fl-topic');
+      await r.page.click('.fl-topic a'); await r.page.waitForTimeout(200);
+      return keys.join() === 'm2' && num === '№ 02' && t.includes('#подорожі — 1 фільм') && t.includes('× Усі фільми') && await r.page.locator('#films .poster').count() === 3;
+    }],
+  ['FM07 посилання на день (#d=…, сторінки /d/…/): афіша того дня підсвічена, на компʼютері — плеєр', { path: '#d=2026-09-21', seasons: FILM(), api: F_API, wait: 1200 },
+    async r => await r.page.locator('#vidModal.show').count() === 1 && (await r.page.getAttribute('#ytIframe', 'src')).includes('/embed/m2')
+      && await r.page.locator('.film.flash [data-k="m2"]').count() === 1],
+  ['FM08 кадр 4:3 з чорними смугами (hqdefault/sddefault) — смуги сховано (за адресою й за розміром); 16:9 — як є', { seasons: FILM(),
+      api: { UU1: [vid('a', 'Смуги в даних', '2026-09-21T10:00:00Z'), vid('b', 'Широкий', '2026-09-22T10:00:00Z'), vid('c', 'Лише hq', '2026-09-23T10:00:00Z')], SH: [] },
+      initScript: () => {} },
+    async r => {
+      // a: вбудований 640×480 зі смугами; c: лише hqdefault (адреса YouTube, теж 4:3 зі смугами)
+      await r.page.route(/i\.ytimg\.com/, rr => rr.fulfill({ contentType: 'image/svg+xml', body: letterboxSvg('#3366cc') }));
+      await r.page.route(/googleapis\.com/, rr => { if (/\/videos\?/.test(rr.request().url())) return rr.fulfill({ contentType: 'application/json', body: '{"items":[]}' });
+        const lbData = 'data:image/svg+xml;utf8,' + encodeURIComponent(letterboxSvg('#cc3366'));
+        const items = [vid('a', 'Смуги в даних', '2026-09-21T10:00:00Z'), vid('b', 'Широкий', '2026-09-22T10:00:00Z'), vid('c', 'Лише hq', '2026-09-23T10:00:00Z')];
+        items[0].snippet.thumbnails = { maxres: { url: lbData } }; items[2].snippet.thumbnails = { high: { url: 'https://i.ytimg.com/vi/c/hqdefault.jpg', width: 480, height: 360 } };
+        return rr.fulfill({ contentType: 'application/json', body: JSON.stringify({ items: /UU1/.test(rr.request().url()) ? items : [] }) }); });
+      await r.page.reload(); await r.page.waitForTimeout(900);
+      const ratio = k => r.page.$eval(`[data-k="${k}"]`, a => { const i = a.querySelector('img'); return { lb: i.classList.contains('lb'), k: i.getBoundingClientRect().height / a.getBoundingClientRect().height }; });
+      const a = await ratio('a'), b = await ratio('b'), c = await ratio('c');
+      return a.lb && Math.abs(a.k - 4 / 3) < .02 && !b.lb && Math.abs(b.k - 1) < .02 && c.lb && Math.abs(c.k - 4 / 3) < .02;
+    }],
+  ['FM09 назви: 100 символів і одне довге слово на 320 px — у межах афіші, без горизонтального скролу; хештеги з назви прибрано', { viewport: { width: 320, height: 700 }, seasons: FILM(),
+      api: { UU1: [vid('l1', 'Що я зрозумів за рік, коли перестав відкладати мрії на потім і почав знімати те, що бачу щодня навколо себе', '2026-09-21T10:00:00Z'),
+        vid('l2', 'Найдовшесловобезжоднихпробілівякемаєвлізтинаафішу #подорожі', '2026-09-22T10:00:00Z'), vid('l3', 'Я', '2026-09-23T10:00:00Z')], SH: [] }, shot: 'FM09-long-320' },
+    async r => {
+      const fits = await r.page.$$eval('#films .poster', ps => ps.every(p => { const b = p.getBoundingClientRect(), t = p.querySelector('.pst-t'), f = p.querySelector('.pst-foot').getBoundingClientRect(),
+        top = p.querySelector('.pst-top').getBoundingClientRect(); return t.scrollWidth <= t.clientWidth + 1 && f.top > top.bottom && f.bottom <= b.bottom + 1 && f.left >= b.left; }));
+      return fits && await noHScroll(r) && !has(r, '#подорожі Найдовше') && (await r.page.innerText('[data-k="l2"] .pst-t')).toLowerCase().startsWith('найдовше');
+    }],
+  ['FM10 films.enabled: false — глядач фільмотеки не бачить (і YouTube не питаємо); ?check — попередній перегляд з позначкою', {
+      seasons: { films: { enabled: false, playlist: 'UU1', exclude: ['SH'] }, calendar: { enabled: false, playlist: 'UU1' } }, api: F_API },
+    async r => {
+      const a = has(r, 'Скоро тут буде нове') && await r.page.locator('#films').count() === 0 && r.apiCalls.length === 0;
+      await r.page.goto('http://localhost:8766/?check'); await r.page.waitForTimeout(800);
+      const t = await r.page.innerText('body');
+      return a && await r.page.locator('#films .poster').count() === 3 && t.includes('глядачі фільмотеки не бачать') && t.includes('сховано від глядачів') && t.includes('Помилок не знайдено');
+    }],
+  ['FM11 ручні помилки у films: посилання на канал → його завантаження, невідоме поле, дата 21.09.2026, «так» — усе пояснено в ?check', { path: '?check',
+      seasons: { films: { enabled: 'так', playlst: 'x', playlist: 'https://www.youtube.com/channel/UCRSKTGA5a2hLrai_MXNaoUQ', start: '21.09.2026', exclude: 'SH' } },
+      api: { UURSKTGA5a2hLrai_MXNaoUQ: F_API.UU1, SH: F_API.SH } },
+    async r => has(r, 'це канал, а не плейлист; беру всі його завантаження: UURSKTGA5a2hLrai_MXNaoUQ') && has(r, 'films: невідоме поле «playlst»')
+      && has(r, 'на сайті 2 фільми') && await r.page.locator('#films .poster').count() === 2 && !has(r, 'Перший день у Києві') && has(r, 'старіші за 21 вересня 2026 не беремо')
+      && r.errs.length === 0],
+  ['FM12 ще один людський промах: films — рядок замість обʼєкта → пояснення, сторінка жива', { path: '?check', seasons: { films: 'UU1' }, api: F_API },
+    async r => has(r, 'films: очікую обʼєкт') && r.errs.length === 0 && has(r, 'Тарас')],
+  ['FM13 судний день: фільми з archive.json — великий кадр (ph) і тривалість (dur)', { state: { mode: 'doomsday' }, seasons: FILM(),
+      archive: { base: '', days: { '2026-09-21': [{ t: 'З архіву', y: 'z1', p: 'posters/z1.jpg', ph: 'posters/z1-hd.jpg', dur: 754 }], '2026-09-22': [{ t: 'Без кадру', y: 'z2' }] } },
+      posters: { 'z1-hd.jpg': solidSvg(1280, 720, '#335577'), 'z1.jpg': letterboxSvg('#335577') } },
+    async r => await r.page.getAttribute('[data-k="z1"] .pst-img', 'src') === 'posters/z1-hd.jpg' && has(r, 'З архіву') && has(r, '13 хв') && has(r, 'Без кадру')
+      && await r.page.locator('#films .poster').count() === 2 && r.errs.length === 0],
+  ['FM14 YouTube мовчить (квота) → фільмотека з архіву, без помилок', { seasons: FILM(), api: { UU1: 'quota', SH: 'quota' },
+      archive: { base: '', days: { '2026-09-21': [{ t: 'Запасна копія', y: 'q1' }] } } },
+    async r => has(r, 'Запасна копія') && await r.page.locator('#films .poster').count() === 1 && r.durCalls.length === 0],
+  ['FM15 генератор архіву з фільмотекою: тривалість і великий кадр в архіві, сторінки днів «у фільмотеці», start і Shorts враховано, повторний запуск — без змін', {},
+    async () => {
+      const os = require('os'), cp = require('child_process'), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'arch-fm-')), out = path.join(dir, 'out');
+      fs.mkdirSync(path.join(out, 'posters'), { recursive: true }); fs.writeFileSync(path.join(out, 'posters', 'f1-hd.jpg'), 'jpg');
+      const it = (id, t, pub) => ({ snippet: { title: t, description: '', resourceId: { videoId: id }, thumbnails: {} }, contentDetails: { videoId: id, videoPublishedAt: pub }, status: { privacyStatus: 'public' } });
+      fs.writeFileSync(path.join(dir, 'fx.json'), JSON.stringify({ UU1: [it('f1', 'Фільм', '2026-10-01T10:00:00Z'), it('sh', 'Шортс', '2026-10-02T10:00:00Z'), it('old', 'Проба', '2026-08-01T10:00:00Z')],
+        SH: [it('sh', 'Шортс', '2026-10-02T10:00:00Z')], __durations: { f1: 754, sh: 30 } }));
+      fs.writeFileSync(path.join(dir, 'seasons.json'), JSON.stringify(FILM({ start: '2026-09-01' })));   // без календаря: схований теж архівувався б (на будь-який формат)
+      const run = () => cp.execFileSync('node', [path.join(ROOT, 'tools/archive.mjs')], { env: Object.assign({}, process.env, { ARCHIVE_OUT: out, ARCHIVE_FIXTURE: path.join(dir, 'fx.json'), ARCHIVE_SEASONS: path.join(dir, 'seasons.json') }) }).toString();
+      run(); const second = run();
+      const a = JSON.parse(fs.readFileSync(path.join(out, 'archive.json'), 'utf8')), f = a.days['2026-10-01'][0], page = fs.readFileSync(path.join(out, 'd/2026-10-01/index.html'), 'utf8');
+      return f.y === 'f1' && f.dur === 754 && f.ph === 'posters/f1-hd.jpg' && !JSON.stringify(a).includes('"sh"') && !JSON.stringify(a).includes('"old"')
+        && page.includes('Відкрити у фільмотеці') && page.includes('· фільмотека') && fs.readFileSync(path.join(out, 'sitemap.xml'), 'utf8').includes('/d/2026-10-01/') && /змінено файлів: 0/.test(second);
+    }],
+  ['FM16 характер: вузький шрифт афіш завантажено зі свого сайту; сірий текст ≥ 4.5:1 і в світлій, і в темній темі', { seasons: FILM(), api: F_API, wait: 1200 },
+    async r => {
+      const font = await r.page.evaluate(() => document.fonts.check('600 40px Oswald') && getComputedStyle(document.querySelector('.fl-title')).fontFamily.startsWith('Oswald'));
+      const cr = () => r.page.evaluate(() => {
+        const lum = c => { let [R, G, B] = c.match(/\d+/g).map(Number).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4; }); return .2126 * R + .7152 * G + .0722 * B; };
+        let bg = lum(getComputedStyle(document.body).backgroundColor);
+        return ['#fl-meta', '.fl-yc', '.footer'].map(q => { let fg = lum(getComputedStyle(document.querySelector(q)).color); return (Math.max(fg, bg) + .05) / (Math.min(fg, bg) + .05); });
+      });
+      const light = await cr(); await r.page.emulateMedia({ colorScheme: 'dark' }); const dark = await cr();
+      return font && light.every(x => x >= 4.5) && dark.every(x => x >= 4.5);
+    }],
+  ['FM17 клавіатура: Tab до афіші, Enter — плеєр, Esc — фокус назад на афішу; «Новий» — лише перші 14 днів', { seasons: FILM(), api: F_API, now: '2026-10-20T12:00:00+03:00' },
+    async r => {
+      await r.page.focus('[data-k="m3"]'); await r.page.keyboard.press('Enter'); await r.page.waitForTimeout(150);
+      const open = await r.page.locator('#vidModal.show').count() === 1;
+      await r.page.keyboard.press('Escape');
+      const back = await r.page.evaluate(() => document.activeElement && document.activeElement.dataset.k);
+      return open && back === 'm3' && await r.page.locator('.pst-new').count() === 0;
     }],
 
 ];

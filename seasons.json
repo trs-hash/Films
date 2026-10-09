@@ -1,4 +1,12 @@
 {
+  "films": {
+    "enabled": true,
+    "start": "",
+    "playlist": "UURSKTGA5a2hLrai_MXNaoUQ",
+    "exclude": [
+      "PLS50DDpfd-9w"
+    ]
+  },
   "calendar": {
     "enabled": false,
     "start": "2026-09-30",

@@ -1,14 +1,14 @@
 {
   "id": "./",
-  "name": "Тарас Максимʼяк — стіна днів",
+  "name": "Тарас Максимʼяк — фільмотека",
   "short_name": "Лови день",
-  "description": "Щоденні стрічки: одне відео про кожен день, який більше не повториться.",
+  "description": "Фільмотека: кожне відео — окремий фільм зі своєю афішею, за датою виходу.",
   "lang": "uk",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#121212",
+  "background_color": "#100f0d",
+  "theme_color": "#100f0d",
   "icons": [
     { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },

@@ -4,18 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарас Максимʼяк</title>
-    <meta name="description" content="Щоденні стрічки Тараса Максимʼяка. Одне відео про кожен день, який більше не повториться.">
+    <meta name="description" content="Фільмотека Тараса Максимʼяка: кожне відео — окремий фільм зі своєю афішею, за датою виходу.">
 
-    <meta property="og:title" content="Taras Maksymiak">
-    <meta property="og:description" content="Щодня — одна стрічка про день, який більше не повториться.">
+    <meta property="og:title" content="Тарас Максимʼяк — фільмотека">
+    <meta property="og:description" content="Кожне відео — окремий фільм зі своєю афішею.">
     <meta property="og:image" content="https://taras.kyiv.ua/image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="color-scheme" content="light dark">
     <!-- 📱 Застосунок на головному екрані (PWA) -->
     <link rel="manifest" href="manifest.webmanifest">
-    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#f3f0e8" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#100f0d" media="(prefers-color-scheme: dark)">
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -24,6 +24,9 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌓</text></svg>">
     <link rel="preconnect" href="https://www.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://i.ytimg.com">
+    <!-- Oswald (SIL OFL, fonts/OFL.txt) — вузький шрифт афіш: імʼя, «Фільмотека», роки, назви на афішах. Свій файл, без Google Fonts -->
+    <link rel="preload" href="fonts/oswald-cyrillic-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="fonts/oswald-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
     <script>
         // Швидкість: сезони й режим запитуємо ще до розбору решти сторінки — паралельно з HTML.
         // Звичайний візит бере файл із CDN (перевірка ETag), ?check — завжди свіжий, повз кеші.
@@ -38,8 +41,11 @@
         })();
     </script>
     <style>
-        :root{--bg:#fff;--txt:#222;--cell:#f8f8f8;--mut:#6f6f6f;--div:#eaeaea;--red:#e62117;--day:#c4c4c4}
-        @media (prefers-color-scheme:dark){:root{--bg:#121212;--txt:#e0e0e0;--cell:#1e1e1e;--mut:#aaa;--div:#333;--day:#5a5a5a}}
+        @font-face{font-family:Oswald;font-style:normal;font-weight:200 700;font-display:swap;src:url(fonts/oswald-cyrillic-wght-normal.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+        @font-face{font-family:Oswald;font-style:normal;font-weight:200 700;font-display:swap;src:url(fonts/oswald-latin-wght-normal.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+        /* Характер: теплий папір кінопрограмки (темна тема — зала перед сеансом), вузький шрифт афіш, червоний — як був */
+        :root{--bg:#f3f0e8;--txt:#1d1b18;--cell:#e9e5dc;--mut:#655f57;--div:#dcd7cc;--red:#d01e14;--day:#bdb6a8;--disp:Oswald,'Arial Narrow','Roboto Condensed',sans-serif}
+        @media (prefers-color-scheme:dark){:root{--bg:#100f0d;--txt:#ebe6dc;--cell:#1c1a17;--mut:#a39d93;--div:#2e2b27;--red:#e62117;--day:#5a554d}}
         html{scroll-behavior:smooth}
         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--txt);margin:0;padding:20px 20px 0;overflow-x:hidden}
         :focus-visible{outline:2px solid var(--red);outline-offset:3px;border-radius:4px}
@@ -47,7 +53,7 @@
         .main{flex:1;min-height:100vh}   /* підвал одразу нижче першого екрана — не «їде» вниз, коли зʼявляється календар (CLS) */
         /* Шапка — один ряд: ім'я, поруч Instagram, далі тихі посилання (збір, «Підтримати»). Не влазить — збір переходить нижче */
         .intro{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:10px 0 50px}
-        .intro .name{font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin:0}
+        .intro .name{font-family:var(--disp);font-size:19px;font-weight:600;line-height:1.2;letter-spacing:.12em;text-transform:uppercase;color:var(--txt);margin:0}
         .intro .links{display:contents}
         /* Іконки без підписів: символи впізнавані самі по собі (05.08.2026) */
         .intro .links a{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;padding:8px;border-radius:8px;transition:.2s}
@@ -187,6 +193,64 @@
         .note-tags .chip:hover{color:#fff;border-color:var(--red);background:var(--red)}
         .note-tags .chip.share{font:inherit;font-size:13px;font-weight:600;cursor:pointer}
 
+        /* ── 🎞 Фільмотека: кожне відео — фільм з афішею 2:3; каталог за датою виходу (роки — від найновішого) ──
+           Афіша: кадр на весь лист (16:9 → обрізаємо по центру; 4:3 зі смугами — .lb ховає смуги), зерно плівки,
+           згори № у каталозі й автор, знизу назва вузьким шрифтом, дата виходу й «титри». Розміри — від ширини афіші (cqw). */
+        .films{margin:0 0 80px;scroll-margin-top:20px}
+        .fl-mast{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px 24px;margin:0 0 30px;padding-bottom:16px;border-bottom:2px solid var(--txt)}
+        .fl-title{font-family:var(--disp);font-size:clamp(46px,10vw,124px);font-weight:600;line-height:.85;letter-spacing:-.01em;text-transform:uppercase;margin:0}
+        .fl-meta{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);padding-bottom:4px;font-variant-numeric:tabular-nums}
+        .fl-year{display:flex;align-items:center;gap:16px;font-family:var(--disp);font-size:40px;font-weight:500;line-height:1;margin:0 0 22px;scroll-margin-top:20px}
+        .fl-year::after{content:'';order:1;flex:1;height:1px;background:var(--div)}
+        .fl-yc{order:2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut)}
+        .fl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:36px 22px;margin:0 0 64px}
+        .fl-topic{margin:-8px 0 30px;font-size:15px;line-height:1.5;color:var(--mut);max-width:640px;overflow-wrap:anywhere}
+        .fl-topic a{color:var(--red);text-decoration:none;white-space:nowrap;margin-left:6px}
+        .film{position:relative;min-width:0}
+        .poster{position:relative;display:block;aspect-ratio:2/3;overflow:hidden;border-radius:3px;background:#1b1916;color:#fff;text-decoration:none;container-type:inline-size;
+            box-shadow:0 1px 2px rgba(0,0,0,.14),0 16px 30px -18px rgba(0,0,0,.6);transition:transform .25s,box-shadow .25s}
+        .pst-img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;display:block;transition:filter .3s}
+        .pst-img.lb{top:-16.667%;height:133.334%}
+        .poster::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
+            background:linear-gradient(to bottom,rgba(0,0,0,.6) 0%,rgba(0,0,0,0) 24%,rgba(0,0,0,.08) 36%,rgba(0,0,0,.6) 56%,rgba(0,0,0,.9) 76%,rgba(0,0,0,.95) 100%)}
+        .poster::after{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.28;mix-blend-mode:overlay;
+            background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+        .pst-top{position:absolute;z-index:3;top:0;left:0;right:0;display:flex;justify-content:space-between;gap:8px;padding:12px 12px 0;padding:7cqw 7cqw 0;
+            font-family:var(--disp);font-size:10px;font-size:5.2cqw;font-weight:500;letter-spacing:.16em;text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+        .pst-by{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.85}
+        .pst-foot{position:absolute;z-index:3;left:0;right:0;bottom:0;display:flex;flex-direction:column;padding:0 12px 12px;padding:0 7cqw 7cqw}
+        .pst-t{font-family:var(--disp);font-weight:600;line-height:1.02;letter-spacing:.005em;text-shadow:0 2px 14px rgba(0,0,0,.5);text-transform:uppercase;overflow-wrap:anywhere;
+            display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance;padding-bottom:.04em}
+        .pst-date{margin-top:4.5cqw;padding-top:4cqw;border-top:1px solid rgba(255,255,255,.28);font-family:var(--disp);font-size:12px;font-size:6.2cqw;font-weight:500;letter-spacing:.1em;text-transform:uppercase}
+        .pst-bill{margin-top:1.5cqw;font-family:var(--disp);font-size:9px;font-size:4.4cqw;font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.62);font-variant-numeric:tabular-nums}
+        .pst-new{position:absolute;z-index:4;top:17cqw;left:0;padding:1.4cqw 4cqw 1.4cqw 7cqw;background:var(--red);color:#fff;font-family:var(--disp);font-size:5cqw;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+        /* Переглянуте — штамп, як у власному каталозі: «відмічено» */
+        .pst-seen{display:none;position:absolute;z-index:4;top:36%;left:50%;transform:translate(-50%,-50%) rotate(-11deg);padding:1.6cqw 4cqw;border:.9cqw solid var(--red);border-radius:1.6cqw;
+            background:rgba(0,0,0,.4);color:#ff5146;font-family:var(--disp);font-size:8cqw;font-weight:700;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;transition:opacity .2s}
+        .poster.watched .pst-seen{display:block}
+        .poster.watched .pst-img{filter:grayscale(.7) brightness(.85)}
+        .pst-play{position:absolute;z-index:4;top:42%;left:50%;width:17cqw;height:17cqw;border-radius:50%;background:var(--red);opacity:0;transform:translate(-50%,-50%) scale(.8);transition:opacity .2s,transform .2s;pointer-events:none}
+        .pst-play::before{content:'';position:absolute;left:39%;top:30%;border-style:solid;border-width:4.4cqw 0 4.4cqw 7cqw;border-color:transparent transparent transparent #fff;width:0;height:0}
+        @media (hover:hover) and (pointer:fine){
+            .poster:hover{transform:translateY(-4px);box-shadow:0 2px 4px rgba(0,0,0,.16),0 24px 40px -18px rgba(0,0,0,.7)}
+            .poster:hover .pst-play{opacity:1;transform:translate(-50%,-50%) scale(1)}
+            .poster:hover .pst-seen{opacity:0}
+        }
+        .poster:focus-visible .pst-play{opacity:1;transform:translate(-50%,-50%) scale(1)}
+        .film .v-more{top:0;bottom:auto;align-items:flex-start;padding:7px 7px 0 0}
+        .film.has-more .pst-by{visibility:hidden}
+        .films.filtering .film:not(.hit){display:none}
+        .film.flash .poster{animation:flash 1.4s ease-out 2}
+        /* Порожньо / ще вантажиться */
+        .poster.sk{background:var(--cell);box-shadow:none}
+        .poster.sk::before,.poster.sk::after,.poster.soon::before,.poster.soon::after{display:none}
+        .poster.soon{background:transparent;border:2px dashed var(--div);box-sizing:border-box;color:var(--mut);box-shadow:none}
+        .poster.soon .pst-top,.poster.soon .pst-t{text-shadow:none}
+        .poster.soon .pst-date{border-top-color:var(--div)}
+        .poster.soon .pst-bill{color:var(--mut)}
+        .fl-soon{align-self:center;font-size:15px;line-height:1.55;color:var(--mut);max-width:340px}
+        .fl-soon a{color:var(--red);text-decoration:none}
+
         /* ── Підтримка (seasons.json → support). Типово вимкнено ──
            Шапка — один ряд: іконка Instagram і поруч тихі посилання «● Збір: Назва ↗» (та «Підтримати ↗», якщо увімкнено).
            Без кнопок, карток, прогресу й закликів у плеєрі. */
@@ -258,7 +322,7 @@
         .iframe-wrap video{display:none}
         .close{position:absolute;top:-15px;right:20px;color:#fff;font:inherit;font-size:40px;line-height:1;cursor:pointer;z-index:10;background:none;border:0;padding:0 6px}
         .close:hover{color:var(--red)}
-        .footer{text-align:center;padding:60px 0;font-size:11px;color:var(--mut);letter-spacing:2px}
+        .footer{text-align:center;padding:60px 0;font-family:var(--disp);font-size:12px;font-weight:500;color:var(--mut);letter-spacing:.2em}
         @media(max-width:1024px){
             .eps,.season.done .eps{grid-template-columns:repeat(2,1fr)}
             .season.live .s-title{font-size:56px;letter-spacing:-2px}
@@ -274,6 +338,10 @@
             .season{margin-bottom:80px}
             .grid{grid-template-columns:repeat(2,1fr)}
             .eps.compact{grid-template-columns:repeat(2,1fr)}
+            .fl-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:26px 14px;margin-bottom:48px}
+            .fl-mast{margin-bottom:24px;padding-bottom:12px}
+            .fl-year{font-size:32px;margin-bottom:16px}
+            .intro .name{font-size:17px}
             /* теми на телефоні — один рядок з прокруткою: календар лишається на першому екрані */
             .topics{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -15px 28px;padding:0 15px}
             .chip{min-height:40px}
@@ -294,23 +362,24 @@
             html{scroll-behavior:auto}
             .s-live::before{animation:none}
             .ep:hover .ep-th img{transform:none}
+            .poster,.pst-play{transition:none}
         }
         /* ── Записка серії (опис відео) + маркер важливого (Трек C) ── */
         .star{position:absolute;top:6px;right:8px;width:30px;height:30px;z-index:16;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));transform:rotate(-8deg)}
         .cell .star{top:2px;right:3px;width:26px;height:26px}
         .note{margin-top:14px}
-        .note-card{position:relative;background:var(--note-bg,#faf9f4);border:1px solid var(--div);border-left:3px solid var(--red);border-radius:10px;padding:20px 22px 22px}
+        .note-card{position:relative;background:var(--note-bg,#faf8f2);border:1px solid var(--div);border-left:3px solid var(--red);border-radius:10px;padding:20px 22px 22px}
         .note-foot{margin-top:18px;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-variant-numeric:tabular-nums}
         .note-body{font-family:Georgia,'Iowan Old Style','Times New Roman',serif;font-size:16.5px;line-height:1.75;color:var(--txt);white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere;max-width:66ch}
         .note-card .star{top:16px;right:16px;filter:none}
         .note-card.imp{padding-right:52px}
-        @media (prefers-color-scheme:dark){.note-card{--note-bg:#191919}}
+        @media (prefers-color-scheme:dark){.note-card{--note-bg:#1a1815}}
     </style>
 </head>
 <body>
 <div class="wrap">
     <header class="intro">
-        <h1 class="name">Тарас Максимʼяк</h1>
+        <h1 class="name">Тарас Максим’як</h1>
         <div class="links">
             <a class="primary" href="https://instagram.com/taras.maksymiak/" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
@@ -321,14 +390,14 @@
     </header>
 
     <main class="main" id="app">
-        <!-- Скелет першого показу у формі стіни днів: місце під календар є одразу, без стрибків макета -->
+        <!-- Скелет першого показу у формі фільмотеки: місце під афіші є одразу, без стрибків макета -->
         <div aria-hidden="true">
-            <div class="sk sk-m"></div>
-            <div class="grid"><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+            <div class="fl-mast"><div class="fl-title">Фільмотека</div></div>
+            <div class="fl-grid"><div class="film"><div class="poster sk"></div></div><div class="film"><div class="poster sk"></div></div><div class="film"><div class="poster sk"></div></div><div class="film"><div class="poster sk"></div></div><div class="film"><div class="poster sk"></div></div></div>
         </div>
         <noscript><p class="msg-empty">Сторінці потрібен JavaScript. Усі відео — на <a href="https://www.youtube.com/@Taras.maksymiak">YouTube-каналі</a>.</p></noscript>
     </main>
-    <footer class="footer">© 2026 ТАРАС МАКСИМʼЯК · 🌓 ЛОВИ ДЕНЬ</footer>
+    <footer class="footer">© 2026 ТАРАС МАКСИМ’ЯК · 🌓 ЛОВИ ДЕНЬ</footer>
 </div>
 
 <div id="vidModal" class="modal" role="dialog" aria-modal="true" aria-label="Відео" onclick="closeModal()">
@@ -368,6 +437,9 @@
     let TOPIC = '';              // вибрана тема з адреси (#t=подорожі)
     let CAL_NOTE = '';           // чому календар порожній (для ?check)
     let CAL_HIDDEN = false;      // календар сховано (seasons.json → calendar.enabled: false): глядачі його не бачать, ?check — бачить
+    let FILMS = null;            // фільмотека головної: {k:'films', id:'films', start, playlist, exclude:[]} — кожне відео як фільм з афішею
+    let FILMS_HIDDEN = false;    // фільмотеку сховано (films.enabled: false) — так само, як календар
+    let FILMS_NOTE = '';         // чому фільмотека порожня (для ?check)
     let SEASONS = [];            // нормалізовані сезони: {k,id,n,format,title,about,start,end,schedule,playlist,episodes,support}
     let EPS = {};                // {k: [rec]} відео календаря (k='cal') і сезонів, rec = {key,title,thumb,srcset,imp,tags,y,v,date,ts}
     let metaById = {};           // {key: {title,time,body,important}}
@@ -569,45 +641,50 @@
     }
 
     // Увесь seasons.json: календар, теми, сезони. Старий формат (просто список сезонів) теж розуміємо.
-    const TOP_KEYS = ['calendar', 'topics', 'ignore_tags', 'seasons', 'support'];
-    const CAL_KEYS = ['enabled', 'start', 'playlist', 'exclude'];
+    const TOP_KEYS = ['films', 'calendar', 'topics', 'ignore_tags', 'seasons', 'support'];
+    const CAL_KEYS = ['enabled', 'start', 'playlist', 'exclude'];   // ті самі поля — і в films
     const TOPIC_KEYS = ['tag', 'title', 'about', 'aliases'];
     const bareTag = v => str(v).replace(/^#/, '').toLowerCase();
     // Найімовірніша ручна помилка в календарі — вставити канал замість плейлиста.
     // ID каналу (UC…) або посилання /channel/UC… → беремо всі завантаження (UU…); @назва каналу — пояснюємо, що треба.
-    function calPlaylist(v) {
+    function calPlaylist(v, part = 'calendar') {
         let s = str(v), m = s.match(/(?:^|\/channel\/)(UC[\w-]{22})(?:[/?#]|$)/);
         if (m) {
             let uu = 'UU' + m[1].slice(2);
-            issue(`seasons.json, calendar: «${s}» — це канал, а не плейлист; беру всі його завантаження: ${uu}`);
+            issue(`seasons.json, ${part}: «${s}» — це канал, а не плейлист; беру всі його завантаження: ${uu}`);
             return uu;
         }
         if (/^@|youtube\.com\/@/.test(s)) {
-            issue(`seasons.json, calendar: «${s}» — це назва каналу; потрібен ID плейлиста (усі завантаження каналу — UU…, див. README)`);
+            issue(`seasons.json, ${part}: «${s}» — це назва каналу; потрібен ID плейлиста (усі завантаження каналу — UU…, див. README)`);
             return '';
         }
-        return normPlaylist(s, 'seasons.json, calendar');
+        return normPlaylist(s, 'seasons.json, ' + part);
+    }
+    // Джерело головної (фільмотека чи календар): {enabled, start, playlist, exclude}. Повертає [сховано?, обʼєкт або null].
+    // Сховане бачить лише ?check — як попередній перегляд.
+    function normSource(c, part, k, what) {
+        if (c == null) return [false, null];
+        if (typeof c !== 'object' || Array.isArray(c)) { issue(`seasons.json, ${part}: очікую обʼєкт {"playlist": …}`); return [false, null]; }
+        Object.keys(c).forEach(x => { if (!CAL_KEYS.includes(x)) issue(`seasons.json, ${part}: невідоме поле «${x}» — відомі: ${CAL_KEYS.join(', ')}`); });
+        let hidden = c.enabled != null && !flag(c.enabled, 'seasons.json, ' + part);
+        if (hidden && !CHECK) return [true, null];
+        let ex = Array.isArray(c.exclude) ? c.exclude : (c.exclude ? [c.exclude] : []);
+        let o = { k, id: k, format: 'daily', end: '', start: normDate(c.start, `seasons.json, ${part}.start`),
+            playlist: calPlaylist(c.playlist, part),
+            exclude: ex.map(pl => normPlaylist(pl, `seasons.json, ${part}.exclude`)).filter(Boolean) };
+        if (!o.playlist) issue(`seasons.json, ${part}: нема playlist — ${what} не знає, звідки брати відео (усі завантаження каналу — ID на UU…)`);
+        return [hidden, o];
     }
     function normConfig(raw) {
-        CAL = null; CAL_HIDDEN = false; TOPICS = { cfg: {}, alias: {}, ignore: new Set(IGNORE_TAGS) }; SUPPORT = normSupport(null);
+        CAL = null; CAL_HIDDEN = false; FILMS = null; FILMS_HIDDEN = false; TOPICS = { cfg: {}, alias: {}, ignore: new Set(IGNORE_TAGS) }; SUPPORT = normSupport(null);
         if (Array.isArray(raw)) { SEASONS = normSeasons(raw); return; }
         if (!raw || typeof raw !== 'object') { issue('seasons.json: очікую обʼєкт {…}'); SEASONS = []; return; }
         Object.keys(raw).forEach(k => { if (!TOP_KEYS.includes(k)) issue(`seasons.json: невідоме поле «${k}» — описка? Відомі: ${TOP_KEYS.join(', ')}`); });
-        let c = raw.calendar;
-        if (c != null && (typeof c !== 'object' || Array.isArray(c))) issue('seasons.json, calendar: очікую обʼєкт {"start": …, "playlist": …}');
-        else if (c != null) {
-            Object.keys(c).forEach(k => { if (!CAL_KEYS.includes(k)) issue(`seasons.json, calendar: невідоме поле «${k}» — відомі: ${CAL_KEYS.join(', ')}`); });
-            // Сховати календар про запас (щоденний формат — пізніше): "enabled": false. Глядачі бачать заглушку,
-            // ?check — попередній перегляд календаря, як він виглядатиме, коли повернеш "enabled": true.
-            CAL_HIDDEN = c.enabled != null && !flag(c.enabled, 'seasons.json, calendar');
-            let ex = Array.isArray(c.exclude) ? c.exclude : (c.exclude ? [c.exclude] : []);
-            if (!CAL_HIDDEN || CHECK) {
-                CAL = { k: 'cal', id: 'cal', format: 'daily', end: '', start: normDate(c.start, 'seasons.json, calendar.start'),
-                    playlist: calPlaylist(c.playlist),
-                    exclude: ex.map(pl => normPlaylist(pl, 'seasons.json, calendar.exclude')).filter(Boolean) };
-                if (!CAL.playlist) issue('seasons.json, calendar: нема playlist — календар не знає, звідки брати відео (усі завантаження каналу — ID на UU…)');
-            }
-        }
+        // Фільмотека — каталог афіш за датою виходу (типовий вигляд головної).
+        // Календар (стіна днів) — сховано про запас (щоденний формат — пізніше): "enabled": false. Глядачі його не бачать,
+        // ?check — попередній перегляд, як він виглядатиме, коли повернеш "enabled": true.
+        [FILMS_HIDDEN, FILMS] = normSource(raw.films, 'films', 'films', 'фільмотека');
+        [CAL_HIDDEN, CAL] = normSource(raw.calendar, 'calendar', 'cal', 'календар');
         let tl = raw.topics == null ? [] : raw.topics;
         if (!Array.isArray(tl)) { issue('seasons.json, topics: очікую список [ … ]'); tl = []; }
         tl.forEach((t, i) => {
@@ -621,7 +698,7 @@
         });
         (Array.isArray(raw.ignore_tags) ? raw.ignore_tags : []).forEach(a => { a = bareTag(a); if (a) TOPICS.ignore.add(a); });
         SEASONS = raw.seasons == null ? [] : normSeasons(Array.isArray(raw.seasons) ? raw.seasons : raw);
-        if (!CAL && raw.seasons == null) issue('seasons.json: нема ні calendar, ні seasons — сторінці нічого показувати');
+        if (!CAL && !FILMS && !CAL_HIDDEN && !FILMS_HIDDEN && raw.seasons == null) issue('seasons.json: нема ні films, ні calendar, ні seasons — сторінці нічого показувати');
         SUPPORT = normSupport(raw.support);
     }
 
@@ -782,11 +859,12 @@
     function applyPlaylists(byPl) {
         EPS = {};
         SEASONS.forEach(s => { EPS[s.k] = cleanList(s.playlist && byPl[s.playlist]); });
-        if (CAL) {                                     // календар: усе з джерела від start, крім відео з плейлистів-винятків (Shorts)
+        [FILMS, CAL].forEach(S => {                    // фільмотека й календар: усе з джерела від start, крім плейлистів-винятків (Shorts)
+            if (!S) return;
             let skip = new Set();
-            CAL.exclude.forEach(pl => cleanList(byPl[pl]).forEach(r => skip.add(r.key)));
-            EPS.cal = cleanList(CAL.playlist && byPl[CAL.playlist]).filter(r => !skip.has(r.key) && (!CAL.start || r.date >= CAL.start));
-        }
+            S.exclude.forEach(pl => cleanList(byPl[pl]).forEach(r => skip.add(r.key)));
+            EPS[S.k] = cleanList(S.playlist && byPl[S.playlist]).filter(r => !skip.has(r.key) && (!S.start || r.date >= S.start));
+        });
     }
 
     // Мініатюри: браузер сам бере розмір під картку (320…1280 px) — телефон не тягне 1280, коли вистачає 640
@@ -797,7 +875,8 @@
     function thumbSet(t) {
         let src = [t.high, t.medium, t.standard, t.maxres, t.default].map(x => x && x.url).find(okSrc) || '';
         let set = THUMB_KEYS.filter(k => t[k] && okImg(t[k].url) && +t[k].width > 0).map(k => t[k].url + ' ' + Math.round(t[k].width) + 'w').join(', ');
-        return { thumb: src, srcset: set };
+        let pst = [t.maxres, t.standard, t.high, t.medium, t.default].map(x => x && x.url).find(okSrc) || '';   // афіші — найбільший кадр
+        return { thumb: src, srcset: set, pst: pst === src ? '' : pst };
     }
 
     // Відео плейлиста → записи. Дата — дата публікації відео (videoPublishedAt), а не додавання в плейлист.
@@ -830,16 +909,18 @@
     let PL_CACHE = {}, YT_FULL = true;               // YT_FULL: цього разу все зібрано з YouTube, без доклеювання з кешу
     async function loadYouTube(cachedPl, cacheAge) {
         try {
-            CAL_NOTE = '';
-            let pls = [...new Set([...SEASONS.map(s => s.playlist), ...(CAL ? [CAL.playlist, ...CAL.exclude] : [])].filter(Boolean))];
+            CAL_NOTE = FILMS_NOTE = '';
+            let pls = [...new Set([...SEASONS.map(s => s.playlist), ...[FILMS, CAL].flatMap(S => S ? [S.playlist, ...S.exclude] : [])].filter(Boolean))];
             let pages = {};
             await Promise.all(pls.map(async pid => {
                 try { pages[pid] = await fetchPages(pid, '', 1); }
                 catch(e) {
                     if (!e.badPlaylist) throw e;
                     // Список завантажень (UU…) YouTube не віддає, поки на каналі нема жодного публічного відео — це не помилка
-                    if (CAL && pid === CAL.playlist && /^UU/.test(pid)) CAL_NOTE = 'на каналі ще нема жодного публічного відео';
-                    else issue(`плейлист ${pid} не знайдено або він закритий — перевір ID і доступ «Загальнодоступний»`);
+                    let none = 'на каналі ще нема жодного публічного відео', uu = /^UU/.test(pid);
+                    if (uu && FILMS && pid === FILMS.playlist) FILMS_NOTE = none;
+                    if (uu && CAL && pid === CAL.playlist) CAL_NOTE = none;
+                    if (!(uu && ((FILMS && pid === FILMS.playlist) || (CAL && pid === CAL.playlist)))) issue(`плейлист ${pid} не знайдено або він закритий — перевір ID і доступ «Загальнодоступний»`);
                     pages[pid] = { items: [], next: '' };
                 }
             }));
@@ -854,6 +935,7 @@
                     if (pages[pid].next && fromCache(pid)) byPl[pid] = mergeOlder(byPl[pid], cachedPl[pid]);
                 });
                 PL_CACHE = byPl; HIDDEN = hidden;
+                Object.keys(meta).forEach(k => { let d = (metaById[k] || {}).dur; if (d) meta[k].dur = d; });   // тривалість не перепитуємо
                 metaById = Object.assign({}, metaById, meta);   // записки старіших відео лишаються з кешу
                 applyPlaylists(byPl);
             };
@@ -872,6 +954,29 @@
         }
     }
 
+    // Тривалість фільмів для афіші («12 хв»): videos.list — до 50 відео за запит (1 одиниця квоти).
+    // Що вже знаємо (кеш браузера, архів) — не перепитуємо. Не вийшло — афіша просто без хвилин.
+    function parseDur(iso) {
+        let m = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(String(iso || ''));
+        return m ? (+m[1] || 0) * 86400 + (+m[2] || 0) * 3600 + (+m[3] || 0) * 60 + (+m[4] || 0) : 0;
+    }
+    async function loadDurations() {
+        let ids = (EPS.films || []).filter(r => r.y && metaById[r.key] && !metaById[r.key].dur).map(r => r.y), got = false;
+        for (let i = 0; i < ids.length; i += 50) {
+            try {
+                let res = await fetch('https://www.googleapis.com/youtube/v3/videos?part=contentDetails&maxResults=50&id=' +
+                    ids.slice(i, i + 50).map(encodeURIComponent).join(',') + '&fields=' + encodeURIComponent('items(id,contentDetails/duration)') + '&key=' + API_KEY);
+                if (!res.ok) break;
+                ((await res.json()).items || []).forEach(v => {
+                    if (!v || !metaById[v.id]) return;
+                    metaById[v.id].dur = parseDur(v.contentDetails && v.contentDetails.duration) || -1;   // -1: YouTube не знає — не питати знову
+                    got = true;
+                });
+            } catch(e) { break; }
+        }
+        return got;
+    }
+
     // Судний день: читаємо локальний archive.json (незалежно від YouTube).
     // Форма (site_publisher): {base, days:{date:[{t,p,v,y,d,desc}]}}. Календар і сезони — за датою.
     async function loadArchive() {
@@ -884,16 +989,18 @@
             Object.keys(days).forEach(date => {
                 if (!DATE_RE.test(date) || !Array.isArray(days[date])) return;
                 let s = SEASONS.find(x => (!x.start || date >= x.start) && (!x.end || date <= x.end));
-                let inCal = CAL && (!CAL.start || date >= CAL.start);
-                if (!s && !inCal) return;
+                let inCal = CAL && (!CAL.start || date >= CAL.start), inFilms = FILMS && (!FILMS.start || date >= FILMS.start);
+                if (!s && !inCal && !inFilms) return;
                 days[date].forEach((it, n) => {
                     let key = it.y || it.v || (date + '_' + n);
                     let pd = parseDesc(it.desc || '');
                     let rec = { key: key, title: it.t || '', y: it.y || '', v: it.v || '', tags: tagsOf(it.t, it.desc),
-                        thumb: it.p || '', srcset: '', imp: pd.important, date: date, ts: date + 'T' + pad2(n) };
+                        thumb: it.p || '', srcset: '', pst: typeof it.ph === 'string' ? it.ph : '', imp: pd.important, date: date, ts: date + 'T' + pad2(n) };
                     if (s) (eps[s.k] = eps[s.k] || []).push(rec);
                     if (inCal) (eps.cal = eps.cal || []).push(rec);
+                    if (inFilms) (eps.films = eps.films || []).push(rec);
                     meta[key] = { title: it.t || '', time: pd.time, body: pd.body, important: pd.important };
+                    if (+it.dur > 0) meta[key].dur = Math.round(+it.dur);   // тривалість, секунди (архів пише сам)
                 });
             });
             EPS = eps; metaById = meta;
@@ -916,7 +1023,7 @@
         let raw = lsJSON('ss_seasons', null), pl = lsJSON('ss_pl', null), t = +lsGet('ss_time') || 0;
         if (!raw || !pl || typeof pl !== 'object' || Date.now() - t > 30 * DAY_MS) return false;
         normConfig(raw);
-        if (!SEASONS.length && !CAL) return false;
+        if (!SEASONS.length && !CAL && !FILMS) return false;
         TOPIC = topicFromHash();
         CACHED_PL = pl; applyPlaylists(pl); metaById = lsJSON('ss_meta', {}) || {};
         LOADING = false; SRC.eps = 'кеш браузера';
@@ -936,7 +1043,8 @@
         if (CACHED_PL) applyPlaylists(CACHED_PL);
         render();                                      // свіжі шапки сезонів одразу; серії — з кешу або скелетом
         // «Свіжість» для інкрементного оновлення рахуємо від останнього ПОВНОГО перезбору (ss_full), а не від будь-якого візиту
-        if (await loadYouTube(CACHED_PL, Date.now() - (+lsGet('ss_full') || 0))) {
+        let ytOk = await loadYouTube(CACHED_PL, Date.now() - (+lsGet('ss_full') || 0));
+        if (ytOk) {
             lsSet('ss_pl', JSON.stringify(PL_CACHE));
             lsSet('ss_meta', JSON.stringify(metaById));
             lsSet('ss_time', String(Date.now()));
@@ -951,6 +1059,7 @@
         }
         LOADING = false;
         render();
+        if (ytOk && FILMS && await loadDurations()) { lsSet('ss_meta', JSON.stringify(metaById)); render(); }
     }
 
     // ── Малювання ──────────────────────────────────────────────────────────────
@@ -961,9 +1070,10 @@
         PLAY = []; EAGER = matchMedia('(max-width:600px)').matches ? 1 : 3; FIRST_IMG = true;
         let today = todayStr(), rank = { live: 0, soon: 1, done: 2 };
         let html = CHECK ? checkHtml(today) : '';
+        if (FILMS) html += filmsHtml(today);
         if (CAL) html += homeHtml(today);
-        if (!SEASONS.length) {
-            if (CAL_HIDDEN && !CAL) html += `<div class="msg-empty">Скоро тут буде нове.<br>А поки всі відео — на <a href="${CHANNEL_URL}" target="_blank" rel="noopener">YouTube ↗</a></div>`;
+        if (!SEASONS.length && !FILMS) {
+            if ((CAL_HIDDEN || FILMS_HIDDEN) && !CAL) html += `<div class="msg-empty">Скоро тут буде нове.<br>А поки всі відео — на <a href="${CHANNEL_URL}" target="_blank" rel="noopener">YouTube ↗</a></div>`;
             else if (!CAL) html += '<div class="msg-empty">Скоро тут зʼявиться перший сезон.</div>';
         } else {
             let list = SEASONS.map(s => ({ s, st: seasonState(s, today) })).sort((a, b) => rank[a.st] - rank[b.st] ||
@@ -984,7 +1094,7 @@
         opened.forEach(id => { let d = document.getElementById(id); if (d) d.open = true; });
         // Посилання на день (#d=2026-09-30, сюди ж ведуть сторінки /d/…/): показати день; на компʼютері — ще й відкрити відео
         let dh = dayFromHash();
-        if (dh && dh !== DAY_DONE && !LOADING && document.getElementById('cal-' + dh)) {
+        if (dh && dh !== DAY_DONE && !LOADING && dayEl(dh)) {
             DAY_DONE = dh; HASH_DONE = true;
             setTimeout(() => showDay(dh, '', !OPEN_IN_APP), 0);
         }
@@ -1127,10 +1237,89 @@
         return html + (wall && acts ? `<div class="cal-acts">${acts}</div>${mydayHtml()}` : '') + (wall || soon) + '</section>';
     }
 
+    // ── 🎞 Фільмотека ───────────────────────────────────────────────────────────
+    // Кожне відео — фільм з афішею. Каталог за датою виходу: роки від найновішого, у році — найновіші першими.
+    // № — порядковий номер від першого фільму (як у каталозі): з новими фільмами старі номери не змінюються.
+    // Ні прем'єр, ні відліків, ні нагадувань — лише афіші того, що вже вийшло.
+    // Апостроф на афіші — ’: у вузькому шрифті ʼ (U+02BC) і ' — широкий прямий штрих із дірою після нього
+    const FILM_BY = 'Тарас Максим’як', FILM_OF = 'Фільм Тараса Максим’яка', curly = t => t.replace(/[ʼ']/g, '’');
+    function fmtDur(sec) {
+        if (!(sec > 0)) return '';
+        let m = Math.max(1, Math.round(sec / 60));
+        return m < 60 ? m + ' хв' : Math.floor(m / 60) + ' год' + (m % 60 ? ' ' + pad2(m % 60) + ' хв' : '');
+    }
+    const filmsSorted = () => (EPS.films || []).slice().sort(byTs);
+    function filmNo(key) { return filmsSorted().findIndex(r => r.key === key) + 1; }
+    // Розмір назви — щоб найдовше слово влізло в рядок, а вся назва — у ~4 рядки (вузький шрифт: літера ≈ 0,55 кегля)
+    function titleSize(t) {
+        let words = t.split(/\s+/), w = Math.max(...words.map(x => [...x].length)), n = [...t].length;
+        return Math.max(7, Math.min(20, 86 / (.56 * w), 560 / n)).toFixed(1);
+    }
+    // 4:3 зі смугами (hqdefault, sddefault): видно за адресою одразу, а для решти — за розміром, коли кадр завантажився
+    const LB_RE = /\/(?:hq|sd)?default(?:_live)?\.(?:jpg|webp)(?:[?#]|$)/;
+    document.addEventListener('load', e => {             // load не спливає — ловимо на етапі занурення, без inline-обробників
+        let im = e.target;
+        if (!im.classList || !im.classList.contains('pst-img')) return;
+        let r = im.naturalWidth / im.naturalHeight;
+        if (r) im.classList.toggle('lb', Math.abs(r - 4 / 3) < .04);
+    }, true);
+    function posterHtml(rec, no, isNew) {
+        let idx = playIdx(rec, 'films'), dur = fmtDur((metaById[rec.key] || {}).dur);
+        let title = showTitle(rec.title) || 'Без назви', [y, m, d] = rec.date.split('-').map(Number), date = `${d} ${MONTHS_GEN[m - 1]} ${y}`;
+        let src = rec.pst || rec.thumb, img = '';
+        if (src) {
+            let load = EAGER-- > 0 ? (FIRST_IMG ? ' fetchpriority="high"' : '') : ' loading="lazy"';
+            if (load) FIRST_IMG = false;
+            img = `<img class="pst-img${LB_RE.test(src) ? ' lb' : ''}" src="${esc(src)}"${load} decoding="async" alt="">`;
+        }
+        let hit = TOPIC && recTopics(rec).includes(TOPIC) ? ' hit' : '', seen = watched.includes(rec.key) ? ' watched' : '';
+        return `<div class="film${hit}${OPEN_IN_APP ? ' has-more' : ''}" data-date="${rec.date}">` +
+            `<a class="poster${seen}" href="${ytHref(rec)}" target="_blank" rel="noopener" data-k="${esc(rec.key)}" onclick="openVid(event, ${idx}, this)" aria-label="${esc(title)} — № ${no}, ${date}${dur ? ', ' + dur : ''}">` +
+            img + `<span class="pst-top"><span>№ ${pad2(no)}</span><span class="pst-by">${FILM_BY}</span></span>` +
+            (isNew ? '<span class="pst-new">Новий</span>' : '') + '<span class="pst-play"></span><span class="pst-seen">Переглянуто</span>' +
+            `<span class="pst-foot"><span class="pst-t" style="font-size:${titleSize(title)}cqw">${esc(curly(title))}</span>` +
+            `<span class="pst-date">${date}</span><span class="pst-bill">${FILM_OF}${dur ? ' · ' + dur : ''}</span></span></a>` +
+            (OPEN_IN_APP ? `<button type="button" class="v-more" onclick="daySheet(${idx}, this)" aria-label="Про фільм: ${esc(title)}"><span></span></button>` : '') +
+            '</div>';
+    }
+    function flMeta() {                                  // «8 фільмів · 3 переглянуто» — твій облік у цьому браузері
+        let all = (EPS.films || []).filter(playable), seen = all.filter(r => watched.includes(r.key)).length, n = (EPS.films || []).length;
+        return `${n} ${plural(n, 'фільм', 'фільми', 'фільмів')}` + (seen ? ` · ${seen} переглянуто` : '');
+    }
+    function filmsHtml(today) {
+        let all = filmsSorted(), list = TOPIC ? all.filter(r => recTopics(r).includes(TOPIC)) : all;
+        let html = (FILMS_HIDDEN ? '<p class="cal-hidden">Сховано: глядачі фільмотеки не бачать (seasons.json → films.enabled: false). Це попередній перегляд; повернути — "enabled": true.</p>' : '') +
+            `<section class="films${TOPIC ? ' filtering' : ''}" id="films" aria-label="Фільмотека"><div class="fl-mast"><h2 class="fl-title">Фільмотека</h2>` +
+            (all.length ? `<span class="fl-meta" id="fl-meta">${flMeta()}</span>` : '') + '</div>';
+        if (LOAD_FAILED && !all.length) return html + '<p class="s-msg">Не вдалось завантажити фільми. Спробуйте оновити сторінку.</p></section>';
+        if (LOADING && !all.length) return html + '<div class="fl-grid">' + '<div class="film"><div class="poster sk"></div></div>'.repeat(5) + '</div></section>';
+        if (!all.length) return html + '<div class="fl-grid"><div class="film"><div class="poster soon"><span class="pst-top"><span>№ 01</span></span>' +
+            `<span class="pst-foot"><span class="pst-t" style="font-size:20cqw">Скоро</span><span class="pst-date">Перший фільм</span><span class="pst-bill">${FILM_OF}</span></span></div></div>` +
+            `<p class="fl-soon">Тут виходитимуть фільми — кожен зі своєю афішею. А поки всі відео — на <a href="${CHANNEL_URL}" target="_blank" rel="noopener">YouTube ↗</a></p></div></section>`;
+        html += topicsBar(allRecs());
+        if (TOPIC) {
+            let cfg = TOPICS.cfg[TOPIC] || {};
+            html += `<p class="fl-topic">${esc(topicLabel(TOPIC))} — ${list.length} ${plural(list.length, 'фільм', 'фільми', 'фільмів')}` +
+                (cfg.about ? '. ' + esc(cfg.about) : '') + '<a href="#">× Усі фільми</a></p>';
+        }
+        let no = new Map(all.map((r, i) => [r.key, i + 1])), last = all[all.length - 1];
+        let fresh = last && !watched.includes(last.key) && dayNum(today) - dayNum(last.date) < 14 ? last.key : '';
+        let years = {};
+        list.forEach(r => (years[r.date.slice(0, 4)] = years[r.date.slice(0, 4)] || []).push(r));
+        html += '<div id="fl-body">' + Object.keys(years).sort().reverse().map(y => {
+            let l = years[y].reverse();
+            return `<h3 class="fl-year" id="films-${y}">${y}<span class="fl-yc">${l.length} ${plural(l.length, 'фільм', 'фільми', 'фільмів')}</span></h3>` +
+                '<div class="fl-grid">' + l.map(r => posterHtml(r, no.get(r.key), r.key === fresh)).join('') + '</div>';
+        }).join('') + '</div>';
+        let since = sinceInner();
+        if (since) html = html.replace('<div id="fl-body">', `<div class="since" id="since">${since}</div><div id="fl-body">`);
+        return html + '</section>';
+    }
+
     // Усі відомі відео (календар + сезони) без дублів — для каталогу тем
     function allRecs() {
         let seen = new Set(), out = [];
-        [EPS.cal || [], ...SEASONS.map(s => EPS[s.k] || [])].forEach(l => l.forEach(r => { if (!seen.has(r.key)) { seen.add(r.key); out.push(r); } }));
+        [EPS.films || [], EPS.cal || [], ...SEASONS.map(s => EPS[s.k] || [])].forEach(l => l.forEach(r => { if (!seen.has(r.key)) { seen.add(r.key); out.push(r); } }));
         return out;
     }
     function topicCounts(all) {                        // [[тема, {n, last}]] — найчастіші першими, далі найсвіжіші
@@ -1263,15 +1452,25 @@
     function checkHtml(today) {
         const stName = { live: 'йде зараз', soon: 'ще не почався', done: 'завершено' };
         let rows = '';
+        if (FILMS) {
+            let n = (EPS.films || []).length, h = HIDDEN[FILMS.playlist] || 0, durs = (EPS.films || []).filter(r => (metaById[r.key] || {}).dur > 0).length;
+            rows += `<li><b>Фільмотека</b>${FILMS_HIDDEN ? ' — <b>сховано від глядачів</b> (films.enabled: false), нижче попередній перегляд;' : ' —'} джерело ${esc(FILMS.playlist || '—')}: ` +
+                `на сайті ${n} ${plural(n, 'фільм', 'фільми', 'фільмів')}` + (h ? `, ще ${h} приховано (приватні / заплановані)` : '') +
+                (n ? `, тривалість відома для ${durs}` : '') + (FILMS.exclude.length ? `; без відео з ${esc(FILMS.exclude.join(', '))}` : '') +
+                (FILMS.start ? `; старіші за ${fmtDay(FILMS.start, true)} не беремо` : '') + (FILMS_NOTE ? ` — ${esc(FILMS_NOTE)}` : '') + '</li>';
+        }
+        if (FILMS || CAL) {
+            let tl = topicCounts(allRecs());
+            rows += `<li><b>Теми</b> — ${tl.length ? tl.map(([t, e]) => esc(topicLabel(t)) + ' (' + e.n + ')').join(', ') : 'поки жодного хештегу в назвах чи описах відео'}</li>`;
+        }
         if (CAL) {
-            let n = (EPS.cal || []).length, h = HIDDEN[CAL.playlist] || 0, tl = topicCounts(allRecs());
+            let n = (EPS.cal || []).length, h = HIDDEN[CAL.playlist] || 0;
             let first = (EPS.cal || []).reduce((m, r) => !m || r.date < m ? r.date : m, '');
             rows += `<li><b>Календар</b>${CAL_HIDDEN ? ' — <b>сховано від глядачів</b> (calendar.enabled: false), нижче попередній перегляд;' : ' —'} відлік від першого відео${first ? ' (' + fmtDay(first, true) + ')' : ' (його ще нема)'}` +
                 (CAL.start ? `, старіші за ${fmtDay(CAL.start, true)} не беремо` : '') + `; джерело ${esc(CAL.playlist || '—')}: ` +
                 `на сайті ${n} відео` + (h ? `, ще ${h} приховано (приватні / заплановані)` : '') +
                 (CAL.exclude.length ? `; без відео з ${esc(CAL.exclude.join(', '))}` : '') + (CAL_NOTE ? ` — ${esc(CAL_NOTE)}` : '') +
-                (CAL.start && today < CAL.start ? ` — ще не почався: до ${esc(fmtDay(CAL.start, true))} головна показує «Скоро тут зʼявиться перша стрічка»` : '') + '</li>' +
-                `<li><b>Теми</b> — ${tl.length ? tl.map(([t, e]) => esc(topicLabel(t)) + ' (' + e.n + ')').join(', ') : 'поки жодного хештегу в назвах чи описах відео'}</li>`;
+                (CAL.start && today < CAL.start ? ` — ще не почався: до ${esc(fmtDay(CAL.start, true))} головна показує «Скоро тут зʼявиться перша стрічка»` : '') + '</li>';
         }
         rows += SEASONS.map(s => {
             let n = (EPS[s.k] || []).length, h = HIDDEN[s.playlist] || 0;
@@ -1339,7 +1538,7 @@
     // Прогрів: при першому наведенні/дотику на відео заздалегідь відкриваємо з'єднання з YouTube — плеєр стартує швидше
     let warmed = OPEN_IN_APP;                         // на телефоні плеєр на сайті не відкривається — гріти нічого
     function warm(e) {
-        if (warmed || !e.target.closest || !e.target.closest('.ep,.v-lnk')) return;
+        if (warmed || !e.target.closest || !e.target.closest('.ep,.v-lnk,.poster')) return;
         warmed = true;
         let l = document.createElement('link'); l.rel = 'preconnect'; l.href = 'https://www.youtube.com';
         document.head.appendChild(l);
@@ -1359,11 +1558,12 @@
     const isAppVideo = p => OPEN_IN_APP && !!p.y && !(BASE && p.v);     // телефон + відео з YouTube → застосунок
     const ytWatch = p => 'https://www.youtube.com/watch?v=' + encodeURIComponent(p.y);
     const $ = id => document.getElementById(id);
+    const isFilm = p => p.ctx === 'films' || (p.ctx === 'queue' && !!FILMS);
     let lastFocus = null, CUR = null, QUEUE = [], QUEUE_ON = false;
 
     function navList(ctx) {
         if (ctx === 'queue') return QUEUE;
-        let list = ctx === 'topic' ? allRecs().filter(r => recTopics(r).includes(TOPIC)) : (EPS[ctx] || []);
+        let list = ctx === 'topic' || (ctx === 'films' && TOPIC) ? (ctx === 'films' ? EPS.films || [] : allRecs()).filter(r => recTopics(r).includes(TOPIC)) : (EPS[ctx] || []);
         return list.filter(playable).slice().sort(byTs);
     }
     // Застосунок YouTube поза кліком по посиланню (кнопки «Дивитися», «підряд», «Мій день»)
@@ -1406,7 +1606,8 @@
         let prev = list[i - 1], next = list[i + 1], y = todayStr().slice(0, 4);
         let lbl = r => fmtDay(r.date, r.date.slice(0, 4) !== y);
         let mid = ctx === 'queue' ? `З твого візиту · ${i + 1} з ${list.length}`
-            : ctx === 'topic' ? `${esc(topicLabel(TOPIC))} · ${i + 1} / ${list.length}` : `${i + 1} / ${list.length}`;
+            : ctx === 'topic' || (ctx === 'films' && TOPIC) ? `${esc(topicLabel(TOPIC))} · ${i + 1} / ${list.length}`
+            : ctx === 'films' ? `№ ${filmNo(list[i].key)} із ${(EPS.films || []).length}` : `${i + 1} / ${list.length}`;   // «із»: велике «З» схоже на 3
         return `<button type="button" class="mnav" onclick="navStep(-1)"${prev ? ` aria-label="Попередній: ${esc(lbl(prev))}"` : ' disabled'}>‹ ${prev ? esc(lbl(prev)) : ''}</button>` +
             `<span class="mnav-pos">${mid}</span>` +
             `<button type="button" class="mnav" onclick="navStep(1)"${next ? ` aria-label="Наступний: ${esc(lbl(next))}"` : ' disabled'}>${next ? esc(lbl(next)) : ''} ›</button>`;
@@ -1422,7 +1623,8 @@
         if (!sheet) markWatched(p.key);                  // на аркуші дня відео ще не дивились — лише читаєш
         let list = navList(ctx), i = list.findIndex(r => r.key === p.key);
         $('modNav').innerHTML = navHtml(list, i, ctx);
-        $('modHead').innerHTML = (DATE_RE.test(p.date || '') ? `<div class="mod-date">${esc(fmtDayLong(p.date))}</div>` : '') +
+        let dur = fmtDur((metaById[p.key] || {}).dur);
+        $('modHead').innerHTML = (DATE_RE.test(p.date || '') ? `<div class="mod-date">${esc(fmtDayLong(p.date))}${dur ? ' · ' + dur : ''}</div>` : '') +
             (p.title ? `<div class="mod-title">${esc(showTitle(p.title))}</div>` : '');
         // Записка серії під плеєром (щоденник): текст веде, штамп часу — підпис знизу; зірка, якщо важливо.
         let meta = metaById[p.key] || {}, topics = recTopics(p), dated = DATE_RE.test(p.date || '');
@@ -1432,8 +1634,8 @@
               (meta.body ? `<div class="note-body">${esc(meta.body)}</div>` : '') +
               (meta.time ? `<div class="note-foot">🕒 ${esc(meta.time)}</div>` : '') + `</div>`
             : '') + ((topics.length || dated) ? '<div class="note-tags">' +
-              (dated ? `<button type="button" class="chip share" onclick="shareDay('${p.date}', this)">🔗 Посилання на день</button>` +
-                `<button type="button" class="chip card" onclick="shareCard(this)">${OPEN_IN_APP ? '📲 Картка для Stories' : '🖼 Картка дня'}</button>` : '') +
+              (dated ? `<button type="button" class="chip share" onclick="shareDay('${p.date}', this)">🔗 Посилання${isFilm(p) ? '' : ' на день'}</button>` +
+                `<button type="button" class="chip card" onclick="shareCard(this)">${OPEN_IN_APP ? '📲 Картка для Stories' : isFilm(p) ? '🖼 Картка' : '🖼 Картка дня'}</button>` : '') +
               topics.map(t => `<a class="chip" href="#t=${encodeURIComponent(t)}">${chipLabel(t)}</a>`).join('') + '</div>' : '');
         // Плеєр: локальне відео (судний день, Фаза 5) якщо є base+v, інакше YouTube-ембед за id; телефон — кадр і кнопка
         let iframe = $('ytIframe'), loc = $('locVideo'), poster = $('modPoster'), play = $('modPlay');
@@ -1495,7 +1697,7 @@
         let i = QUEUE.findIndex(r => r.key === CUR.p.key), r = QUEUE[i + 1];
         if (r) { showRec(toP(r, 'queue'), 'queue'); return; }
         QUEUE_ON = false;
-        $('modNav').innerHTML = '<span class="mnav-pos">✓ Усі нові дні переглянуто</span>';
+        $('modNav').innerHTML = `<span class="mnav-pos">✓ Усі нові ${FILMS ? 'фільми' : 'дні'} переглянуто</span>`;
     }
     window.watchNew = function(btn) {
         let list = newRecs();
@@ -1533,21 +1735,25 @@
         lsSet('lv', JSON.stringify({ prev: VISIT_PREV, cur: now }));
     })();
     const recTime = r => Date.parse(r.ts) || Date.parse(r.date + 'T12:00:00') || 0;
+    const mainK = () => FILMS ? 'films' : 'cal';        // «з твого візиту» — для головного вигляду: фільмотеки, а без неї — стіни днів
     function newRecs() {
         if (!VISIT_PREV) return [];
-        return (EPS.cal || []).filter(r => playable(r) && !watched.includes(r.key) && recTime(r) > VISIT_PREV).sort(byTs);
+        return (EPS[mainK()] || []).filter(r => playable(r) && !watched.includes(r.key) && recTime(r) > VISIT_PREV).sort(byTs);
     }
     function sinceInner() {
-        let cal = (EPS.cal || []).filter(playable);
+        let cal = (EPS[mainK()] || []).filter(playable);
         if (!cal.length) return '';
         let fresh = newRecs(), seen = cal.filter(r => watched.includes(r.key)).length, days = new Set(fresh.map(r => r.date)).size;
+        if (FILMS) seen = 0;                             // у фільмотеці «переглянуто» — у шапці каталогу
         if (!fresh.length && !seen) return '';
-        return (fresh.length ? `<span class="since-new">З твого візиту — ${days} ${plural(days, 'новий день', 'нових дні', 'нових днів')}` +
+        let what = FILMS ? `${fresh.length} ${plural(fresh.length, 'новий фільм', 'нові фільми', 'нових фільмів')}` : `${days} ${plural(days, 'новий день', 'нових дні', 'нових днів')}`;
+        return (fresh.length ? `<span class="since-new">З твого візиту — ${what}` +
                 `<button type="button" class="act" onclick="watchNew(this)">▶ Дивитися підряд</button></span>` : '<span></span>') +
             (seen ? `<span class="since-seen">Переглянуто ${seen} з ${cal.length}</span>` : '');
     }
     function updateSince() {
-        let html = sinceInner(), el = $('since'), cal = $('cal');
+        let html = sinceInner(), el = $('since'), cal = $(FILMS ? 'fl-body' : 'cal'), fm = $('fl-meta');
+        if (fm) fm.textContent = flMeta();
         if (el) el.innerHTML = html;
         else if (html && cal) cal.insertAdjacentHTML('beforebegin', `<div class="since" id="since">${html}</div>`);
     }
@@ -1764,14 +1970,17 @@
 
     // Показати день на стіні: розгорнути «Раніше», прокрутити, коротко підсвітити; open — ще й відкрити відео
     // (той самий клік по плитці: компʼютер — вікно, телефон — застосунок YouTube)
+    // Фільмотека: перша афіша того дня
+    function dayEl(date) { return (FILMS && document.querySelector(`#films .film[data-date="${date}"]`)) || document.getElementById('cal-' + date); }
     window.showDay = function(date, key, open) {
-        let cell = document.getElementById('cal-' + date);
+        if (!DATE_RE.test(date || '')) return false;
+        let cell = dayEl(date);
         if (!cell) return false;
         let det = cell.closest('details'); if (det) det.open = true;
         cell.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
         cell.classList.remove('flash'); void cell.offsetWidth; cell.classList.add('flash');
         if (open) {
-            let a = [...cell.querySelectorAll('a.v-lnk')].find(x => !key || x.dataset.k === key);
+            let a = [...cell.querySelectorAll('a.v-lnk, a.poster')].find(x => !key || x.dataset.k === key);
             if (a) a.click();
         }
         return true;

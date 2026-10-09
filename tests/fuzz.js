@@ -35,6 +35,8 @@ function config() {
   if (chance(0.05)) return '{"calendar": {"start": ' + nasty();             // зламаний JSON
   if (chance(0.05)) return [{ n: pick([1, '1', nasty()]), title: nasty(), playlist: 'PL1', start: pick([day(), nasty()]) }];
   let c = {};
+  if (chance(0.7)) c.films = chance(0.1) ? nasty() : { playlist: pick(['UU1', 'UU1', 'UCabcdefghijklmnopqrstuv', nasty()]), exclude: pick([['SH'], 'SH', nasty()]),
+    start: maybe(pick([day(), '01.09.2026', nasty()]), 0.3), enabled: maybe(pick([true, false, 'ні', 'так', nasty()]), 0.3) };
   if (chance(0.9)) c.calendar = chance(0.1) ? nasty() : { start: pick([day(), '2026-08-01', nasty()]), playlist: pick(['UU1', 'UU1', 'UCabcdefghijklmnopqrstuv', nasty()]),
     exclude: pick([['SH'], 'SH', nasty()]), enabled: maybe(pick([true, false, 'ні', 'так', nasty()]), 0.3) };
   if (chance(0.5)) c.topics = chance(0.2) ? nasty() : [{ tag: pick(['подорожі', nasty()]), title: maybe(nasty()), about: maybe(nasty()), aliases: maybe(pick([['мандри'], nasty()])) }];
@@ -80,6 +82,8 @@ async function siteRun(browser, i) {
   await page.addInitScript(([lv, md, seen]) => { try { if (lv) localStorage.setItem('lv', lv); if (md) localStorage.setItem('md', md); if (seen) localStorage.setItem('vw', seen); } catch (e) {}
     navigator.canShare = () => true; navigator.share = async () => {}; }, [lv, md, seen]);
   await ctx.route(/googleapis\.com/, r => {
+    if (/\/videos\?/.test(r.request().url())) return chance(0.1) ? r.fulfill({ status: 403, body: '{}' }) : r.fulfill({ contentType: 'application/json', body: chance(0.1) ? '{' :   // тривалість фільмів
+      JSON.stringify({ items: items.slice(0, 20).map((it, k) => ({ id: chance(0.9) ? 'v' + k : nasty(), contentDetails: chance(0.9) ? { duration: pick(['PT12M3S', 'PT1H5M', 'P1DT2H', 'PT0S', 'x', nasty(), 5]) } : undefined })) }) });
     const pid = new URL(r.request().url()).searchParams.get('playlistId');
     if (pid === 'UU1' || pid === 'PL1') return chance(0.1) ? r.fulfill({ status: pick([403, 404, 500]), body: '{}' }) : r.fulfill({ contentType: 'application/json', body: JSON.stringify({ items }) });
     return r.fulfill({ contentType: 'application/json', body: JSON.stringify({ items: chance(0.5) ? items.slice(0, 2) : [] }) });
@@ -90,7 +94,7 @@ async function siteRun(browser, i) {
   await ctx.route(/fundraisers\.json/, r => chance(0.3) ? r.fulfill({ status: 404 }) : r.fulfill({ contentType: 'application/json',
     body: pick([JSON.stringify({ jars: { AbC123xyz: { raised: pick([41000, -5, 'x', 1e12]), goal: pick([60000, 0, nasty()]) } } }), '{"jars":', JSON.stringify(nasty())]) }));
   await ctx.route(/state\.json/, r => r.fulfill({ contentType: 'application/json', body: pick(['{"mode":"youtube"}', '{"mode":"doomsday"}', '{', '']) }));
-  await ctx.route(/archive\.json/, r => r.fulfill({ contentType: 'application/json', body: pick(['{"base":"","days":{}}', JSON.stringify({ days: { [day()]: [{ t: nasty(), y: 'a1', d: nasty() }], [String(nasty())]: nasty() } }), '{']) }));
+  await ctx.route(/archive\.json/, r => r.fulfill({ contentType: 'application/json', body: pick(['{"base":"","days":{}}', JSON.stringify({ days: { [day()]: [{ t: nasty(), y: 'a1', d: nasty(), dur: pick([754, -1, nasty()]), ph: pick(['posters/a1-hd.jpg', nasty(), 7]) }], [String(nasty())]: nasty() } }), '{']) }));
   const hash = pick(['', '', '#t=' + encodeURIComponent(String(nasty())), '#t=%E0%A4%A', '#d=' + day(), '#f-dron', '#%', '#cal-2026-09-21', '#d=' + String(nasty())]);
   const url = 'http://localhost:8767/' + pick(['', '', '?check']) + hash;
   try {
@@ -106,7 +110,7 @@ async function siteRun(browser, i) {
     if (chk.jsLinks) problems.push(`javascript:-посилань: ${chk.jsLinks}`);
     if (!chk.app) problems.push('порожня сторінка');
     if (chk.hscroll) problems.push('горизонтальний скрол: ' + chk.wide.join(', '));
-    const v = page.locator('#cal .v-lnk, .ep').first();
+    const v = page.locator('#cal .v-lnk, .ep, #films .poster[data-k]').first();
     if (!mobile && await v.count()) {
       await v.click({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(150);
       for (let k = int(0, 4); k > 0; k--) await page.keyboard.press(pick(['ArrowLeft', 'ArrowRight']));   // гортати дні
@@ -114,7 +118,7 @@ async function siteRun(browser, i) {
       await page.waitForTimeout(chance(0.3) ? 600 : 50);
       await page.keyboard.press('Escape');
     }
-    const more = page.locator('#cal .v-more').first();                    // телефон: аркуш дня
+    const more = page.locator('#cal .v-more, #films .v-more').first();   // телефон: аркуш дня / фільму
     if (mobile && await more.count()) {
       await more.tap({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(150);
       if (chance(0.5)) await page.locator('#modNav .mnav:not([disabled])').first().tap({ timeout: 1500 }).catch(() => {});
@@ -181,7 +185,7 @@ function botRuns(n) {
   botBad.slice(0, 8).forEach(b => console.log('  ✗ бот', JSON.stringify(b)));
   const browser = await chromium.launch(EXE);
   const siteBad = [];
-  for (let i = 0; i < N_SITE; i++) { const b = await siteRun(browser, i); if (b) siteBad.push(b); }
+  for (let i = 0; i < N_SITE; i++) { if (process.env.FUZZ_TRACE) console.log("сайт #" + i); const b = await siteRun(browser, i); if (b) siteBad.push(b); }
   console.log(`сайт: ${N_SITE - siteBad.length}/${N_SITE} чисто`);
   siteBad.slice(0, 8).forEach(b => console.log('  ✗ сайт', JSON.stringify(b)));
   await browser.close(); server.close();

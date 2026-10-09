@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // Архів без компʼютера. GitHub Action (.github/workflows/archive.yml) раз на годину запускає цей скрипт:
-//  • archive.json — усі публічні відео календаря й сезонів (режим doomsday, коли YouTube недоступний);
+//  • archive.json — усі публічні відео фільмотеки, календаря й сезонів (режим doomsday, коли YouTube недоступний);
+//    для фільмотеки — ще тривалість (dur, секунди) і великий кадр для афіші (ph);
 //    записи з локального скрипта (поля v, d тощо) не губляться — оновлюються лише назва, постер, опис;
 //    відео, яке зникло з YouTube, з архіву НЕ видаляється (на те він і архів);
 //  • posters/ID.jpg — постери на власному домені (не залежать від YouTube);
 //  • d/РРРР-ММ-ДД/index.html — сторінка дня з прев'ю для Telegram/Instagram/Facebook (OG-теги),
-//    людину одразу переносить на стіну днів (/#d=дата);
+//    людину одразу переносить на сайт (/#d=дата) — до афіші у фільмотеці чи дня на стіні;
 //  • sitemap.xml — головна й усі дні (для пошуковиків).
 // Дата дня — за київським часом. Пише файли лише тоді, коли щось справді змінилось (без зайвих комітів).
 //
@@ -17,8 +18,8 @@
 //  ARCHIVE_NO_POSTERS=1 — не завантажувати постери (p = адреса YouTube).
 //  ARCHIVE_SEASONS      — інший seasons.json замість того, що в корені (для тестів).
 //
-// Календар сховано (seasons.json → calendar.enabled: false): відео й далі архівуються (на будь-який формат сайту),
-// але сторінок днів, днів у sitemap і постерів для «картки дня» не робимо. Увімкнули назад — наступний запуск
+// Фільмотека й календар сховані (films / calendar → enabled: false): відео й далі архівуються (на будь-який формат сайту),
+// але сторінок днів, днів у sitemap і великих кадрів не робимо. Увімкнули назад — наступний запуск
 // сам згенерує все, чого бракує, з усього архіву.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -48,11 +49,14 @@ function normDate(v) {
     return '';
 }
 const cfg = loose(read(process.env.ARCHIVE_SEASONS || path.join(SRC, 'seasons.json'), '{}').replace(/^\uFEFF/, ''));
-const cal = cfg && !Array.isArray(cfg) && cfg.calendar ? cfg.calendar : null;
-const calOn = !!cal && !/^(false|ні|no|0|off)$/i.test(String(cal.enabled ?? 'true').trim());   // сховано — без сторінок днів
-const calPl = cal ? playlistId(cal.playlist) : '';
-const calStart = cal ? normDate(cal.start) : '';
-const exclude = cal ? [].concat(cal.exclude || []).map(playlistId).filter(Boolean) : [];
+// Джерело головної: фільмотека (films) або календар (calendar) — {enabled, start, playlist, exclude}
+function source(c) {
+    c = cfg && !Array.isArray(cfg) && c && typeof c === 'object' && !Array.isArray(c) ? c : null;
+    return { on: !!c && !/^(false|ні|no|0|off)$/i.test(String(c.enabled ?? 'true').trim()),   // сховано — без сторінок днів
+        pl: c ? playlistId(c.playlist) : '', start: c ? normDate(c.start) : '', exclude: c ? [].concat(c.exclude || []).map(playlistId).filter(Boolean) : [] };
+}
+const films = source(cfg && cfg.films), cal = source(cfg && cfg.calendar);
+const calOn = cal.on, filmsOn = films.on, pagesOn = calOn || filmsOn;
 const seasonPls = (Array.isArray(cfg) ? cfg : (cfg.seasons || [])).map(s => s && playlistId(s.playlist)).filter(Boolean);
 
 // ── YouTube ──
@@ -113,12 +117,13 @@ async function poster(v) {
     } catch (e) { return ''; }
 }
 
-// Кадр для «картки дня» (Stories, 1080 px завширшки): maxresdefault 1280×720, якщо нема — sddefault 640×480.
-// Окремий файл posters/ID-hd.jpg (~100 КБ), лише поки календар на сайті.
+// Великий кадр — для афіші у фільмотеці й «картки дня» (Stories, 1080 px): maxresdefault 1280×720, якщо нема — sddefault 640×480.
+// Окремий файл posters/ID-hd.jpg (~100 КБ), лише поки фільмотека чи календар на сайті.
 async function posterHd(v) {
-    if (process.env.ARCHIVE_NO_POSTERS || fixture || !calOn) return;
+    if (process.env.ARCHIVE_NO_POSTERS || !pagesOn) return '';
     let rel = `posters/${v.y}-hd.jpg`, f = path.join(OUT, rel);
-    if (fs.existsSync(f)) return;
+    if (fs.existsSync(f)) return rel;
+    if (fixture) return '';
     for (const name of ['maxresdefault', 'sddefault']) {
         try {
             let res = await fetch(`https://i.ytimg.com/vi/${encodeURIComponent(v.y)}/${name}.jpg`);
@@ -126,9 +131,26 @@ async function posterHd(v) {
             fs.mkdirSync(path.dirname(f), { recursive: true });
             fs.writeFileSync(f, Buffer.from(await res.arrayBuffer()));
             changed.push(rel);
-            return;
+            return rel;
         } catch (e) {}
     }
+    return '';
+}
+
+// Тривалість фільмів (секунди) — videos.list, по 50 за запит; ARCHIVE_FIXTURE: {"__durations": {id: секунди}}
+const parseDur = iso => { let m = /^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(String(iso || '')); return m ? (+m[1] || 0) * 86400 + (+m[2] || 0) * 3600 + (+m[3] || 0) * 60 + (+m[4] || 0) : 0; };
+async function durations(ids) {
+    let out = {};
+    if (fixture) { ids.forEach(id => { let d = (fixture.__durations || {})[id]; if (d > 0) out[id] = d; }); return out; }
+    for (let i = 0; i < ids.length; i += 50) {
+        try {
+            let res = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=contentDetails&maxResults=50&id=${ids.slice(i, i + 50).map(encodeURIComponent).join(',')}` +
+                `&fields=${encodeURIComponent('items(id,contentDetails/duration)')}&key=${KEY}`, { headers: HEADERS });
+            if (!res.ok) break;
+            ((await res.json()).items || []).forEach(v => { let d = parseDur(v && v.contentDetails && v.contentDetails.duration); if (d > 0) out[v.id] = d; });
+        } catch (e) { break; }
+    }
+    return out;
 }
 
 // ── Сторінка дня: прев'ю для месенджерів + миттєвий перехід на стіну днів ──
@@ -140,7 +162,7 @@ function cleanNote(desc) {   // як на сайті: без маркера №,
 const showTitle = t => String(t || '').replace(/(\s+#[\p{L}\p{N}_]+)+\s*$/u, '').trim() || String(t || '');
 function dayPage(date, items, thumbOf) {
     let [y, m, d] = date.split('-').map(Number), human = `${d} ${MONTHS_GEN[m - 1]} ${y}`;
-    let first = items[0], title = showTitle(first.t) || 'Стрічка дня';
+    let first = items[0], title = showTitle(first.t) || (filmsOn ? 'Фільм' : 'Стрічка дня');
     let note = cleanNote(first.desc), excerpt = note.length > 200 ? note.slice(0, 197).replace(/\s+\S*$/, '') + '…' : note;
     let th = thumbOf(first), img = th ? th.url : (first.p ? (/^https?:/.test(first.p) ? first.p : `${SITE}/${first.p}`) : `${SITE}/icons/icon-512.png`);
     let url = `${SITE}/d/${date}/`, hash = `/#d=${date}`;
@@ -151,12 +173,12 @@ function dayPage(date, items, thumbOf) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${esc(human)} — ${esc(title)}${more} · Тарас Максимʼяк</title>
-<meta name="description" content="${esc(excerpt || 'Одне відео про день, який більше не повториться.')}">
+<meta name="description" content="${esc(excerpt || (filmsOn ? 'Фільм Тараса Максимʼяка.' : 'Одне відео про день, який більше не повториться.'))}">
 <link rel="canonical" href="${url}">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Тарас Максимʼяк">
 <meta property="og:title" content="${esc(human)} — ${esc(title)}${more}">
-<meta property="og:description" content="${esc(excerpt || 'Одне відео про день, який більше не повториться.')}">
+<meta property="og:description" content="${esc(excerpt || (filmsOn ? 'Фільм Тараса Максимʼяка.' : 'Одне відео про день, який більше не повториться.'))}">
 <meta property="og:image" content="${esc(img)}">${th && th.width ? `
 <meta property="og:image:width" content="${th.width}">
 <meta property="og:image:height" content="${th.height}">` : ''}
@@ -168,24 +190,26 @@ function dayPage(date, items, thumbOf) {
 img{width:100%;border-radius:8px}a{color:#e62117}.k{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#6f6f6f}</style>
 </head>
 <body>
-<p class="k"><a href="/">Тарас Максимʼяк</a> · стіна днів</p>
+<p class="k"><a href="/">Тарас Максимʼяк</a> · ${filmsOn ? 'фільмотека' : 'стіна днів'}</p>
 <h1>${esc(human)}</h1>
 ${items.map(v => `<h2>${esc(showTitle(v.t))}</h2>
 ${v.y ? `<p><a href="https://www.youtube.com/watch?v=${esc(v.y)}">Дивитися на YouTube</a></p>` : ''}
 ${cleanNote(v.desc) ? `<p>${esc(cleanNote(v.desc))}</p>` : ''}`).join('\n')}
-<p><a href="${hash}">Відкрити на стіні днів →</a></p>
+<p><a href="${hash}">${filmsOn ? 'Відкрити у фільмотеці' : 'Відкрити на стіні днів'} →</a></p>
 </body>
 </html>
 `;
 }
 
 // ── Головне ──
-const pls = [...new Set([calPl, ...exclude, ...seasonPls].filter(Boolean))];
+const pls = [...new Set([films.pl, ...films.exclude, cal.pl, ...cal.exclude, ...seasonPls].filter(Boolean))];
 const byPl = {};
 for (const pid of pls) byPl[pid] = publicVideos(await playlistItems(pid));
-const skip = new Set(exclude.flatMap(pid => byPl[pid].map(v => v.y)));
-const vids = new Map();
-(byPl[calPl] || []).filter(v => !skip.has(v.y) && (!calStart || v.date >= calStart)).forEach(v => vids.set(v.y, v));
+const vids = new Map(), filmIds = new Set();
+[films, cal].forEach(S => {                                  // усе з джерела від start, крім відео з плейлистів-винятків (Shorts)
+    let skip = new Set(S.exclude.flatMap(pid => byPl[pid].map(v => v.y)));
+    (byPl[S.pl] || []).filter(v => !skip.has(v.y) && (!S.start || v.date >= S.start)).forEach(v => { vids.set(v.y, v); if (S === films) filmIds.add(v.y); });
+});
 seasonPls.forEach(pid => byPl[pid].forEach(v => vids.set(v.y, v)));
 
 const archive = loose(read(path.join(OUT, 'archive.json'), null) || read(path.join(SRC, 'archive.json'), '{}')) || {};
@@ -193,9 +217,14 @@ const days = JSON.parse(JSON.stringify(archive.days || {}));
 const where = new Map();                                     // y → дата, під якою відео вже лежить в архіві
 Object.entries(days).forEach(([date, list]) => (Array.isArray(list) ? list : []).forEach(it => { if (it && it.y) where.set(it.y, date); }));
 
+const known = new Map();                                    // y → тривалість, уже записана в архіві (не перепитуємо)
+Object.values(days).forEach(list => (Array.isArray(list) ? list : []).forEach(it => { if (it && it.y && it.dur > 0) known.set(it.y, it.dur); }));
+const durs = await durations([...filmIds].filter(y => !known.has(y)));
 for (const v of [...vids.values()].sort((a, b) => a.ts < b.ts ? -1 : 1)) {
     let p = await poster(v), fresh = { t: v.t, desc: v.desc };
-    await posterHd(v);
+    let ph = await posterHd(v), dur = known.get(v.y) || durs[v.y];
+    if (ph) fresh.ph = ph;
+    if (dur > 0) fresh.dur = dur;
     let date = where.get(v.y);
     if (date) {                                              // уже є — оновлюємо текст, локальні поля (v, d…) лишаються
         let list = days[date], i = list.findIndex(it => it.y === v.y), it = Object.assign({}, list[i], fresh);
@@ -203,7 +232,7 @@ for (const v of [...vids.values()].sort((a, b) => a.ts < b.ts ? -1 : 1)) {
         if (date !== v.date) { list.splice(i, 1); if (!list.length) delete days[date]; (days[v.date] = days[v.date] || []).push(it); }
         else list[i] = it;
     } else {
-        (days[v.date] = days[v.date] || []).push(Object.assign({ t: v.t, p: p || (bestThumb(v.thumbs) || {}).url || '', y: v.y }, { desc: v.desc }));
+        (days[v.date] = days[v.date] || []).push(Object.assign({ t: v.t, p: p || (bestThumb(v.thumbs) || {}).url || '', y: v.y }, fresh));
     }
 }
 const sortedDays = Object.fromEntries(Object.keys(days).sort().map(d => [d, days[d]]));
@@ -218,7 +247,7 @@ if (JSON.stringify(sortedDays) !== JSON.stringify(archive.days || {}))
 
 // Сторінки днів і sitemap (з усього архіву, не лише з того, що зараз на YouTube)
 const thumbOf = it => { let v = vids.get(it.y); return v ? bestThumb(v.thumbs) : null; };
-const dates = !calOn ? [] : Object.keys(sortedDays).filter(d => Array.isArray(sortedDays[d]) && sortedDays[d].some(it => it && (it.y || it.p)));
+const dates = !pagesOn ? [] : Object.keys(sortedDays).filter(d => Array.isArray(sortedDays[d]) && sortedDays[d].some(it => it && (it.y || it.p)));
 dates.forEach(d => writeIfChanged(`d/${d}/index.html`, dayPage(d, sortedDays[d].filter(it => it && (it.y || it.p)), thumbOf)));
 writeIfChanged('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
