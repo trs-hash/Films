@@ -306,6 +306,14 @@ const CASES = [
       return (Math.max(fg, bg) + .05) / (Math.min(fg, bg) + .05) >= 4.5; })],
   ['A04 скелет на першому візиті, поки YouTube думає', { seasons: { seasons: [S1()] }, api: { PL1: TWO }, apiDelay: 1500, wait: 500 },
     async r => await r.page.locator('.ep-th.sk').count() === 3 && has(r, 'Тема') && !has(r, '0 серій')],
+  ['A07 шапка — один ряд: імʼя, поруч Instagram; пошти нема; на компʼютері й телефоні шапка не вища за кнопку', { api: REAL_API },
+    async r => {
+      const check = async () => { const name = await r.page.locator('.intro .name').boundingBox(), ig = await r.page.locator('.links a.primary').boundingBox(),
+        h = await r.page.$eval('.intro', e => e.getBoundingClientRect().height);
+        return Math.abs((name.y + name.height / 2) - (ig.y + ig.height / 2)) <= 2 && ig.x > name.x + name.width && ig.x - (name.x + name.width) < 30 && h <= ig.height + 1; };
+      const desk = await check(); await r.page.setViewportSize({ width: 320, height: 640 }); await r.page.waitForTimeout(100);
+      return desk && await check() && await r.page.locator('a[href^="mailto:"], .mail').count() === 0 && !has(r, 'hello@') && await noHScroll(r);
+    }],
   ['A05 заголовок h1 — ім\'я автора, сезони — h2', { seasons: { seasons: [S1()] }, api: { PL1: TWO } },
     async r => (await r.page.innerText('h1')).toLowerCase().includes('тарас') && await r.page.locator('h2.s-title').count() === 1],
   ['A06 переглянута серія: смужка + «переглянуто», без хреста', { seasons: { seasons: [S1()] }, api: { PL1: TWO } },
@@ -683,12 +691,13 @@ const CASES = [
       seasons: SUP({ enabled: false, donate: { enabled: true, url: 'https://send.monobank.ua/jar/Don0001' }, fundraisers: [FUND({ goal: '50к', raised: 12345.678 })] }), api: API1 },
     async r => has(r, 'вимкнено весь блок (support.enabled)') && await r.page.locator('#sup .q-link.off').count() === 2
       && has(r, 'зібрано 12 345 ₴ з 50 000 ₴') && has(r, '«50к» прочитано як 50 000 ₴')],
-  ['S11 телефон 320px, темна тема: довга назва збору переноситься поруч з іконкою, «Підтримати» теж — без горизонтального скролу', { seasons: SUP({ donate: { enabled: true, url: 'https://send.monobank.ua/jar/Don0001' },
+  ['S11 телефон 320px, темна тема: імʼя й Instagram — один ряд, довгий збір і «Підтримати» — під ним, без горизонтального скролу', { seasons: SUP({ donate: { enabled: true, url: 'https://send.monobank.ua/jar/Don0001' },
       fundraisers: [FUND({ title: 'Дуже довга назва збору, яка не вміщується в один рядок на маленькому телефоні' }), FUND({ id: 'b', title: 'Генератор', url: 'https://send.monobank.ua/jar/Other1' })] }), api: API1,
       viewport: { width: 320, height: 640 }, dark: true, shot: 'S11-mobile' },
     async r => {
-      const ig = await r.page.locator('.links a.primary').boundingBox(), first = await r.page.locator('#sup a').first().boundingBox();
-      return await noHScroll(r) && await r.page.locator('#sup a').count() === 3 && first.x > ig.x + ig.width && first.y < ig.y + ig.height
+      const ig = await r.page.locator('.links a.primary').boundingBox(), name = await r.page.locator('.intro .name').boundingBox(), first = await r.page.locator('#sup a').first().boundingBox();
+      return await noHScroll(r) && await r.page.locator('#sup a').count() === 3 && Math.abs((name.y + name.height / 2) - (ig.y + ig.height / 2)) <= 2
+        && ig.x > name.x + name.width && first.y >= ig.y + ig.height && first.x < 40
         && Math.min(...await r.page.$$eval('#sup a', l => l.map(e => e.getBoundingClientRect().height))) >= 24;
     }],
   ['S12 посилання #f-dron (з відповіді бота) підсвічує збір у шапці', { path: '#f-dron', seasons: SUP(), api: API1 },

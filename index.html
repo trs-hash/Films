@@ -45,11 +45,12 @@
         :focus-visible{outline:2px solid var(--red);outline-offset:3px;border-radius:4px}
         .wrap{max-width:1400px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
         .main{flex:1;min-height:100vh}   /* підвал одразу нижче першого екрана — не «їде» вниз, коли зʼявляється календар (CLS) */
-        .intro{margin:10px 0 50px}
-        .intro .name{font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin:0 0 18px}
-        .intro .links{display:flex;align-items:center;gap:10px}
+        /* Шапка — один ряд: ім'я, поруч Instagram, далі тихі посилання (збір, «Підтримати»). Не влазить — збір переходить нижче */
+        .intro{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin:10px 0 50px}
+        .intro .name{font-size:14px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin:0}
+        .intro .links{display:contents}
         /* Іконки без підписів: символи впізнавані самі по собі (05.08.2026) */
-        .intro .links a{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;padding:10px;border-radius:8px;transition:.2s}
+        .intro .links a{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;padding:8px;border-radius:8px;transition:.2s}
         .intro .links a.primary{background:var(--txt);color:var(--bg)}
         .intro .links a.primary:hover{background:var(--red)}
         .intro .links a.ghost{color:var(--mut);border:1px solid var(--div)}
@@ -175,7 +176,7 @@
         /* День, до якого перейшли (випадковий / за посиланням) — коротко підсвічується */
         .cell.flash{animation:flash 1.4s ease-out 2}
         @keyframes flash{0%{box-shadow:0 0 0 3px var(--red)}100%{box-shadow:0 0 0 3px transparent}}
-        .install{display:block;margin-top:6px;padding:0;background:none;border:0;font:inherit;font-size:11px;letter-spacing:.5px;color:var(--mut);opacity:.6;cursor:pointer}
+        .install{margin-left:auto;padding:6px 0;background:none;border:0;font:inherit;font-size:11px;letter-spacing:.5px;color:var(--mut);opacity:.6;cursor:pointer}
         .install:hover{opacity:1;color:var(--red)}
         .install[hidden]{display:none}
         .cal-soon{font-size:17px;color:var(--mut);margin:14px 0 0}
@@ -189,7 +190,7 @@
         /* ── Підтримка (seasons.json → support). Типово вимкнено ──
            Шапка — один ряд: іконка Instagram і поруч тихі посилання «● Збір: Назва ↗» (та «Підтримати ↗», якщо увімкнено).
            Без кнопок, карток, прогресу й закликів у плеєрі. */
-        .q-links{display:flex;flex-wrap:wrap;align-items:center;gap:2px 18px;min-width:0;margin-left:6px}
+        .q-links{display:flex;flex-wrap:wrap;align-items:center;gap:2px 18px;min-width:0;margin-left:4px}
         .q-links:empty{display:none}
         .intro .links a.q-link,.q-link{display:inline-flex;align-items:flex-start;justify-content:flex-start;gap:8px;padding:4px 0;border-radius:0;font-size:12px;letter-spacing:.3px;line-height:1.4;color:var(--mut);text-decoration:none;transition:color .2s;overflow-wrap:anywhere}
         .fund-link::before{content:'';flex:none;width:6px;height:6px;margin-top:calc(.7em - 3px);border-radius:50%;background:var(--red)}   /* навпроти першого рядка */
@@ -258,10 +259,6 @@
         .close{position:absolute;top:-15px;right:20px;color:#fff;font:inherit;font-size:40px;line-height:1;cursor:pointer;z-index:10;background:none;border:0;padding:0 6px}
         .close:hover{color:var(--red)}
         .footer{text-align:center;padding:60px 0;font-size:11px;color:var(--mut);letter-spacing:2px}
-        /* Пошта під кнопками — ледь помітна: хто шукає, той побачить */
-        .mail{margin-top:12px}
-        .mail a{font-size:11px;letter-spacing:.5px;color:var(--mut);opacity:.45;text-decoration:none;transition:.25s}
-        .mail a:hover{opacity:1;color:var(--red)}
         @media(max-width:1024px){
             .eps,.season.done .eps{grid-template-columns:repeat(2,1fr)}
             .season.live .s-title{font-size:56px;letter-spacing:-2px}
@@ -320,7 +317,6 @@
             </a>
             <div class="q-links" id="sup"></div><!-- збори й «Підтримати» — тихі посилання, коли увімкнені в seasons.json → support -->
         </div>
-        <div class="mail"><a href="mailto:hello@taras.kyiv.ua">hello@taras.kyiv.ua</a></div>
         <button id="install" class="install" type="button" hidden onclick="installApp()">Встановити застосунок</button>
     </header>
 
