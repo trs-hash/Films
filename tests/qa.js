@@ -131,6 +131,14 @@ const pixelsIn = (page, b64, pts) => page.evaluate(async ([b64, pts]) => {
   return pts.map(([x, y]) => [...g.getImageData(x, y, 1, 1).data].slice(0, 3));
 }, [b64, pts]);
 const near = (px, rgb, tol = 24) => px.every((v, i) => Math.abs(v - rgb[i]) <= tol);
+// Найдовша безперервна смуга потрібного кольору вниз по стовпчику x (крок 10 px): рамка кадру — 540 px заввишки,
+// тож ≥ 50 кроків = увесь кадр без чорних смуг; положення рамки залежить від довжини записки (блок по центру)
+async function colorRun(page, b64, x, rgb) {
+  const pts = []; for (let y = 200; y < 1600; y += 10) pts.push([x, y]);
+  let best = 0, cur = 0;
+  (await pixelsIn(page, b64, pts)).forEach(px => { cur = near(px, rgb) ? cur + 1 : 0; best = Math.max(best, cur); });
+  return best;
+}
 const sharedFile = page => page.evaluate(async () => {
   const f = window.__shared && window.__shared.files && window.__shared.files[0];
   if (!f) return null;
@@ -903,8 +911,8 @@ const CASES = [
       await r.page.click('[data-k="g3"]'); await r.page.waitForTimeout(150);
       const [dl] = await Promise.all([r.page.waitForEvent('download'), r.page.click('.note-tags .card')]);
       const buf = fs.readFileSync(await dl.path()), size = jpegSize(buf);
-      const [top, mid] = await pixelsIn(r.page, buf.toString('base64'), [[540, 345], [540, 600]]);
-      return dl.suggestedFilename() === 'den-2026-09-23.jpg' && size && size.w === 1080 && size.h === 1920 && near(top, [51, 102, 204]) && near(mid, [51, 102, 204])
+      const run = await colorRun(r.page, buf.toString('base64'), 540, [51, 102, 204]);
+      return dl.suggestedFilename() === 'den-2026-09-23.jpg' && size && size.w === 1080 && size.h === 1920 && run >= 50 && run <= 55
         && (await r.page.innerText('.note-tags .card')).includes('Збережено');
     }],
   ['K02 телефон: «Картка для Stories» — системне «Поділитися» з файлом-картинкою 1080×1920', { ua: UA_ANDROID, mobile: true, viewport: { width: 412, height: 915 },
@@ -912,8 +920,8 @@ const CASES = [
     async r => {
       await r.page.tap('#cal .v-more >> nth=0'); await r.page.waitForTimeout(600); await r.page.tap('.note-tags .card'); await r.page.waitForTimeout(400);
       const f = await sharedFile(r.page); if (!f) return false;
-      const size = jpegSize(Buffer.from(f.b64, 'base64')), [mid] = await pixelsIn(r.page, f.b64, [[540, 600]]);
-      return f.name === 'den-2026-09-21.jpg' && f.type === 'image/jpeg' && size.w === 1080 && size.h === 1920 && near(mid, [204, 51, 51]);
+      const size = jpegSize(Buffer.from(f.b64, 'base64')), run = await colorRun(r.page, f.b64, 540, [204, 51, 51]);
+      return f.name === 'den-2026-09-21.jpg' && f.type === 'image/jpeg' && size.w === 1080 && size.h === 1920 && run >= 50;
     }],
   ['K03 телефон: «Поділитися» відмовило — картинка зʼявляється в аркуші, щоб зберегти утриманням', { ua: UA_IPHONE, mobile: true, viewport: { width: 390, height: 844 },
       seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, initScript: SHARE_DENIED },
@@ -926,9 +934,20 @@ const CASES = [
       await r.page.route(/i\.ytimg\.com/, rr => rr.fulfill({ contentType: 'image/svg+xml', headers: { 'access-control-allow-origin': 'https://nope.example' }, body: solidSvg(480, 360, '#ff00ff') }));
       await r.page.tap('#cal .v-more >> nth=0'); await r.page.waitForTimeout(700); await r.page.tap('.note-tags .card'); await r.page.waitForTimeout(500);
       const f = await sharedFile(r.page); if (!f) return false;
-      const [frame] = await pixelsIn(r.page, f.b64, [[200, 400]]);
-      return jpegSize(Buffer.from(f.b64, 'base64')).h === 1920 && near(frame, [30, 30, 30], 14) && r.errs.length === 0; }],
+      return jpegSize(Buffer.from(f.b64, 'base64')).h === 1920 && await colorRun(r.page, f.b64, 200, [30, 30, 30]) >= 50 && r.errs.length === 0; }],
 
+  ['K05 відео без опису: блок картки (кадр, дата, назва) посередині, без порожньої нижньої половини; довга записка — блок угорі', {
+      ua: UA_ANDROID, mobile: true, viewport: { width: 412, height: 915 }, seasons: CAL({ start: '2026-09-20' }), initScript: SHARE_OK,
+      posters: { 'n1.jpg': solidSvg(480, 270, '#33aa55'), 'n2.jpg': solidSvg(480, 270, '#33aa55') },
+      api: { UU1: [vid('n1', 'Без опису', '2026-09-21T10:00:00Z', ''), vid('n2', 'З довгою запискою', '2026-09-22T10:00:00Z', 'Слова записки. '.repeat(80))], SH: [] } },
+    async r => {
+      const frameTop = async b64 => { const pts = []; for (let y = 200; y < 1600; y += 4) pts.push([540, y]); const px = await pixelsIn(r.page, b64, pts); return 200 + 4 * px.findIndex(p => near(p, [51, 170, 85])); };
+      const card = async n => { await r.page.evaluate(() => { window.__shared = null; }); await r.page.tap(`#cal .v-more >> nth=${n}`); await r.page.waitForTimeout(700);
+        await r.page.tap('.note-tags .card'); await r.page.waitForTimeout(400); const f = await sharedFile(r.page); await r.page.tap('#vidModal .close'); await r.page.waitForTimeout(150); return f; };
+      const a = await card(0), b = await card(1);
+      const ta = await frameTop(a.b64), tb = await frameTop(b.b64);
+      return ta > 450 && tb < 330 && ta - tb > 150;            // без опису кадр помітно нижче — блок по центру
+    }],
   // --- 🎂 «Мій день»
   ['Y01 компʼютер: «Мій день» 23 вересня — день підсвічено, відео відкрито; вибір запамʼятовано', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, shot: 'Y01-myday' },
     async r => {

@@ -1676,7 +1676,18 @@
         let g = c.getContext('2d');
         let draw = im => {
             g.fillStyle = '#121212'; g.fillRect(0, 0, CARD_W, CARD_H);
-            let fx = 60, fy = 330, fw = 960, fh = 540;
+            // Розкладка: спершу міряємо назву й записку, потім ставимо весь блок посередині між верхнім і нижнім
+            // полями Stories (записки здебільшого нема — картка не має бути «порожньою внизу»)
+            const TOP = 230, BOTTOM = 1550, dated = DATE_RE.test(p.date || '');
+            let title = showTitle(p.title || ''), body = ((metaById[p.key] || {}).body || '').replace(/(\s*#[\p{L}\p{N}_]+)+\s*$/u, '').trim();
+            g.font = `700 54px ${SANS}`;
+            let tLines = title ? wrapText(g, title, 960, 2) : [];
+            let beforeBody = 610 + (dated ? 220 : 40) + tLines.length * 66 + (tLines.length ? 26 : 0);
+            g.font = `italic 400 40px ${SERIF}`;
+            let bLines = body ? wrapText(g, body, 960, Math.max(0, Math.floor((BOTTOM - TOP - beforeBody) / 58))) : [];
+            let height = beforeBody + bLines.length * 58 + 14;
+            let T = TOP + Math.max(0, Math.round((BOTTOM - TOP - height) / 2));
+            let fx = 60, fy = T + 70, fw = 960, fh = 540;
             if (im) {
                 // Кадр 16:9 з середини (у 4:3-мініатюрах YouTube — чорні смуги згори й знизу)
                 let sw = im.naturalWidth, sh = im.naturalHeight, ch = Math.min(sh, sw * 9 / 16), cy = (sh - ch) / 2;
@@ -1694,11 +1705,12 @@
             g.textBaseline = 'alphabetic'; g.textAlign = 'left';
             g.fillStyle = 'rgba(255,255,255,.72)'; g.font = `700 30px ${SANS}`;
             if ('letterSpacing' in g) g.letterSpacing = '6px';
-            g.fillText('ТАРАС МАКСИМʼЯК', 60, 260);
+            g.fillText('ТАРАС МАКСИМʼЯК', 60, T + 30);
             if ('letterSpacing' in g) g.letterSpacing = '0px';
-            let y = 990;
-            if (DATE_RE.test(p.date || '')) {
+            let y = T + 610;
+            if (dated) {
                 let [yy, mm, dd] = p.date.split('-').map(Number);
+                y += 120;
                 g.fillStyle = '#fff'; g.font = `400 104px ${SERIF}`;
                 g.fillText(`${dd} ${MONTHS_GEN[mm - 1]}`, 56, y);
                 g.fillStyle = 'rgba(255,255,255,.6)'; g.font = `700 32px ${SANS}`;
@@ -1706,26 +1718,19 @@
                 g.fillText(`${WD_FULL[new Date(dayNum(p.date) * DAY_MS).getUTCDay()]} · ${yy}`.toUpperCase(), 60, y + 62);
                 if ('letterSpacing' in g) g.letterSpacing = '0px';
                 y += 100;
-            }
-            let title = showTitle(p.title || '');
-            if (title) {
-                g.fillStyle = '#fff'; g.font = `700 54px ${SANS}`;
-                wrapText(g, title, 960, 2).forEach(l => { y += 66; g.fillText(l, 60, y); });
-                y += 26;
-            }
-            let body = ((metaById[p.key] || {}).body || '').replace(/(\s*#[\p{L}\p{N}_]+)+\s*$/u, '').trim();
-            if (body) {
-                g.fillStyle = 'rgba(255,255,255,.86)'; g.font = `italic 400 40px ${SERIF}`;
-                let maxLines = Math.max(0, Math.floor((1540 - y) / 58));
-                wrapText(g, body, 960, maxLines).forEach(l => { y += 58; g.fillText(l, 60, y); });
-            }
+            } else y += 40;
+            g.fillStyle = '#fff'; g.font = `700 54px ${SANS}`;
+            tLines.forEach(l => { y += 66; g.fillText(l, 60, y); });
+            if (tLines.length) y += 26;
+            g.fillStyle = 'rgba(255,255,255,.86)'; g.font = `italic 400 40px ${SERIF}`;
+            bLines.forEach(l => { y += 58; g.fillText(l, 60, y); });
             drawMoon(g, 84, 1632, 24);
             g.fillStyle = '#fff'; g.font = `700 30px ${SANS}`;
             if ('letterSpacing' in g) g.letterSpacing = '6px';
             g.fillText('ЛОВИ ДЕНЬ', 128, 1643);
             if ('letterSpacing' in g) g.letterSpacing = '0px';
             g.fillStyle = 'rgba(255,255,255,.6)'; g.font = `400 30px ${SANS}`;
-            g.fillText(location.host + (DATE_RE.test(p.date || '') ? '/d/' + p.date : ''), 60, 1702);
+            g.fillText(location.host + (dated ? '/d/' + p.date : ''), 60, 1702);
         };
         let toBlob = () => new Promise(res => { try { c.toBlob(b => res(b), 'image/jpeg', .9); } catch(e) { res(null); } });
         draw(await cardImage(p));
