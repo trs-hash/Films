@@ -74,6 +74,11 @@ async function siteRun(browser, i) {
   page.on('pageerror', e => problems.push('JS: ' + e.message));
   page.on('dialog', d => { problems.push('ALERT: ' + d.message()); d.dismiss().catch(() => {}); });
   await page.addInitScript(() => { window.openApp = u => { window.__opened = u; }; });
+  // Сміття й справжні значення в памʼяті браузера: минулий візит, «мій день», переглянуте; «Поділитися» — заглушка
+  const lv = pick(['', '{oops', '[1]', 'null', JSON.stringify({ prev: 0, cur: Date.parse('2026-09-25T10:00:00Z') }), JSON.stringify({ prev: 'x', cur: 9e15 })]);
+  const md = pick(['', '09-23', '02-29', '99-99', 'abc', '04-31']), seen = pick(['', '["v1","v2"]', '{bad', '[1,null,"v3"]']);
+  await page.addInitScript(([lv, md, seen]) => { try { if (lv) localStorage.setItem('lv', lv); if (md) localStorage.setItem('md', md); if (seen) localStorage.setItem('vw', seen); } catch (e) {}
+    navigator.canShare = () => true; navigator.share = async () => {}; }, [lv, md, seen]);
   await ctx.route(/googleapis\.com/, r => {
     const pid = new URL(r.request().url()).searchParams.get('playlistId');
     if (pid === 'UU1' || pid === 'PL1') return chance(0.1) ? r.fulfill({ status: pick([403, 404, 500]), body: '{}' }) : r.fulfill({ contentType: 'application/json', body: JSON.stringify({ items }) });
@@ -102,7 +107,32 @@ async function siteRun(browser, i) {
     if (!chk.app) problems.push('порожня сторінка');
     if (chk.hscroll) problems.push('горизонтальний скрол: ' + chk.wide.join(', '));
     const v = page.locator('#cal .v-lnk, .ep').first();
-    if (!mobile && await v.count()) { await v.click({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(150); await page.keyboard.press('Escape'); }
+    if (!mobile && await v.count()) {
+      await v.click({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(150);
+      for (let k = int(0, 4); k > 0; k--) await page.keyboard.press(pick(['ArrowLeft', 'ArrowRight']));   // гортати дні
+      if (chance(0.3)) await page.locator('.note-tags .card').click({ timeout: 1500 }).catch(() => {});  // картка дня
+      await page.waitForTimeout(chance(0.3) ? 600 : 50);
+      await page.keyboard.press('Escape');
+    }
+    const more = page.locator('#cal .v-more').first();                    // телефон: аркуш дня
+    if (mobile && await more.count()) {
+      await more.tap({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(150);
+      if (chance(0.5)) await page.locator('#modNav .mnav:not([disabled])').first().tap({ timeout: 1500 }).catch(() => {});
+      if (chance(0.4)) { await page.locator('.note-tags .card').tap({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(500); }
+      await page.locator('#vidModal .close').tap({ timeout: 1500 }).catch(() => {});
+    }
+    if (await page.locator('#since .act').count() && chance(0.5)) {      // «дивитися підряд»
+      await page.locator('#since .act').click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(150); await page.keyboard.press('Escape');
+    }
+    const myd = page.locator('.cal-acts .act:has-text("Мій день")');    // «мій день» з випадковою датою
+    if (await myd.count() && chance(0.5)) {
+      await myd.click({ timeout: 1500 }).catch(() => {});
+      await page.selectOption('#mdD', String(int(1, 31)), { timeout: 1500 }).catch(() => {});
+      await page.selectOption('#mdM', String(int(1, 12)), { timeout: 1500 }).catch(() => {});
+      await page.locator('.md-go').click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(200);
+      await page.keyboard.press('Escape');
+    }
+    if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) problems.push('горизонтальний скрол після дій');
   } catch (e) { problems.push('EXC: ' + e.message.split('\n')[0]); }
   await ctx.close();
   return problems.length ? { i, url, vw, problems, cfg: JSON.stringify(cfg).slice(0, 400) } : null;

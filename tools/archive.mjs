@@ -15,6 +15,11 @@
 //  ARCHIVE_OUT          — куди писати (типово — корінь репозиторію). Для тестів.
 //  ARCHIVE_FIXTURE      — JSON {playlistId: [items]} замість запитів до YouTube. Для тестів.
 //  ARCHIVE_NO_POSTERS=1 — не завантажувати постери (p = адреса YouTube).
+//  ARCHIVE_SEASONS      — інший seasons.json замість того, що в корені (для тестів).
+//
+// Календар сховано (seasons.json → calendar.enabled: false): відео й далі архівуються (на будь-який формат сайту),
+// але сторінок днів, днів у sitemap і постерів для «картки дня» не робимо. Увімкнули назад — наступний запуск
+// сам згенерує все, чого бракує, з усього архіву.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -42,8 +47,9 @@ function normDate(v) {
     if ((m = s.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})$/))) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
     return '';
 }
-const cfg = loose(read(path.join(SRC, 'seasons.json'), '{}'));
+const cfg = loose(read(process.env.ARCHIVE_SEASONS || path.join(SRC, 'seasons.json'), '{}').replace(/^\uFEFF/, ''));
 const cal = cfg && !Array.isArray(cfg) && cfg.calendar ? cfg.calendar : null;
+const calOn = !!cal && !/^(false|ні|no|0|off)$/i.test(String(cal.enabled ?? 'true').trim());   // сховано — без сторінок днів
 const calPl = cal ? playlistId(cal.playlist) : '';
 const calStart = cal ? normDate(cal.start) : '';
 const exclude = cal ? [].concat(cal.exclude || []).map(playlistId).filter(Boolean) : [];
@@ -105,6 +111,24 @@ async function poster(v) {
         changed.push(rel);
         return rel;
     } catch (e) { return ''; }
+}
+
+// Кадр для «картки дня» (Stories, 1080 px завширшки): maxresdefault 1280×720, якщо нема — sddefault 640×480.
+// Окремий файл posters/ID-hd.jpg (~100 КБ), лише поки календар на сайті.
+async function posterHd(v) {
+    if (process.env.ARCHIVE_NO_POSTERS || fixture || !calOn) return;
+    let rel = `posters/${v.y}-hd.jpg`, f = path.join(OUT, rel);
+    if (fs.existsSync(f)) return;
+    for (const name of ['maxresdefault', 'sddefault']) {
+        try {
+            let res = await fetch(`https://i.ytimg.com/vi/${encodeURIComponent(v.y)}/${name}.jpg`);
+            if (!res.ok) continue;
+            fs.mkdirSync(path.dirname(f), { recursive: true });
+            fs.writeFileSync(f, Buffer.from(await res.arrayBuffer()));
+            changed.push(rel);
+            return;
+        } catch (e) {}
+    }
 }
 
 // ── Сторінка дня: прев'ю для месенджерів + миттєвий перехід на стіну днів ──
@@ -171,6 +195,7 @@ Object.entries(days).forEach(([date, list]) => (Array.isArray(list) ? list : [])
 
 for (const v of [...vids.values()].sort((a, b) => a.ts < b.ts ? -1 : 1)) {
     let p = await poster(v), fresh = { t: v.t, desc: v.desc };
+    await posterHd(v);
     let date = where.get(v.y);
     if (date) {                                              // уже є — оновлюємо текст, локальні поля (v, d…) лишаються
         let list = days[date], i = list.findIndex(it => it.y === v.y), it = Object.assign({}, list[i], fresh);
@@ -193,7 +218,7 @@ if (JSON.stringify(sortedDays) !== JSON.stringify(archive.days || {}))
 
 // Сторінки днів і sitemap (з усього архіву, не лише з того, що зараз на YouTube)
 const thumbOf = it => { let v = vids.get(it.y); return v ? bestThumb(v.thumbs) : null; };
-const dates = Object.keys(sortedDays).filter(d => Array.isArray(sortedDays[d]) && sortedDays[d].some(it => it && (it.y || it.p)));
+const dates = !calOn ? [] : Object.keys(sortedDays).filter(d => Array.isArray(sortedDays[d]) && sortedDays[d].some(it => it && (it.y || it.p)));
 dates.forEach(d => writeIfChanged(`d/${d}/index.html`, dayPage(d, sortedDays[d].filter(it => it && (it.y || it.p)), thumbOf)));
 writeIfChanged('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

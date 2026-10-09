@@ -201,6 +201,46 @@
         .fund-bar i{display:block;height:100%;max-width:100%;border-radius:inherit;background:var(--red)}
         .off-tag{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--red)}
 
+        /* ── Плеєр: дата й назва, гортання днів (‹ ›, стрілки, свайп), «аркуш дня» на телефоні ── */
+        .mod-head{margin-top:14px;color:#fff}
+        .mod-head:empty{display:none}
+        .mod-date{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.6)}
+        .mod-title{font-size:19px;font-weight:700;line-height:1.3;margin-top:4px;overflow-wrap:anywhere}
+        .mod-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;min-height:0}
+        .mod-nav:empty{display:none}
+        .mnav{background:none;border:0;padding:8px 2px;min-height:40px;font:inherit;font-size:13px;font-weight:600;color:#fff;cursor:pointer;white-space:nowrap;transition:color .2s}
+        .mnav:hover:not([disabled]){color:var(--red)}
+        .mnav[disabled]{visibility:hidden}
+        .mnav-pos{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.55);text-align:center;overflow-wrap:anywhere}
+        .mod-poster,.iframe-wrap .mod-poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+        .mod-play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;display:inline-flex;align-items:center;min-height:44px;box-sizing:border-box;padding:12px 20px;border-radius:999px;background:var(--red);color:#fff;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;box-shadow:0 4px 18px rgba(0,0,0,.45)}
+        .mod-poster[hidden],.mod-play[hidden]{display:none}
+        .note-tags .chip.card{font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+        .card-prev{margin-top:14px;text-align:center;color:rgba(255,255,255,.8);font-size:13px}
+        .card-prev img{display:block;width:min(260px,70vw);margin:0 auto 10px;border-radius:12px}
+        /* «⋯» на клітинці (телефон): аркуш дня — записка, «Мій день», картка, посилання; дотик по кадру й далі веде в застосунок */
+        .v-more{position:absolute;right:0;bottom:0;z-index:22;width:44px;height:40px;padding:0 7px 7px 0;box-sizing:border-box;border:0;background:none;cursor:pointer;display:flex;align-items:flex-end;justify-content:flex-end}
+        .v-more span{position:relative;width:28px;height:22px;border-radius:11px;background:rgba(0,0,0,.5)}
+        .v-more span::before{content:'';position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:#fff;box-shadow:-7px 0 #fff,7px 0 #fff}
+        .cell.has-more .v-title{right:44px}
+        /* «З твого візиту» над стіною: нові дні від минулого візиту + «дивитися підряд»; праворуч — скільки переглянуто */
+        .since{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 18px;margin:0 0 22px;font-size:13px;color:var(--mut)}
+        .since:empty{display:none}
+        .since-new{color:var(--txt);font-weight:600}
+        .since-new .act{color:var(--red);margin-left:6px}
+        .since-seen{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}
+        /* 🎂 «Мій день»: день і місяць → цей день у щоденнику (найсвіжіший рік; інші роки — кнопками) */
+        .myday{position:absolute;top:34px;right:0;z-index:30;width:min(340px,100%);box-sizing:border-box;padding:14px 16px;background:var(--bg);border:1px solid var(--div);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.12);font-size:13px}
+        .myday[hidden]{display:none}
+        .md-l{display:block;color:var(--mut);margin-bottom:8px}
+        .md-row{display:flex;gap:8px}
+        .md-row select{flex:1;min-width:0;min-height:40px;padding:0 8px;border:1px solid var(--div);border-radius:8px;background:var(--bg);color:var(--txt);font:inherit;font-size:14px}
+        .md-go{min-height:40px;padding:0 14px;border:0;border-radius:8px;background:var(--txt);color:var(--bg);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+        .md-go:hover{background:var(--red)}
+        .md-msg{margin:10px 0 0;color:var(--txt);line-height:1.45}
+        .md-msg:empty{display:none}
+        .md-msg button{background:none;border:0;padding:4px 2px;font:inherit;font-weight:700;color:var(--red);cursor:pointer}
+
         /* ?check — самоперевірка після правок seasons.json (бачить лише той, хто відкрив з ?check) */
         .chk{border:2px dashed var(--red);border-radius:10px;padding:16px 20px 6px;margin:0 0 50px;font-size:14px;line-height:1.55;overflow-wrap:anywhere}
         .chk-h{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--red);margin:4px 0 8px}
@@ -238,14 +278,16 @@
             /* теми на телефоні — один рядок з прокруткою: календар лишається на першому екрані */
             .topics{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -15px 28px;padding:0 15px}
             .chip{min-height:40px}
-            .cal-acts{position:static;justify-content:flex-end;margin:-6px 0 10px}
+            .cal-acts{position:static;justify-content:flex-end;flex-wrap:wrap;gap:2px 18px;margin:-6px 0 10px}
+            .myday{position:static;width:100%;margin:0 0 16px}
             .topics:not(.all) .chip.extra{display:inline-flex}   /* на телефоні ряд гортається — видно всі теми */
             .topics .chip.more{display:none}
             .topics::-webkit-scrollbar{display:none}
             .dt-n{font-size:16px}
             .dt-d{font-size:9px}
-            .mod-in{padding:10px}
-            .close{right:10px;top:-25px}
+            .modal{background:rgba(0,0,0,.96)}                  /* аркуш дня читається, стіна під ним не просвічує */
+            .mod-in{padding:46px 10px 14px}                      /* хрестик — всередині, а не над прокручуваним вікном (там він обрізався) */
+            .close{right:4px;top:2px;width:44px;height:44px;font-size:34px}
             .nav-seg{font-size:10px;letter-spacing:.5px;padding:11px 10px}
             .footer{padding:50px 0}
         }
@@ -297,7 +339,11 @@
         <div class="iframe-wrap">
             <iframe id="ytIframe" title="Відео" allow="autoplay; encrypted-media" allowfullscreen></iframe>
             <video id="locVideo" controls playsinline preload="none"></video>
+            <img id="modPoster" class="mod-poster" alt="" hidden>
+            <a id="modPlay" class="mod-play" href="#" onclick="playSheet(event)" hidden>▶ Дивитися в YouTube</a>
         </div>
+        <div id="modNav" class="mod-nav"></div>
+        <div id="modHead" class="mod-head"></div>
         <div id="modNote" class="note"></div>
     </div>
 </div>
@@ -1061,11 +1107,15 @@
         if (LOADING && !eps.length) return html + '<div class="sk sk-m"></div><div class="grid">' + '<div class="cell"></div>'.repeat(7) + '</div></section>';
         // Над стіною: 🎲 випадковий день (коли є з чого вибирати) і на телефоні «Сьогодні ↓» — місяць у дві колонки
         // займає кілька екранів (адресу й вибрану тему кнопка не чіпає)
-        let acts = (eps.filter(r => r.y || r.v).length > 1 ? '<button type="button" class="act" onclick="randomDay()">🎲 Випадковий день</button>' : '') +
+        let n = eps.filter(playable).length;
+        let acts = (n > 1 ? '<button type="button" class="act" onclick="randomDay()">🎲 Випадковий день</button>' : '') +
+            (n ? `<button type="button" class="act" onclick="myDayToggle(this)" aria-expanded="${MD_OPEN}" aria-controls="myday">🎂 Мій день</button>` : '') +
             (+today.slice(8) > 6 ? `<a class="act to-today" href="#cal-${today}" onclick="event.preventDefault();showDay('${today}')">Сьогодні ↓</a>` : '');
         // Відлік стіни — від дня першого відео (calendar.start лише відсікає старіші проби): без порожніх тижнів до старту
         let wall = eps.length ? dailyHtml(Object.assign({}, s, { start: eps[0].date }), 'live', today, eps) : '';
-        return html + (wall && acts ? `<div class="cal-acts">${acts}</div>` : '') + (wall || soon) + '</section>';
+        let since = sinceInner();
+        if (since) html = html.replace('<section class="cal-home', `<div class="since" id="since">${since}</div><section class="cal-home`);
+        return html + (wall && acts ? `<div class="cal-acts">${acts}</div>${mydayHtml()}` : '') + (wall || soon) + '</section>';
     }
 
     // Усі відомі відео (календар + сезони) без дублів — для каталогу тем
@@ -1104,7 +1154,7 @@
         if (!list.length) return html + '<p class="s-msg">Поки що нема відео з цією темою.</p></section>';
         let sizes = '(max-width:600px) 30vw, (max-width:1024px) 50vw, 340px';
         return html + '<div class="eps compact">' + list.map(rec => {
-            let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [], date: rec.date, title: rec.title }) - 1;
+            let idx = playIdx(rec, 'topic');
             return `<a href="${ytHref(rec)}" class="ep${watched.includes(rec.key) ? ' watched' : ''}" data-k="${esc(rec.key)}" onclick="openVid(event, ${idx}, this)">` +
                 `<div class="ep-th">${imgTag(rec, '', sizes)}${rec.imp ? STAR_SVG : ''}</div>` +
                 `<div class="ep-k">${fmtDay(rec.date, rec.date.slice(0, 4) !== today.slice(0, 4))}</div>` +
@@ -1122,7 +1172,7 @@
             : '(max-width:600px) calc((100vw - 30px) * .9), (max-width:1024px) calc((100vw - 62px) / 2), 560px';
         let html = '<div class="eps">';
         eps.forEach((rec, i) => {
-            let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [], date: rec.date, title: rec.title }) - 1;
+            let idx = playIdx(rec, s.k);
             let body = (metaById[rec.key] || {}).body || '';
             let isNew = st === 'live' && i === eps.length - 1 && dayNum(today) - dayNum(rec.date) < 7;
             // Справжнє посилання на YouTube: Ctrl/Cmd-клік і середня кнопка відкривають відео в новій вкладці
@@ -1170,15 +1220,18 @@
                 let dt = `<div class="dt"><span class="dt-n">${dn}</span><span class="dt-d">${WDAYS[w]}</span></div>`;
                 let isToday = d === today && st === 'live', tid = ` id="${s.id}-${d}"`;   // id дня — для «Сьогодні ↓», випадкового дня й посилань #d=
                 if (!recs.length) { h += `<div class="cell ${isToday ? 'today' : 'empty'}"${tid}>${dt}</div>`; return; }
-                let links = recs.map(rec => {
-                    let idx = PLAY.push({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [], date: rec.date, title: rec.title }) - 1;
+                let idxs = recs.map(rec => playIdx(rec, s.k));
+                let links = recs.map((rec, j) => {
+                    let idx = idxs[j];
                     let body = (metaById[rec.key] || {}).body || '';
                     let hit = TOPIC && recTopics(rec).includes(TOPIC) ? ' hit' : '';
                     return `<a href="${ytHref(rec)}" class="v-lnk${watched.includes(rec.key) ? ' watched' : ''}${hit}" data-k="${esc(rec.key)}" onclick="openVid(event, ${idx}, this)">` +
                         imgTag(rec, 'v-thumb', sizes) + (body ? `<div class="v-excerpt">${esc(body.slice(0, 160))}</div>` : '') +
                         `<div class="v-title">${esc(showTitle(rec.title))}</div></a>`;
                 }).join('');
-                h += `<div class="cell has-vid"${tid}><div class="v-cont${recs.length > 1 ? ' mult' : ''}">${links}</div>${dt}${recs.some(r => r.imp) ? STAR_SVG : ''}</div>`;
+                // Телефон: дотик по кадру — одразу застосунок YouTube; «⋯» — аркуш дня (записка, картка, гортання)
+                let more = OPEN_IN_APP ? `<button type="button" class="v-more" onclick="daySheet(${idxs[0]}, this)" aria-label="Про день: ${dn} ${MONTHS_GEN[+d.slice(5, 7) - 1]}"><span></span></button>` : '';
+                h += `<div class="cell has-vid${more ? ' has-more' : ''}"${tid}><div class="v-cont${recs.length > 1 ? ' mult' : ''}">${links}</div>${dt}${recs.some(r => r.imp) ? STAR_SVG : ''}${more}</div>`;
             });
             return h + '</div></div>';
         };
@@ -1260,6 +1313,7 @@
         if (!key) return;
         if (!watched.includes(key)) { watched.push(key); lsSet('vw', JSON.stringify(watched)); }
         document.querySelectorAll('[data-k]').forEach(el => { if (el.dataset.k === key) el.classList.add('watched'); });
+        updateSince();
         // Просимо браузер не стирати сховище під час нестачі місця (Chrome/Safari вирішують тихо; Firefox питав би — не чіпаємо)
         if (!askedPersist && !/Firefox/i.test(UA)) {
             askedPersist = true;
@@ -1284,66 +1338,414 @@
     document.addEventListener('pointerover', warm, { passive: true });
     document.addEventListener('focusin', warm);
 
-    let lastFocus = null;
+    // ── Плеєр ───────────────────────────────────────────────────────────────────
+    // Компʼютер: вікно з відео, датою, запискою; ‹ › (і стрілки ← →, свайп) гортають дні — як сторінки щоденника.
+    // Телефон: дотик по дню — застосунок YouTube; «⋯» на дні відкриває «аркуш дня» без плеєра: кадр, записка,
+    // картка для Stories, посилання, гортання; «▶ Дивитися в YouTube» — у застосунок.
+    // Контекст гортання — звідки відкрили: стіна днів, вибрана тема, сезон або «з твого візиту» (черга нових днів).
+    const toP = (rec, ctx) => ({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [], date: rec.date, title: rec.title, thumb: rec.thumb || '', ctx });
+    function playIdx(rec, ctx) { return PLAY.push(toP(rec, ctx)) - 1; }
+    const byTs = (a, b) => a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0;
+    const playable = r => !!(r && (r.y || r.v));
+    const isAppVideo = p => OPEN_IN_APP && !!p.y && !(BASE && p.v);     // телефон + відео з YouTube → застосунок
+    const ytWatch = p => 'https://www.youtube.com/watch?v=' + encodeURIComponent(p.y);
+    const $ = id => document.getElementById(id);
+    let lastFocus = null, CUR = null, QUEUE = [], QUEUE_ON = false;
+
+    function navList(ctx) {
+        if (ctx === 'queue') return QUEUE;
+        let list = ctx === 'topic' ? allRecs().filter(r => recTopics(r).includes(TOPIC)) : (EPS[ctx] || []);
+        return list.filter(playable).slice().sort(byTs);
+    }
+    // Застосунок YouTube поза кліком по посиланню (кнопки «Дивитися», «підряд», «Мій день»)
+    function openInApp(p) {
+        if (IS_ANDROID) openApp('intent://www.youtube.com/watch?v=' + encodeURIComponent(p.y) +
+            '#Intent;scheme=https;package=com.google.android.youtube;S.browser_fallback_url=' + encodeURIComponent(ytWatch(p)) + ';end');
+        else openApp(ytWatch(p));                       // iOS: перехід на youtube.com — система відкриє застосунок
+    }
     window.openVid = function(e, idx, el) {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;   // Ctrl/Cmd-клік — браузер відкриє YouTube у новій вкладці
         let p = PLAY[idx] || {};
-        markWatched(p.key);
-        let hasLocal = !!(BASE && p.v);
-        if (OPEN_IN_APP && p.y && !hasLocal) {
+        QUEUE_ON = false;
+        if (isAppVideo(p)) {
             // iOS: звичайний перехід за посиланням youtube.com — система сама відкриє застосунок (Universal Link).
             // Android: intent — застосунок YouTube, а якщо його нема — сторінка відео в браузері.
-            if (IS_ANDROID) {
-                e.preventDefault();
-                let web = 'https://www.youtube.com/watch?v=' + encodeURIComponent(p.y);
-                openApp('intent://www.youtube.com/watch?v=' + encodeURIComponent(p.y) +
-                    '#Intent;scheme=https;package=com.google.android.youtube;S.browser_fallback_url=' + encodeURIComponent(web) + ';end');
-            }
+            markWatched(p.key);
+            if (IS_ANDROID) { e.preventDefault(); openInApp(p); }
             return;
         }
         e.preventDefault();
+        lastFocus = el || document.activeElement;
+        showRec(p, p.ctx || 'cal');
+    };
+    window.daySheet = function(idx, btn) {
+        let p = PLAY[idx];
+        if (!p) return;
+        QUEUE_ON = false; lastFocus = btn || document.activeElement;
+        showRec(p, p.ctx || 'cal');
+    };
+    window.playSheet = function(e) {                    // «▶ Дивитися в YouTube» з аркуша дня
+        if (!CUR) return;
+        markWatched(CUR.p.key);
+        if (IS_ANDROID) { e.preventDefault(); openInApp(CUR.p); }
+    };
+
+    const WD_FULL = ['неділя', 'понеділок', 'вівторок', 'середа', 'четвер', 'пʼятниця', 'субота'];
+    function fmtDayLong(d) { return fmtDay(d, true) + ' · ' + WD_FULL[new Date(dayNum(d) * DAY_MS).getUTCDay()]; }
+    function navHtml(list, i, ctx) {
+        if (i < 0 || list.length < 2) return '';
+        let prev = list[i - 1], next = list[i + 1], y = todayStr().slice(0, 4);
+        let lbl = r => fmtDay(r.date, r.date.slice(0, 4) !== y);
+        let mid = ctx === 'queue' ? `З твого візиту · ${i + 1} з ${list.length}`
+            : ctx === 'topic' ? `${esc(topicLabel(TOPIC))} · ${i + 1} / ${list.length}` : `${i + 1} / ${list.length}`;
+        return `<button type="button" class="mnav" onclick="navStep(-1)"${prev ? ` aria-label="Попередній: ${esc(lbl(prev))}"` : ' disabled'}>‹ ${prev ? esc(lbl(prev)) : ''}</button>` +
+            `<span class="mnav-pos">${mid}</span>` +
+            `<button type="button" class="mnav" onclick="navStep(1)"${next ? ` aria-label="Наступний: ${esc(lbl(next))}"` : ' disabled'}>${next ? esc(lbl(next)) : ''} ›</button>`;
+    }
+    function stopPlayers() {
+        let iframe = $('ytIframe'), loc = $('locVideo');
+        iframe.src = ''; iframe.style.display = 'none';
+        try { loc.pause(); } catch(_) {} loc.removeAttribute('src'); loc.style.display = 'none'; loc.onended = null;
+    }
+    function showRec(p, ctx) {
+        CUR = { p, ctx };
+        let sheet = isAppVideo(p);
+        if (!sheet) markWatched(p.key);                  // на аркуші дня відео ще не дивились — лише читаєш
+        let list = navList(ctx), i = list.findIndex(r => r.key === p.key);
+        $('modNav').innerHTML = navHtml(list, i, ctx);
+        $('modHead').innerHTML = (DATE_RE.test(p.date || '') ? `<div class="mod-date">${esc(fmtDayLong(p.date))}</div>` : '') +
+            (p.title ? `<div class="mod-title">${esc(showTitle(p.title))}</div>` : '');
         // Записка серії під плеєром (щоденник): текст веде, штамп часу — підпис знизу; зірка, якщо важливо.
-        let meta = metaById[p.key] || {};
-        let note = document.getElementById('modNote');
-        let topics = recTopics(p);                     // теми відео — чипи під запискою, клік відкриває тему
-        note.innerHTML = ((meta.time || meta.body)
+        let meta = metaById[p.key] || {}, topics = recTopics(p), dated = DATE_RE.test(p.date || '');
+        $('modNote').innerHTML = ((meta.time || meta.body)
             ? `<div class="note-card${meta.important ? ' imp' : ''}">` +
               (meta.important ? STAR_SVG : '') +
               (meta.body ? `<div class="note-body">${esc(meta.body)}</div>` : '') +
               (meta.time ? `<div class="note-foot">🕒 ${esc(meta.time)}</div>` : '') + `</div>`
-            : '') + ((topics.length || p.date) ? '<div class="note-tags">' +
-              (DATE_RE.test(p.date || '') ? `<button type="button" class="chip share" onclick="shareDay('${p.date}', this)">🔗 Посилання на день</button>` : '') +
+            : '') + ((topics.length || dated) ? '<div class="note-tags">' +
+              (dated ? `<button type="button" class="chip share" onclick="shareDay('${p.date}', this)">🔗 Посилання на день</button>` +
+                `<button type="button" class="chip card" onclick="shareCard(this)">${OPEN_IN_APP ? '📲 Картка для Stories' : '🖼 Картка дня'}</button>` : '') +
               topics.map(t => `<a class="chip" href="#t=${encodeURIComponent(t)}">${chipLabel(t)}</a>`).join('') + '</div>' : '');
-        // Плеєр: локальне відео (судний день, Фаза 5) якщо є base+v, інакше YouTube-ембед за id.
-        let iframe = document.getElementById('ytIframe'), loc = document.getElementById('locVideo');
-        let local = hasLocal ? (BASE.replace(/\/+$/, '') + '/' + p.v.replace(/^\/+/, '')) : '';
-        if (local) {
-            iframe.src = ''; iframe.style.display = 'none';
-            loc.src = local; loc.style.display = 'block'; try { loc.play(); } catch(_) {}
+        // Плеєр: локальне відео (судний день, Фаза 5) якщо є base+v, інакше YouTube-ембед за id; телефон — кадр і кнопка
+        let iframe = $('ytIframe'), loc = $('locVideo'), poster = $('modPoster'), play = $('modPlay');
+        poster.hidden = play.hidden = true;
+        stopPlayers();
+        if (sheet) {
+            if (p.thumb) { poster.src = p.thumb; poster.hidden = false; }
+            play.href = ytWatch(p); play.hidden = false;
+        } else if (BASE && p.v) {
+            loc.src = BASE.replace(/\/+$/, '') + '/' + p.v.replace(/^\/+/, ''); loc.style.display = 'block';
+            loc.onended = () => { if (QUEUE_ON) queueNext(); };
+            try { let pr = loc.play(); if (pr && pr.catch) pr.catch(() => {}); } catch(_) {}   // файлу нема — тихо, без помилки в консолі
         } else if (p.y) {
-            try { loc.pause(); } catch(_) {} loc.removeAttribute('src'); loc.style.display = 'none';
-            iframe.style.display = 'block'; iframe.src = 'https://www.youtube.com/embed/' + p.y + '?autoplay=1';
-        } else {                                        // нема чим грати — постер+записка (Фаза 5 дасть відео)
-            iframe.src = ''; iframe.style.display = 'none';
-            try { loc.pause(); } catch(_) {} loc.removeAttribute('src'); loc.style.display = 'none';
+            iframe.style.display = 'block';
+            iframe.src = 'https://www.youtube.com/embed/' + p.y + '?autoplay=1' + (QUEUE_ON ? '&enablejsapi=1&origin=' + encodeURIComponent(location.origin) : '');
+            if (QUEUE_ON) watchEnd(p.key);
+        }                                               // нема чим грати — лише записка (Фаза 5 дасть відео)
+        let cp = $('cardPrev'); if (cp) cp.remove();
+        let modal = $('vidModal');
+        if (!modal.classList.contains('show')) {
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            $('modIn').scrollTop = 0;
+            document.querySelector('#vidModal .close').focus({ preventScroll: true });
         }
-        lastFocus = el || document.activeElement;
-        document.getElementById('vidModal').classList.add('show');
-        document.getElementById('modIn').scrollTop = 0;
-        document.body.style.overflow = 'hidden';
-        document.querySelector('#vidModal .close').focus({ preventScroll: true });
+        if (sheet || OPEN_IN_APP) setTimeout(() => prepCard(p), 60);   // картку — заздалегідь: iPhone ділиться лише одразу після дотику
     }
+    window.navStep = function(d) {
+        if (!CUR) return;
+        let list = navList(CUR.ctx), i = list.findIndex(r => r.key === CUR.p.key), r = i < 0 ? null : list[i + d];
+        if (r) showRec(toP(r, CUR.ctx), CUR.ctx);
+    };
+
+    // «Дивитися підряд»: нові дні по черзі; на компʼютері наступний вмикається сам, коли закінчився попередній
+    // (YouTube IFrame API підвантажуємо лише для цього; не вдалось — гортаєш ›)
+    let ytReady = null;
+    function ytApi() {
+        if (!ytReady) ytReady = new Promise(res => {
+            if (window.YT && window.YT.Player) return res(true);
+            let prev = window.onYouTubeIframeAPIReady;
+            window.onYouTubeIframeAPIReady = () => { try { if (prev) prev(); } catch(e) {} res(true); };
+            let sc = document.createElement('script');
+            sc.src = 'https://www.youtube.com/iframe_api'; sc.async = true; sc.onerror = () => res(false);
+            document.head.appendChild(sc);
+            setTimeout(() => res(!!(window.YT && window.YT.Player)), 8000);
+        });
+        return ytReady;
+    }
+    function watchEnd(key) {
+        ytApi().then(ok => {
+            if (!ok || !QUEUE_ON || !CUR || CUR.p.key !== key) return;
+            try { new YT.Player('ytIframe', { events: { onStateChange: ev => {
+                if (ev && ev.data === 0 && QUEUE_ON && CUR && CUR.p.key === key) queueNext();
+            } } }); } catch(e) {}
+        });
+    }
+    function queueNext() {
+        if (!QUEUE_ON || !CUR) return;
+        let i = QUEUE.findIndex(r => r.key === CUR.p.key), r = QUEUE[i + 1];
+        if (r) { showRec(toP(r, 'queue'), 'queue'); return; }
+        QUEUE_ON = false;
+        $('modNav').innerHTML = '<span class="mnav-pos">✓ Усі нові дні переглянуто</span>';
+    }
+    window.watchNew = function(btn) {
+        let list = newRecs();
+        if (!list.length) return;
+        let first = toP(list[0], 'queue');
+        if (isAppVideo(first)) { markWatched(first.key); openInApp(first); return; }   // телефон — перший пропущений день у застосунку
+        QUEUE = list; QUEUE_ON = true; lastFocus = btn || document.activeElement;
+        showRec(first, 'queue');
+    };
 
     window.closeModal = function() {
-        let modal = document.getElementById('vidModal');
+        let modal = $('vidModal');
         if (!modal.classList.contains('show')) return;
-        let iframe = document.getElementById('ytIframe'), loc = document.getElementById('locVideo');
-        iframe.src = '';
-        try { loc.pause(); } catch(_) {} loc.removeAttribute('src');
+        stopPlayers();
+        $('modPoster').hidden = $('modPlay').hidden = true;
+        let cp = $('cardPrev'); if (cp) cp.remove();
+        QUEUE_ON = false; CUR = null;
         modal.classList.remove('show');
         document.body.style.overflow = '';
-        document.getElementById('modIn').style.transform = '';
+        $('modIn').style.transform = '';
         if (lastFocus && lastFocus.isConnected) lastFocus.focus({ preventScroll: true });   // фокус — туди, звідки відкрили
+    }
+
+    // ── «З твого візиту» ────────────────────────────────────────────────────────
+    // Візит = заходи з перервами до 30 хв. «Минулий візит» — останній захід перед поточним (лише в цьому браузері).
+    // Нові дні — опубліковані після нього й ще не переглянуті. Перший візит (чи сміття в сховищі) — рядка нема.
+    const VISIT_GAP = 30 * 60e3;
+    let VISIT_PREV = 0;
+    (function () {
+        let v = lsJSON('lv', null), now = Date.now(), prev = 0, cur = 0;
+        if (v && typeof v === 'object') { prev = +v.prev || 0; cur = +v.cur || 0; }
+        if (!(cur > 0 && cur <= now)) prev = 0;          // перший візит, зіпсований запис або годинник «з майбутнього»
+        else if (now - cur > VISIT_GAP) prev = cur;      // новий візит: минулий — той, що був
+        VISIT_PREV = prev > 0 && prev <= now ? prev : 0;
+        lsSet('lv', JSON.stringify({ prev: VISIT_PREV, cur: now }));
+    })();
+    const recTime = r => Date.parse(r.ts) || Date.parse(r.date + 'T12:00:00') || 0;
+    function newRecs() {
+        if (!VISIT_PREV) return [];
+        return (EPS.cal || []).filter(r => playable(r) && !watched.includes(r.key) && recTime(r) > VISIT_PREV).sort(byTs);
+    }
+    function sinceInner() {
+        let cal = (EPS.cal || []).filter(playable);
+        if (!cal.length) return '';
+        let fresh = newRecs(), seen = cal.filter(r => watched.includes(r.key)).length, days = new Set(fresh.map(r => r.date)).size;
+        if (!fresh.length && !seen) return '';
+        return (fresh.length ? `<span class="since-new">З твого візиту — ${days} ${plural(days, 'новий день', 'нових дні', 'нових днів')}` +
+                `<button type="button" class="act" onclick="watchNew(this)">▶ Дивитися підряд</button></span>` : '<span></span>') +
+            (seen ? `<span class="since-seen">Переглянуто ${seen} з ${cal.length}</span>` : '');
+    }
+    function updateSince() {
+        let html = sinceInner(), el = $('since'), cal = $('cal');
+        if (el) el.innerHTML = html;
+        else if (html && cal) cal.insertAdjacentHTML('beforebegin', `<div class="since" id="since">${html}</div>`);
+    }
+
+    // ── 🎂 «Мій день» ───────────────────────────────────────────────────────────
+    // День і місяць (день народження, річниця) → цей день у щоденнику: найсвіжіший рік, інші роки — кнопками.
+    // Відео того дня нема — найближчий день із відео. Ще не настав — коли зʼявиться. Вибір памʼятає браузер.
+    let MD_OPEN = false, MD_MSG = '';
+    const validDay = d => { let [y, m, dd] = d.split('-').map(Number), t = new Date(Date.UTC(y, m - 1, dd)); return t.getUTCMonth() === m - 1 && t.getUTCDate() === dd; };
+    function mdSaved() { let m = /^(\d{2})-(\d{2})$/.exec(lsGet('md') || ''); return m && +m[1] >= 1 && +m[1] <= 12 && +m[2] >= 1 && +m[2] <= 31 ? { m: +m[1], d: +m[2] } : null; }
+    function mydayHtml() {
+        if (!MD_OPEN) return '<div class="myday" id="myday" hidden></div>';
+        let t = todayStr(), sv = mdSaved() || { m: +t.slice(5, 7), d: +t.slice(8) };
+        let days = Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}"${i + 1 === sv.d ? ' selected' : ''}>${i + 1}</option>`).join('');
+        let months = MONTHS_GEN.map((m, i) => `<option value="${i + 1}"${i + 1 === sv.m ? ' selected' : ''}>${m}</option>`).join('');
+        return `<div class="myday" id="myday"><form onsubmit="event.preventDefault();myDayFind()">` +
+            `<label class="md-l" for="mdD">Твій день — день народження чи інша важлива дата</label>` +
+            `<div class="md-row"><select id="mdD" aria-label="День">${days}</select><select id="mdM" aria-label="Місяць">${months}</select>` +
+            `<button type="submit" class="md-go">Знайти</button></div><p class="md-msg" id="mdMsg" aria-live="polite">${MD_MSG}</p></form></div>`;
+    }
+    window.myDayToggle = function(btn) {
+        MD_OPEN = !MD_OPEN; MD_MSG = '';
+        let el = $('myday'); if (el) el.outerHTML = mydayHtml();
+        if (btn) btn.setAttribute('aria-expanded', String(MD_OPEN));
+        if (MD_OPEN) { let sel = $('mdD'); if (sel) sel.focus(); }
+    };
+    // Телефон: день підсвічуємо й відкриваємо аркуш дня (картка «мій день» — у два дотики); компʼютер — відео
+    function openDay(rec) {
+        if (isAppVideo(toP(rec))) { showDay(rec.date, rec.key, false); QUEUE_ON = false; lastFocus = document.activeElement; showRec(toP(rec, 'cal'), 'cal'); }
+        else showDay(rec.date, rec.key, true);
+    }
+    function mdSay(html) { MD_MSG = html; let el = $('mdMsg'); if (el) el.innerHTML = html; }
+    window.myDayFind = function() {
+        let d = +($('mdD') || {}).value, m = +($('mdM') || {}).value, today = todayStr();
+        if (!(d >= 1 && d <= 31 && m >= 1 && m <= 12)) return;
+        lsSet('md', pad2(m) + '-' + pad2(d));
+        let human = d + ' ' + MONTHS_GEN[m - 1];
+        if (!validDay(`2024-${pad2(m)}-${pad2(d)}`)) { mdSay(`${esc(human)} — такого дня в календарі нема.`); return; }
+        let cal = (EPS.cal || []).filter(playable).sort(byTs);
+        if (!cal.length) { mdSay('Щоденник поки порожній.'); return; }
+        let first = cal[0].date, ty = +today.slice(0, 4), years = [];
+        for (let y = ty; y >= +first.slice(0, 4); y--) {
+            let ds = `${y}-${pad2(m)}-${pad2(d)}`;
+            if (validDay(ds) && ds >= first && ds <= today) years.push(ds);
+        }
+        if (!years.length) {
+            let next = '';
+            for (let y = ty; y <= ty + 8 && !next; y++) { let ds = `${y}-${pad2(m)}-${pad2(d)}`; if (validDay(ds) && ds > today) next = ds; }
+            mdSay(`${esc(human)} ще не потрапив у щоденник — він почався ${esc(fmtDay(first, true))}.` + (next ? ` Цей день буде тут ${esc(fmtDay(next, true))}.` : ''));
+            return;
+        }
+        myDayGo(years[0], years);
+    };
+    window.myDayGo = function(target, years) {
+        let cal = (EPS.cal || []).filter(playable).sort(byTs);
+        if (!cal.length || !DATE_RE.test(target)) return;
+        let exact = cal.find(r => r.date === target);
+        let rec = exact || cal.reduce((b, r) => Math.abs(dayNum(r.date) - dayNum(target)) < Math.abs(dayNum(b.date) - dayNum(target)) ? r : b);
+        let y = todayStr().slice(0, 4);
+        years = years || [];
+        let others = years.filter(x => x !== target);
+        mdSay((exact ? `${esc(fmtDayLong(target))} ↓` : `${esc(fmtDay(target, target.slice(0, 4) !== y))} відео нема — найближчий день: ${esc(fmtDay(rec.date, rec.date.slice(0, 4) !== y))}.`) +
+            (others.length ? ' Інші роки: ' + others.map(x => `<button type="button" onclick="myDayGo('${x}', ${esc(JSON.stringify(years))})">${x.slice(0, 4)}</button>`).join(' ') : ''));
+        openDay(rec);
+    };
+
+    // ── 🖼 Картка дня: вертикальна картинка 1080×1920 для Stories (Instagram, Telegram) ─────────────
+    // Кадр (постер із сайту — він «свій», тож полотно можна зберегти), дата, назва, рядки записки, адреса дня.
+    // Телефон — меню «Поділитися»; не вийшло — картинка в плеєрі (утримай, щоб зберегти). Компʼютер — файл.
+    const CARD_W = 1080, CARD_H = 1920;
+    const SANS = '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif', SERIF = 'Georgia,"Iowan Old Style","Times New Roman",serif';
+    function loadImg(src, cors) {
+        return new Promise(res => {
+            let im = new Image();
+            if (cors) im.crossOrigin = 'anonymous';
+            im.onload = () => res(im.naturalWidth ? im : null); im.onerror = () => res(null);
+            im.src = src;
+            setTimeout(() => res(null), 6000);
+        });
+    }
+    async function cardImage(p) {
+        let list = [];
+        if (p.y) list.push(['posters/' + p.y + '-hd.jpg', false], ['posters/' + p.y + '.jpg', false]);   // їх кладе архів на GitHub
+        if (p.thumb) { let own = !/^https?:/i.test(p.thumb) || p.thumb.startsWith(location.origin); list.push([p.thumb, !own]); }
+        for (let [src, cors] of list) { let im = await loadImg(src, cors); if (im) return im; }
+        return null;
+    }
+    function rrect(g, x, y, w, h, r) {
+        g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+        g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+    }
+    // Перенос слів під ширину; задовге «слово» ріжемо; не влізло — «…» в останньому рядку
+    function wrapText(g, text, maxW, maxLines) {
+        if (!(maxLines >= 1)) return [];
+        let words = String(text || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean), lines = [], line = '', i = 0;
+        const fits = t => g.measureText(t).width <= maxW;
+        while (i < words.length && lines.length < maxLines) {
+            let w = words[i], t = line ? line + ' ' + w : w;
+            if (fits(t)) { line = t; i++; continue; }
+            if (line) { lines.push(line); line = ''; continue; }            // слово — з нового рядка
+            let k = w.length; while (k > 1 && !fits(w.slice(0, k))) k--;      // і в порожній рядок не влазить — ріжемо
+            lines.push(w.slice(0, k)); words[i] = w.slice(k); if (!words[i]) i++;
+        }
+        if (line && lines.length < maxLines) { lines.push(line); line = ''; }
+        if ((i < words.length || line) && lines.length) {
+            let last = lines[lines.length - 1];
+            while (last && !fits(last + '…')) last = /\s/.test(last) ? last.replace(/\s+\S*$/, '') : last.slice(0, -1);   // спершу — ціле слово
+            lines[lines.length - 1] = last.replace(/[\s,.;:—–-]+$/, '') + '…';
+        }
+        return lines;
+    }
+    function drawMoon(g, cx, cy, r) {                    // 🌓 з логотипа: ліва половина темна, права світла + червона крапка
+        g.save();
+        g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fillStyle = '#2b2b2b'; g.fill();
+        g.beginPath(); g.arc(cx, cy, r, -Math.PI / 2, Math.PI / 2); g.closePath(); g.fillStyle = '#f2ead3'; g.fill();
+        g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.lineWidth = 2; g.strokeStyle = 'rgba(255,255,255,.75)'; g.stroke();
+        g.beginPath(); g.arc(cx + r * .82, cy - r * .82, r * .28, 0, Math.PI * 2); g.fillStyle = '#e62117'; g.fill();
+        g.restore();
+    }
+    async function makeCard(p) {
+        let c = document.createElement('canvas'); c.width = CARD_W; c.height = CARD_H;
+        let g = c.getContext('2d');
+        let draw = im => {
+            g.fillStyle = '#121212'; g.fillRect(0, 0, CARD_W, CARD_H);
+            let fx = 60, fy = 330, fw = 960, fh = 540;
+            if (im) {
+                // Кадр 16:9 з середини (у 4:3-мініатюрах YouTube — чорні смуги згори й знизу)
+                let sw = im.naturalWidth, sh = im.naturalHeight, ch = Math.min(sh, sw * 9 / 16), cy = (sh - ch) / 2;
+                let t = document.createElement('canvas'); t.width = 18; t.height = 32;   // розмитий фон: крихітна копія, розтягнута
+                let cw = Math.min(sw, ch * 9 / 16);
+                t.getContext('2d').drawImage(im, (sw - cw) / 2, cy, cw, ch, 0, 0, 18, 32);
+                g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+                g.drawImage(t, 0, 0, CARD_W, CARD_H);
+                g.fillStyle = 'rgba(0,0,0,.58)'; g.fillRect(0, 0, CARD_W, CARD_H);
+                g.save(); rrect(g, fx, fy, fw, fh, 28); g.clip(); g.drawImage(im, 0, cy, sw, ch, fx, fy, fw, fh); g.restore();
+            } else {
+                g.save(); rrect(g, fx, fy, fw, fh, 28); g.fillStyle = '#1e1e1e'; g.fill(); g.restore();
+                drawMoon(g, CARD_W / 2, fy + fh / 2, 70);
+            }
+            g.textBaseline = 'alphabetic'; g.textAlign = 'left';
+            g.fillStyle = 'rgba(255,255,255,.72)'; g.font = `700 30px ${SANS}`;
+            if ('letterSpacing' in g) g.letterSpacing = '6px';
+            g.fillText('ТАРАС МАКСИМʼЯК', 60, 260);
+            if ('letterSpacing' in g) g.letterSpacing = '0px';
+            let y = 990;
+            if (DATE_RE.test(p.date || '')) {
+                let [yy, mm, dd] = p.date.split('-').map(Number);
+                g.fillStyle = '#fff'; g.font = `400 104px ${SERIF}`;
+                g.fillText(`${dd} ${MONTHS_GEN[mm - 1]}`, 56, y);
+                g.fillStyle = 'rgba(255,255,255,.6)'; g.font = `700 32px ${SANS}`;
+                if ('letterSpacing' in g) g.letterSpacing = '4px';
+                g.fillText(`${WD_FULL[new Date(dayNum(p.date) * DAY_MS).getUTCDay()]} · ${yy}`.toUpperCase(), 60, y + 62);
+                if ('letterSpacing' in g) g.letterSpacing = '0px';
+                y += 100;
+            }
+            let title = showTitle(p.title || '');
+            if (title) {
+                g.fillStyle = '#fff'; g.font = `700 54px ${SANS}`;
+                wrapText(g, title, 960, 2).forEach(l => { y += 66; g.fillText(l, 60, y); });
+                y += 26;
+            }
+            let body = ((metaById[p.key] || {}).body || '').replace(/(\s*#[\p{L}\p{N}_]+)+\s*$/u, '').trim();
+            if (body) {
+                g.fillStyle = 'rgba(255,255,255,.86)'; g.font = `italic 400 40px ${SERIF}`;
+                let maxLines = Math.max(0, Math.floor((1540 - y) / 58));
+                wrapText(g, body, 960, maxLines).forEach(l => { y += 58; g.fillText(l, 60, y); });
+            }
+            drawMoon(g, 84, 1632, 24);
+            g.fillStyle = '#fff'; g.font = `700 30px ${SANS}`;
+            if ('letterSpacing' in g) g.letterSpacing = '6px';
+            g.fillText('ЛОВИ ДЕНЬ', 128, 1643);
+            if ('letterSpacing' in g) g.letterSpacing = '0px';
+            g.fillStyle = 'rgba(255,255,255,.6)'; g.font = `400 30px ${SANS}`;
+            g.fillText(location.host + (DATE_RE.test(p.date || '') ? '/d/' + p.date : ''), 60, 1702);
+        };
+        let toBlob = () => new Promise(res => { try { c.toBlob(b => res(b), 'image/jpeg', .9); } catch(e) { res(null); } });
+        draw(await cardImage(p));
+        let blob = await toBlob();
+        if (!blob) { draw(null); blob = await toBlob(); }    // «чуже» зображення зіпсувало полотно — картка без кадру
+        return blob;
+    }
+    let CARD = null;                                     // {key, promise} — картка, зібрана заздалегідь
+    function prepCard(p) { if (!CARD || CARD.key !== p.key) CARD = { key: p.key, promise: makeCard(p) }; return CARD.promise; }
+    window.shareCard = async function(btn) {
+        if (!CUR) return;
+        let p = CUR.p, blob = await prepCard(p);
+        if (!blob) return;
+        let name = 'den-' + (DATE_RE.test(p.date || '') ? p.date : 'video') + '.jpg';
+        let file = new File([blob], name, { type: 'image/jpeg' });
+        if (OPEN_IN_APP && navigator.canShare && navigator.canShare({ files: [file] })) {
+            try { await navigator.share({ files: [file] }); return; }
+            catch(e) { if (e && e.name === 'AbortError') return; }      // інакше — показати картинку
+            showCardPreview(blob);
+            return;
+        }
+        if (OPEN_IN_APP) { showCardPreview(blob); return; }
+        let a = document.createElement('a'), url = URL.createObjectURL(blob);
+        a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+        if (btn) { let t = btn.textContent; btn.textContent = '✓ Збережено'; setTimeout(() => { btn.textContent = t; }, 2000); }
+    };
+    function showCardPreview(blob) {
+        let old = $('cardPrev'); if (old) old.remove();
+        let d = document.createElement('div'); d.id = 'cardPrev'; d.className = 'card-prev';
+        d.innerHTML = `<img alt="Картка дня" src="${URL.createObjectURL(blob)}">Утримай картинку, щоб зберегти, і додай в історію.`;
+        $('modNote').appendChild(d);
+        d.scrollIntoView({ block: 'nearest' });
     }
 
     // Показати день на стіні: розгорнути «Раніше», прокрутити, коротко підсвітити; open — ще й відкрити відео
@@ -1400,7 +1802,12 @@
         installEvt = null; document.getElementById('install').hidden = true;
     };
 
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { closeModal(); return; }
+        if (!CUR || !/^Arrow(Left|Right)$/.test(e.key) || e.altKey || e.ctrlKey || e.metaKey) return;
+        if (/^(INPUT|SELECT|TEXTAREA)$/.test((e.target || {}).tagName || '')) return;
+        e.preventDefault(); navStep(e.key === 'ArrowRight' ? 1 : -1);    // гортати дні, як сторінки
+    });
     // Вибір теми живе в адресі (#t=…): «назад» у браузері повертає попередній вибір, посиланням можна поділитися
     window.addEventListener('hashchange', () => {
         let d = dayFromHash();
@@ -1412,10 +1819,17 @@
         if (t) { let el = document.getElementById('topic'); if (el) el.scrollIntoView({ block: 'start' }); }
     });
 
-    let tY = 0, mod = document.getElementById('vidModal'), mIn = document.getElementById('modIn');
-    mod.addEventListener('touchstart', e => tY = e.touches[0].clientY, {passive:true});
-    mod.addEventListener('touchmove', e => { let dY = e.touches[0].clientY - tY; if(dY>0 && mIn.scrollTop<=0) mIn.style.transform = `translateY(${dY}px)`; }, {passive:true});
-    mod.addEventListener('touchend', e => { if(e.changedTouches[0].clientY - tY > 100) closeModal(); else mIn.style.transform = ''; }, {passive:true});
+    // Свайп униз — закрити; вліво/вправо — наступний/попередній день
+    let tY = 0, tX = 0, mod = document.getElementById('vidModal'), mIn = document.getElementById('modIn');
+    mod.addEventListener('touchstart', e => { tY = e.touches[0].clientY; tX = e.touches[0].clientX; }, {passive:true});
+    mod.addEventListener('touchmove', e => { let dY = e.touches[0].clientY - tY, dX = e.touches[0].clientX - tX;
+        if (dY > 0 && Math.abs(dY) > Math.abs(dX) && mIn.scrollTop <= 0) mIn.style.transform = `translateY(${dY}px)`; }, {passive:true});
+    mod.addEventListener('touchend', e => {
+        let dY = e.changedTouches[0].clientY - tY, dX = e.changedTouches[0].clientX - tX;
+        mIn.style.transform = '';
+        if (dY > 100 && Math.abs(dY) > Math.abs(dX)) closeModal();
+        else if (Math.abs(dX) > 60 && Math.abs(dX) > Math.abs(dY) * 1.5) navStep(dX < 0 ? 1 : -1);
+    }, {passive:true});
 
     init();
 </script>

@@ -100,6 +100,40 @@ function zbirRepo(seasons) {
   return { dir, run, cfgText };
 }
 const REAL_CFG = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'seasons.json'), 'utf8'));
+// Повернення на сайт: минулий захід (lv.cur) — у заданий момент; лише при першому завантаженні вкладки
+const visitedAt = iso => `(() => { try { if (!sessionStorage.getItem('__lv')) { sessionStorage.setItem('__lv', '1');
+  localStorage.setItem('lv', JSON.stringify({ prev: 0, cur: Date.parse('${iso}') })); } } catch (e) {} })()`;
+// 5 днів: 21, 25, 27 (18:00 UTC), 28, 29 вересня; минулий візит 27-го о 12:00 UTC → нові 27, 28, 29
+const V_API = { UU1: [vid('v1', 'Перший', '2026-09-21T10:00:00Z', 'Записка один #подорожі'), vid('v2', 'Другий', '2026-09-25T10:00:00Z', 'Записка два'),
+  vid('v3', 'Третій', '2026-09-27T18:00:00Z', 'Записка три #подорожі'), vid('v4', 'Четвертий', '2026-09-28T10:00:00Z', 'Записка чотири'),
+  vid('v5', 'Пʼятий', '2026-09-29T08:00:00Z', '№ Важливе')].reverse(), SH: [] };
+const solidSvg = (w, h, c) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="100%" height="100%" fill="${c}"/></svg>`;
+// Мініатюра 4:3 з чорними смугами згори й знизу, як sddefault/hqdefault у YouTube
+const letterboxSvg = c => `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480"><rect width="640" height="480" fill="#000"/><rect y="60" width="640" height="360" fill="${c}"/></svg>`;
+function jpegSize(buf) {                                  // ширина й висота з маркера SOF у JPEG
+  for (let i = 2; i + 9 < buf.length;) {
+    if (buf[i] !== 0xFF) return null;
+    const m = buf[i + 1], len = buf.readUInt16BE(i + 2);
+    if (m >= 0xC0 && m <= 0xCF && ![0xC4, 0xC8, 0xCC].includes(m)) return { h: buf.readUInt16BE(i + 5), w: buf.readUInt16BE(i + 7) };
+    i += 2 + len;
+  }
+  return null;
+}
+// Пікселі картинки (JPEG у base64 або File у сторінці) — перевірити, що в рамці саме кадр
+const pixelsIn = (page, b64, pts) => page.evaluate(async ([b64, pts]) => {
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0)), bmp = await createImageBitmap(new Blob([bytes], { type: 'image/jpeg' }));
+  const c = new OffscreenCanvas(bmp.width, bmp.height), g = c.getContext('2d'); g.drawImage(bmp, 0, 0);
+  return pts.map(([x, y]) => [...g.getImageData(x, y, 1, 1).data].slice(0, 3));
+}, [b64, pts]);
+const near = (px, rgb, tol = 24) => px.every((v, i) => Math.abs(v - rgb[i]) <= tol);
+const sharedFile = page => page.evaluate(async () => {
+  const f = window.__shared && window.__shared.files && window.__shared.files[0];
+  if (!f) return null;
+  const b = new Uint8Array(await f.arrayBuffer()); let s = ''; b.forEach(x => { s += String.fromCharCode(x); });
+  return { name: f.name, type: f.type, b64: btoa(s) };
+});
+const SHARE_OK = () => { navigator.canShare = () => true; navigator.share = async d => { window.__shared = d; }; };
+const SHARE_DENIED = () => { navigator.canShare = () => true; navigator.share = async () => { const e = new Error('no'); e.name = 'NotAllowedError'; throw e; }; };
 
 // ── Запуск одного сценарію ──────────────────────────────────────────────────
 async function scenario(browser, o) {
@@ -136,6 +170,13 @@ async function scenario(browser, o) {
   if (!o.realFiles) await json(/archive\.json/, o.archive !== undefined ? o.archive : { base: '', days: {} });   // realFiles — справжні файли сайту
   if (o.state !== undefined) await json(/state\.json/, o.state);
   if (o.funds !== undefined) await json(/fundraisers\.json/, o.funds);
+  // Заглушка YouTube IFrame API: window.__ytEnd() — «відео скінчилось» в останньому підключеному плеєрі
+  if (o.ytApi) await ctx.route(/youtube\.com\/iframe_api/, r => r.fulfill({ contentType: 'text/javascript', body:
+    'window.YT={Player:function(id,o){window.__ytPlayers=(window.__ytPlayers||0)+1;window.__ytEnd=function(){o.events.onStateChange({data:0});};}};' +
+    'if(window.onYouTubeIframeAPIReady)window.onYouTubeIframeAPIReady();' }));
+  // Постери «з сайту» (posters/ID.jpg, posters/ID-hd.jpg): o.posters = {імʼя: svg}
+  if (o.posters) await ctx.route(/\/posters\//, r => { const n = r.request().url().split('/posters/')[1];
+    return o.posters[n] ? r.fulfill({ contentType: 'image/svg+xml', body: o.posters[n] }) : r.fulfill({ status: 404, body: '' }); });
   await page.goto('http://localhost:8766/' + (o.path || ''));
   await page.waitForTimeout(o.wait || 700);
   if (o.reload) { await o.reload(page); }
@@ -733,6 +774,199 @@ const CASES = [
       cp.execFileSync('node', ['--check', path.join(ROOT, 'tools/gavriil/films-zbir.mjs')]);
       return runs.length >= 4 && runs.every(t => !/\$\{\{\s*(inputs|github\.event|steps)\./.test(t)) && inputs === 9 && /ZBIR_TEXT: \$\{\{ inputs\.text \}\}/.test(y);
     }],
+  // --- 👋 «З твого візиту» (новий з минулого візиту + «дивитися підряд»)
+  ['V01 перший візит: рядка «з твого візиту» нема; візит записано', { seasons: CAL({ start: '2026-09-20' }), api: V_API },
+    async r => await r.page.locator('#since').count() === 0 && !has(r, 'з твого візиту')
+      && await r.page.evaluate(() => { const v = JSON.parse(localStorage.getItem('lv')); return v.prev === 0 && v.cur > 0; })],
+  ['V02 повернення: «3 нових дні» → «дивитися підряд» — з найстарішого нового, гортання в межах нових; лічильник зменшується', {
+      seasons: CAL({ start: '2026-09-20' }), api: V_API, initScript: visitedAt('2026-09-27T12:00:00Z'), shot: 'V02-since' },
+    async r => {
+      const line = await r.page.innerText('#since');
+      await r.page.click('#since .act'); await r.page.waitForTimeout(200);
+      const src = await r.page.getAttribute('#ytIframe', 'src'), nav = await r.page.innerText('#modNav');
+      const after = await r.page.innerText('#since');
+      await r.page.click('#modNav .mnav >> nth=1'); await r.page.waitForTimeout(150);
+      const src2 = await r.page.getAttribute('#ytIframe', 'src');
+      return line.includes('З твого візиту — 3 нових дні') && src.includes('/embed/v3') && nav.toLowerCase().includes('з твого візиту · 1 з 3')
+        && after.includes('2 нових дні') && after.toLowerCase().includes('переглянуто 1 з 5') && src2.includes('/embed/v4');
+    }],
+  ['V03 «дивитися підряд»: відео скінчилось — наступне вмикається само; після останнього — «усі нові дні переглянуто»', {
+      seasons: CAL({ start: '2026-09-20' }), api: V_API, initScript: visitedAt('2026-09-27T12:00:00Z'), ytApi: true },
+    async r => {
+      await r.page.click('#since .act'); await r.page.waitForTimeout(300);
+      const s1 = await r.page.getAttribute('#ytIframe', 'src');
+      await r.page.evaluate(() => window.__ytEnd()); await r.page.waitForTimeout(300);
+      const s2 = await r.page.getAttribute('#ytIframe', 'src');
+      await r.page.evaluate(() => window.__ytEnd()); await r.page.waitForTimeout(300);
+      await r.page.evaluate(() => window.__ytEnd()); await r.page.waitForTimeout(200);
+      return s1.includes('/embed/v3') && s1.includes('enablejsapi=1') && s2.includes('/embed/v4') && has({ text: await r.page.innerText('#modNav') }, 'Усі нові дні переглянуто')
+        && await r.page.locator('#since').innerText() .then(t => !t.includes('нових'));
+    }],
+  ['V04 перезавантаження в межах візиту (до 30 хв) — «нові» не зникають; звичайний клік по дню — без черги', {
+      seasons: CAL({ start: '2026-09-20' }), api: V_API, initScript: visitedAt('2026-09-27T12:00:00Z'),
+      reload: async p => { await p.reload(); await p.waitForTimeout(600); } },
+    async r => { const line = await r.page.innerText('#since');
+      await r.page.click('[data-k="v4"]'); await r.page.waitForTimeout(150);
+      return line.includes('3 нових дні') && !(await r.page.innerText('#modNav')).includes('З твого візиту') && (await r.page.innerText('#modNav')).includes('4 / 5'); }],
+  ['V05 iPhone: «дивитися підряд» — перший пропущений день у застосунку YouTube, відмічено', { ua: UA_IPHONE, mobile: true, viewport: { width: 390, height: 844 },
+      seasons: CAL({ start: '2026-09-20' }), api: V_API, initScript: visitedAt('2026-09-27T12:00:00Z') },
+    async r => { await r.page.tap('#since .act'); await r.page.waitForTimeout(200);
+      return await r.page.evaluate(() => window.__opened) === 'https://www.youtube.com/watch?v=v3' && await r.page.locator('#vidModal.show').count() === 0
+        && await r.page.locator('[data-k="v3"].watched').count() === 1 && (await r.page.innerText('#since')).includes('2 нових дні'); }],
+  ['V06 зіпсований запис візиту (сміття, рядки, «майбутнє») і заблоковане сховище — без помилок і без рядка', { seasons: CAL({ start: '2026-09-20' }), api: V_API,
+      initScript: () => { try { if (!sessionStorage.getItem('__k')) { sessionStorage.setItem('__k', '1'); localStorage.setItem('lv', '{oops'); } } catch (e) {} } },
+    async r => {
+      const bad = ['{"prev":"x","cur":"y"}', JSON.stringify({ prev: 0, cur: 9e15 }), '[1,2]', 'null'];
+      for (const v of bad) { await r.page.evaluate(v => localStorage.setItem('lv', v), v); await r.page.reload(); await r.page.waitForTimeout(400);
+        if (await r.page.locator('#since .since-new').count()) return false; }
+      const ctx2 = await r.browser.newContext(); const p2 = await ctx2.newPage(); const errs = []; p2.on('pageerror', e => errs.push(e.message));
+      await p2.addInitScript(() => { Object.defineProperty(window, 'localStorage', { get() { throw new Error('blocked'); } }); });
+      await ctx2.route(/googleapis/, rr => rr.fulfill({ contentType: 'application/json', body: JSON.stringify({ items: /playlistId=UU1/.test(rr.request().url()) ? V_API.UU1 : [] }) }));
+      await ctx2.route(/seasons\.json/, rr => rr.fulfill({ contentType: 'application/json', body: JSON.stringify(CAL({ start: '2026-09-20' })) }));
+      await p2.goto('http://localhost:8766/'); await p2.waitForTimeout(600);
+      const ok = errs.length === 0 && await p2.locator('#cal .v-lnk').count() === 5; await ctx2.close();
+      return ok && r.errs.length === 0;
+    }],
+  ['V07 судний день (локальні відео): «дивитися підряд» — наступне після кінця відео', { state: { mode: 'doomsday' }, seasons: CAL({ start: '2026-09-20' }),
+      archive: { base: 'https://video.example', days: { '2026-09-21': [{ t: 'Старе', y: 'a1', v: 'a1.mp4' }], '2026-09-28': [{ t: 'Нове 1', y: 'a2', v: 'a2.mp4' }], '2026-09-29': [{ t: 'Нове 2', y: 'a3', v: 'a3.mp4' }] } },
+      initScript: visitedAt('2026-09-27T12:00:00Z') },
+    async r => { await r.page.route(/video\.example/, rr => rr.fulfill({ status: 404, body: '' }));
+      await r.page.click('#since .act'); await r.page.waitForTimeout(200);
+      const v1 = await r.page.getAttribute('#locVideo', 'src');
+      await r.page.evaluate(() => document.getElementById('locVideo').dispatchEvent(new Event('ended'))); await r.page.waitForTimeout(200);
+      return v1.endsWith('/a2.mp4') && (await r.page.getAttribute('#locVideo', 'src')).endsWith('/a3.mp4'); }],
+
+  // --- ⏭ Гортати дні в плеєрі (‹ ›, стрілки, свайп; контекст — стіна / тема / сезон)
+  ['G01 компʼютер: ‹ › і стрілки ← → гортають дні; дата й назва над запискою; на краях кнопок нема; кожен день відмічається', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => {
+      await r.page.click('[data-k="g2"]'); await r.page.waitForTimeout(150);
+      const nav1 = await r.page.innerText('#modNav'), head1 = await r.page.innerText('#modHead');
+      await r.page.click('#modNav .mnav >> nth=1'); await r.page.waitForTimeout(100);
+      const s3 = await r.page.getAttribute('#ytIframe', 'src');
+      await r.page.keyboard.press('ArrowRight'); await r.page.waitForTimeout(100);
+      const last = await r.page.locator('#modNav .mnav >> nth=1').isDisabled();
+      await r.page.keyboard.press('ArrowLeft'); await r.page.keyboard.press('ArrowLeft'); await r.page.keyboard.press('ArrowLeft'); await r.page.waitForTimeout(100);
+      const first = await r.page.locator('#modNav .mnav >> nth=0').isDisabled(), s1 = await r.page.getAttribute('#ytIframe', 'src');
+      await r.page.keyboard.press('ArrowLeft');                 // за краєм — нічого
+      return nav1.includes('21 вересня') && nav1.includes('2 / 4') && nav1.includes('23 вересня') && head1.toLowerCase().includes('22 вересня 2026 · вівторок') && head1.includes('Друге')
+        && s3.includes('/embed/g3') && last && first && s1.includes('/embed/g1') && (await r.page.getAttribute('#ytIframe', 'src')).includes('/embed/g1')
+        && await r.page.locator('#cal .v-lnk.watched').count() === 4;
+    }],
+  ['G02 відкрито з вибраної теми — гортання лише її відео; із сезону — лише серії сезону', { path: '#t=' + encodeURIComponent('подорожі'),
+      seasons: Object.assign(CAL({ start: '2026-09-20' }), { seasons: [S1()] }), api: { UU1: TAGGED, SH: [], PL1: TWO } },
+    async r => {
+      await r.page.click('#topic .ep >> nth=0'); await r.page.waitForTimeout(150);      // найновіше в темі — g3
+      const nav = await r.page.innerText('#modNav'); await r.page.keyboard.press('ArrowRight'); await r.page.waitForTimeout(80);
+      const stay = (await r.page.getAttribute('#ytIframe', 'src')).includes('/embed/g3');
+      await r.page.keyboard.press('Escape'); await r.page.click('#s-1 .ep >> nth=0'); await r.page.waitForTimeout(150);
+      const navS = await r.page.innerText('#modNav'); await r.page.keyboard.press('ArrowRight'); await r.page.waitForTimeout(80);
+      return nav.toLowerCase().includes('#подорожі · 3 / 3') && stay && navS.includes('1 / 2') && (await r.page.getAttribute('#ytIframe', 'src')).includes('/embed/a2');
+    }],
+  ['G03 iPhone: «⋯» на дні — аркуш дня без плеєра (кадр, записка, дії); свайп — наступний день; «▶ Дивитися» — у застосунок, відмічено лише тоді', {
+      ua: UA_IPHONE, mobile: true, viewport: { width: 390, height: 844 }, seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, shot: 'G03-sheet' },
+    async r => {
+      await r.page.tap('#cal .v-more >> nth=0'); await r.page.waitForTimeout(200);
+      const shown = await r.page.locator('#vidModal.show').count() === 1, iframe = await r.page.getAttribute('#ytIframe', 'src');
+      const poster = await r.page.locator('#modPoster').isVisible(), play = await r.page.getAttribute('#modPlay', 'href');
+      const note = await r.page.innerText('#modNote'), watched0 = await r.page.locator('#cal .v-lnk.watched').count();
+      await r.page.evaluate(() => { const m = document.getElementById('vidModal'), t = (x, type) => m.dispatchEvent(new TouchEvent(type, { bubbles: true,
+        touches: type === 'touchend' ? [] : [new Touch({ identifier: 1, target: m, clientX: x, clientY: 400 })], changedTouches: [new Touch({ identifier: 1, target: m, clientX: x, clientY: 400 })] }));
+        t(300, 'touchstart'); t(120, 'touchend'); });
+      await r.page.waitForTimeout(150);
+      const play2 = await r.page.getAttribute('#modPlay', 'href');
+      await Promise.all([r.page.waitForURL(/youtube\.com\/watch\?v=g2/), r.page.tap('#modPlay')]);
+      await r.page.goBack(); await r.page.waitForTimeout(500);
+      return shown && !iframe && poster && play === 'https://www.youtube.com/watch?v=g1' && note.includes('Сьогодні в дорозі') && note.includes('Картка для Stories')
+        && watched0 === 0 && play2 === 'https://www.youtube.com/watch?v=g2' && await r.page.locator('[data-k="g2"].watched').count() === 1;
+    }],
+  ['G04 Android: «▶ Дивитися» з аркуша — intent у застосунок YouTube; «⋯» — зона дотику ≥ 40 px, не перекриває назву', {
+      ua: UA_ANDROID, mobile: true, viewport: { width: 360, height: 780 }, seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => {
+      const box = await r.page.locator('#cal .v-more >> nth=0').boundingBox();
+      const overlap = await r.page.$eval('#cal .cell.has-more', c => { const t = c.querySelector('.v-title').getBoundingClientRect(), m = c.querySelector('.v-more').getBoundingClientRect(); return t.right > m.left + 1; });
+      await r.page.tap('#cal .v-more >> nth=0'); await r.page.waitForTimeout(150); await r.page.tap('#modPlay'); await r.page.waitForTimeout(150);
+      const u = await r.page.evaluate(() => window.__opened || '');
+      return box.width >= 40 && box.height >= 40 && !overlap && u.startsWith('intent://www.youtube.com/watch?v=g1#Intent;') && await r.page.locator('[data-k="g1"].watched').count() === 1;
+    }],
+
+  // --- 🖼 Картка дня (Stories)
+  ['K01 компʼютер: «Картка дня» — файл JPEG 1080×1920; у рамці — кадр із постера сайту (не чорні смуги 4:3)', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] },
+      posters: { 'g3-hd.jpg': letterboxSvg('#3366cc') } },
+    async r => {
+      await r.page.click('[data-k="g3"]'); await r.page.waitForTimeout(150);
+      const [dl] = await Promise.all([r.page.waitForEvent('download'), r.page.click('.note-tags .card')]);
+      const buf = fs.readFileSync(await dl.path()), size = jpegSize(buf);
+      const [top, mid] = await pixelsIn(r.page, buf.toString('base64'), [[540, 345], [540, 600]]);
+      return dl.suggestedFilename() === 'den-2026-09-23.jpg' && size && size.w === 1080 && size.h === 1920 && near(top, [51, 102, 204]) && near(mid, [51, 102, 204])
+        && (await r.page.innerText('.note-tags .card')).includes('Збережено');
+    }],
+  ['K02 телефон: «Картка для Stories» — системне «Поділитися» з файлом-картинкою 1080×1920', { ua: UA_ANDROID, mobile: true, viewport: { width: 412, height: 915 },
+      seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, posters: { 'g1.jpg': solidSvg(480, 360, '#cc3333') }, initScript: SHARE_OK },
+    async r => {
+      await r.page.tap('#cal .v-more >> nth=0'); await r.page.waitForTimeout(600); await r.page.tap('.note-tags .card'); await r.page.waitForTimeout(400);
+      const f = await sharedFile(r.page); if (!f) return false;
+      const size = jpegSize(Buffer.from(f.b64, 'base64')), [mid] = await pixelsIn(r.page, f.b64, [[540, 600]]);
+      return f.name === 'den-2026-09-21.jpg' && f.type === 'image/jpeg' && size.w === 1080 && size.h === 1920 && near(mid, [204, 51, 51]);
+    }],
+  ['K03 телефон: «Поділитися» відмовило — картинка зʼявляється в аркуші, щоб зберегти утриманням', { ua: UA_IPHONE, mobile: true, viewport: { width: 390, height: 844 },
+      seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, initScript: SHARE_DENIED },
+    async r => { await r.page.tap('#cal .v-more >> nth=0'); await r.page.waitForTimeout(500); await r.page.tap('.note-tags .card'); await r.page.waitForTimeout(500);
+      return await r.page.locator('#cardPrev img').count() === 1 && (await r.page.innerText('#cardPrev')).includes('Утримай') && r.errs.length === 0; }],
+  ['K04 картка без кадру (постерів нема, мініатюра YouTube без CORS), з HTML, емодзі й «словом» на 3000 літер — без помилок, рамка-заглушка', {
+      ua: UA_ANDROID, mobile: true, viewport: { width: 412, height: 915 }, seasons: CAL({ start: '2026-09-20' }), initScript: SHARE_OK, posters: {},
+      api: { UU1: [Object.assign(vidT('x1', '<b>Назва</b> 🌓 "лапки" ' + 'Ж'.repeat(400), '2026-09-21T10:00:00Z'), {}), vidT('x2', 'Друге', '2026-09-22T10:00:00Z')].map((v, i) => { v.snippet.description = i ? '' : 'ж'.repeat(3000) + ' <script>alert(1)</script>'; return v; }), SH: [] } },
+    async r => {   // мініатюра YouTube без дозволу CORS (Playwright сам додав би «дозволено всім» — забороняємо явно)
+      await r.page.route(/i\.ytimg\.com/, rr => rr.fulfill({ contentType: 'image/svg+xml', headers: { 'access-control-allow-origin': 'https://nope.example' }, body: solidSvg(480, 360, '#ff00ff') }));
+      await r.page.tap('#cal .v-more >> nth=0'); await r.page.waitForTimeout(700); await r.page.tap('.note-tags .card'); await r.page.waitForTimeout(500);
+      const f = await sharedFile(r.page); if (!f) return false;
+      const [frame] = await pixelsIn(r.page, f.b64, [[200, 400]]);
+      return jpegSize(Buffer.from(f.b64, 'base64')).h === 1920 && near(frame, [30, 30, 30], 14) && r.errs.length === 0; }],
+
+  // --- 🎂 «Мій день»
+  ['Y01 компʼютер: «Мій день» 23 вересня — день підсвічено, відео відкрито; вибір запамʼятовано', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, shot: 'Y01-myday' },
+    async r => {
+      await r.page.click('.cal-acts .act:has-text("Мій день")'); await r.page.selectOption('#mdD', '23'); await r.page.selectOption('#mdM', '9');
+      await r.page.click('.md-go'); await r.page.waitForTimeout(300);
+      const src = await r.page.getAttribute('#ytIframe', 'src'), msg = await r.page.innerText('#mdMsg');
+      return src.includes('/embed/g3') && msg.includes('23 вересня 2026 · середа') && await r.page.evaluate(() => localStorage.getItem('md')) === '09-23';
+    }],
+  ['Y02 того дня відео нема — найближчий день із відео й пояснення', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await r.page.click('.cal-acts .act:has-text("Мій день")'); await r.page.selectOption('#mdD', '27'); await r.page.selectOption('#mdM', '9');
+      await r.page.click('.md-go'); await r.page.waitForTimeout(300);
+      return (await r.page.innerText('#mdMsg')).includes('27 вересня відео нема — найближчий день: 24 вересня') && (await r.page.getAttribute('#ytIframe', 'src')).includes('/embed/g4'); }],
+  ['Y03 день ще не потрапив у щоденник (день народження навесні) — коли зʼявиться; 31 квітня — «такого дня нема»; 29 лютого — найближчий високосний', {
+      seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => {
+      const ask = async (d, m) => { await r.page.selectOption('#mdD', String(d)); await r.page.selectOption('#mdM', String(m)); await r.page.click('.md-go'); await r.page.waitForTimeout(120); return r.page.innerText('#mdMsg'); };
+      await r.page.click('.cal-acts .act:has-text("Мій день")');
+      const a = await ask(15, 3), b = await ask(31, 4), c = await ask(29, 2);
+      return a.includes('15 березня ще не потрапив у щоденник — він почався 21 вересня 2026. Цей день буде тут 15 березня 2027.')
+        && b.includes('такого дня в календарі нема') && c.includes('29 лютого 2028') && await r.page.locator('#vidModal.show').count() === 0;
+    }],
+  ['Y04 кілька років у щоденнику — найсвіжіший рік, інші — кнопками', { now: '2027-10-01T12:00:00+03:00', seasons: CAL({ start: '2026-09-01' }),
+      api: { UU1: [vid('y27', 'Двадцять сьомий', '2027-09-23T10:00:00Z'), vid('y26', 'Двадцять шостий', '2026-09-23T10:00:00Z')], SH: [] } },
+    async r => { await r.page.click('.cal-acts .act:has-text("Мій день")'); await r.page.selectOption('#mdD', '23'); await r.page.selectOption('#mdM', '9');
+      await r.page.click('.md-go'); await r.page.waitForTimeout(250);
+      const first = await r.page.getAttribute('#ytIframe', 'src'); await r.page.keyboard.press('Escape');
+      await r.page.click('#mdMsg button:has-text("2026")'); await r.page.waitForTimeout(250);
+      return first.includes('/embed/y27') && (await r.page.getAttribute('#ytIframe', 'src')).includes('/embed/y26'); }],
+  ['Y05 зіпсований запамʼятований вибір («99-99», «abc») — форма з сьогоднішньою датою, без помилок', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] },
+      initScript: () => { try { localStorage.setItem('md', '99-99'); } catch (e) {} } },
+    async r => { await r.page.click('.cal-acts .act:has-text("Мій день")');
+      const d = await r.page.inputValue('#mdD'), m = await r.page.inputValue('#mdM');
+      await r.page.evaluate(() => localStorage.setItem('md', 'abc')); await r.page.click('.cal-acts .act:has-text("Мій день")'); await r.page.click('.cal-acts .act:has-text("Мій день")');
+      return d === '29' && m === '9' && await r.page.inputValue('#mdD') === '29' && r.errs.length === 0; }],
+  ['Y06 iPhone: «Мій день» — день підсвічено й відкрито аркуш дня (картка поруч), не застосунок', { ua: UA_IPHONE, mobile: true, viewport: { width: 390, height: 844 },
+      seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
+    async r => { await r.page.tap('.cal-acts .act:has-text("Мій день")'); await r.page.selectOption('#mdD', '22'); await r.page.selectOption('#mdM', '9');
+      await r.page.tap('.md-go'); await r.page.waitForTimeout(300);
+      return await r.page.locator('#vidModal.show').count() === 1 && await r.page.getAttribute('#modPlay', 'href') === 'https://www.youtube.com/watch?v=g2'
+        && !(await r.page.evaluate(() => window.__opened)) && (await r.page.innerText('#modNote')).includes('Картка для Stories'); }],
+  ['U05 телефон 320px: повернення («з твого візиту»), усі дії над стіною й форма «Мій день» — без горизонтального скролу', { ua: UA_IPHONE, mobile: true,
+      viewport: { width: 320, height: 640 }, seasons: CAL({ start: '2026-09-20' }), api: V_API, initScript: visitedAt('2026-09-27T12:00:00Z'), now: '2026-09-29T15:00:00+03:00', shot: 'U05-mobile' },
+    async r => { const a = await noHScroll(r); await r.page.tap('.cal-acts .act:has-text("Мій день")'); await r.page.waitForTimeout(100);
+      return a && await noHScroll(r) && await r.page.locator('#since .since-new').count() === 1 && await r.page.locator('#myday select').count() === 2; }],
+
 ];
 
 (async () => {
