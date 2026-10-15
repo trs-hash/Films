@@ -1,6 +1,6 @@
 {
   "films": {
-    "enabled": true,
+    "enabled": false,
     "start": "",
     "playlist": "UURSKTGA5a2hLrai_MXNaoUQ",
     "exclude": [
@@ -8,8 +8,8 @@
     ]
   },
   "calendar": {
-    "enabled": false,
-    "start": "2026-09-30",
+    "enabled": true,
+    "start": "2026-10-16",
     "playlist": "UURSKTGA5a2hLrai_MXNaoUQ",
     "exclude": [
       "PLS50DDpfd-9w"
@@ -17,7 +17,18 @@
   },
   "topics": [],
   "ignore_tags": [],
-  "seasons": [],
+  "seasons": [
+    {
+      "n": 1,
+      "title": "",
+      "about": "",
+      "format": "daily",
+      "start": "2026-10-16",
+      "end": "2027-10-15",
+      "schedule": "",
+      "playlist": ""
+    }
+  ],
   "support": {
     "enabled": false,
     "donate": {
