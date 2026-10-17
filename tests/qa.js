@@ -1023,8 +1023,8 @@ const CASES = [
       return a && await noHScroll(r) && await r.page.locator('#since .since-new').count() === 1 && await r.page.locator('#myday select').count() === 2; }],
 
   // --- 🗄 Календар схований про запас (calendar.enabled: false) і повертається одним рядком
-  ['E01 справжній seasons.json до старту (сьогодні раніше за 16.10): календар — головне, над ним «Сезон 1 · Скоро» з датами; фільмів нема', { api: REAL_API, shot: 'E01-real-before' },
-    async r => has(r, 'Сезон 1') && has(r, 'Старт — 16 жовтня 2026 · до 15 жовтня 2027') && has(r, 'Скоро тут зʼявиться перша стрічка')
+  ['E01 справжній seasons.json до старту (сьогодні раніше за 19.10): календар — головне, над ним «Сезон 1 · Скоро» з датами; фільмів нема', { api: REAL_API, shot: 'E01-real-before' },
+    async r => has(r, 'Сезон 1') && has(r, 'Старт — 19 жовтня 2026 · до 18 жовтня 2027') && has(r, 'Скоро тут зʼявиться перша стрічка')
       && await r.page.locator('#s-1.season.cal-s.soon').count() === 1 && await r.page.locator('#cal').count() === 1 && await r.page.locator('section.season').count() === 1
       && await r.page.locator('#films, .cal-hidden, .poster').count() === 0 && r.apiCalls.includes('UURSKTGA5a2hLrai_MXNaoUQ') && r.durCalls.length === 0
       && !has(r, 'Скоро тут буде нове') && !has(r, 'Фільмотека') && r.errs.length === 0],
@@ -1086,11 +1086,11 @@ const CASES = [
       const b = !r2.apiUrls.some(u => /playlistId=UC/.test(u)) && r2.apiUrls.filter(u => /UURSKTGA5a2hLrai_MXNaoUQ/.test(u)).length === 1 && await r2.page.locator('#cal .v-lnk').count() === 4;
       await c2.close(); return a && b;
     }],
-  ['E07 справжній seasons.json, сезон іде: «Сезон 1 · Зараз», «День 24 із 365», стіна днів з 16.10; Shorts і старіші проби — ні; одна стіна, не дві', {
-      now: '2026-11-08T12:00:00+02:00', shot: 'E07-real-live',
-      api: { UURSKTGA5a2hLrai_MXNaoUQ: [vid('p0', 'Проба', '2026-10-10T10:00:00Z'), ...Array.from({ length: 24 }, (_, i) => vid('s' + i, 'День ' + (i + 1), new Date(Date.UTC(2026, 9, 16 + i, 12)).toISOString())),
+  ['E07 справжній seasons.json, сезон іде: «Сезон 1 · Зараз», «День 24 із 365», стіна днів з 19.10; Shorts і старіші проби — ні; одна стіна, не дві', {
+      now: '2026-11-11T12:00:00+02:00', shot: 'E07-real-live',
+      api: { UURSKTGA5a2hLrai_MXNaoUQ: [vid('p0', 'Проба', '2026-10-17T10:00:00Z'), ...Array.from({ length: 24 }, (_, i) => vid('s' + i, 'День ' + (i + 1), new Date(Date.UTC(2026, 9, 19 + i, 12)).toISOString())),
         vid('sh', 'Шортс', '2026-10-20T10:00:00Z')].reverse(), 'PLS50DDpfd-9w': [vid('sh', 'Шортс', '2026-10-20T10:00:00Z')] } },
-    async r => has(r, 'Зараз') && has(r, 'Сезон 1') && has(r, '16 жовтня 2026 — 15 жовтня 2027') && has(r, 'День 24 із 365') && has(r, '24 відео')
+    async r => has(r, 'Зараз') && has(r, 'Сезон 1') && has(r, '19 жовтня 2026 — 18 жовтня 2027') && has(r, 'День 24 із 365') && has(r, '24 відео')
       && await r.page.locator('#cal .v-lnk').count() === 24 && await r.page.locator('.grid').count() === await r.page.locator('#cal .grid').count()
       && !has(r, 'Шортс') && !has(r, 'Проба') && await r.page.locator('#s-1 .prog-bar i').count() === 1 && r.errs.length === 0],
   ['E03 сховано, але є сезон — показано сезон, без заглушки; посилання #d= і «мій день» тихо нічого не роблять', { path: '#d=2026-09-21',

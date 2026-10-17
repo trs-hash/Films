@@ -9,7 +9,7 @@
   },
   "calendar": {
     "enabled": true,
-    "start": "2026-10-16",
+    "start": "2026-10-19",
     "playlist": "UURSKTGA5a2hLrai_MXNaoUQ",
     "exclude": [
       "PLS50DDpfd-9w"
@@ -23,8 +23,8 @@
       "title": "",
       "about": "",
       "format": "daily",
-      "start": "2026-10-16",
-      "end": "2027-10-15",
+      "start": "2026-10-19",
+      "end": "2027-10-18",
       "schedule": "",
       "playlist": ""
     }
