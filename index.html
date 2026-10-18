@@ -97,6 +97,22 @@
         /* Сезон календаря — шапка над стіною днів (стіна — своя, нижче) */
         .season.cal-s{margin-bottom:44px}
         .topic .s-title{text-transform:none}            /* хештег теми — як пишеться */
+        /* Плашка сезону — квиток: червоний, з вирізами з боків і пунктиром усередині, трохи навскіс. Поруч із назвою —
+           окремою колонкою сітки (не поверх), тож довга назва переноситься, а не залазить під плашку */
+        .season.cal-s{display:grid;grid-template-columns:minmax(0,max-content) minmax(0,1fr);column-gap:44px;align-items:start}
+        .season.cal-s>*{grid-column:1/-1}
+        .season.cal-s>.s-lbl,.season.cal-s>.s-title{grid-column:1}
+        .season.cal-s>.s-plate{grid-column:2;grid-row:1/span 2;align-self:center;justify-self:start;margin:8px 4px 14px}   /* поля — під нахил і тінь */
+        .s-plate{position:relative;width:max-content;display:flex;flex-direction:column;align-items:center;padding:12px 26px 11px;
+            background:var(--red);color:#fff;font-family:var(--disp);text-transform:uppercase;line-height:1;border-radius:4px;
+            transform:rotate(-4deg);pointer-events:none;filter:drop-shadow(0 10px 14px rgba(0,0,0,.18));
+            -webkit-mask:radial-gradient(circle 9px at 0 50%,#0000 97%,#000) left/51% 100% no-repeat,radial-gradient(circle 9px at 100% 50%,#0000 97%,#000) right/51% 100% no-repeat;
+            mask:radial-gradient(circle 9px at 0 50%,#0000 97%,#000) left/51% 100% no-repeat,radial-gradient(circle 9px at 100% 50%,#0000 97%,#000) right/51% 100% no-repeat}
+        .s-plate::after{content:'';position:absolute;inset:5px 13px;border:1px dashed rgba(255,255,255,.55);border-radius:2px}
+        .sp-k{font-size:13px;font-weight:500;letter-spacing:.32em;margin-right:-.32em}
+        .sp-n{font-size:58px;font-weight:600;margin:3px 0 4px}
+        .sp-y{font-size:11px;font-weight:500;letter-spacing:.2em;margin-right:-.2em;opacity:.9;font-variant-numeric:tabular-nums}
+        .season.done .s-plate{background:var(--mut)}
         .season.cal-s .prog{margin-bottom:0}
         .s-about{font-size:17px;line-height:1.55;color:var(--mut);max-width:640px;margin:0 0 22px;white-space:pre-line;overflow-wrap:anywhere}
         .s-meta{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13px;font-weight:600;letter-spacing:.3px;color:var(--mut);margin-bottom:26px;overflow-wrap:anywhere}
@@ -358,6 +374,12 @@
             .eps.compact{grid-template-columns:repeat(2,1fr)}
             .fl-grid{grid-template-columns:minmax(0,1fr);gap:28px;margin-bottom:48px}
             .fl-year{font-size:32px;margin-bottom:16px}
+            .season.cal-s{column-gap:18px}
+            .s-plate{padding:8px 16px 7px}
+            .s-plate::after{inset:4px 9px}
+            .sp-k{font-size:9px}
+            .sp-n{font-size:32px;margin:2px 0 3px}
+            .sp-y{font-size:8px}
             .intro .name{font-size:17px}
             /* теми на телефоні — один рядок з прокруткою: календар лишається на першому екрані */
             .topics{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -15px 28px;padding:0 15px}
@@ -1189,7 +1211,11 @@
         let eps = (s.cal ? calSeasonRecs(s) : (EPS[s.k] || [])).slice().sort((a, b) => a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0);
         let daily = s.format === 'daily';
         let stLbl = st === 'live' ? '<span class="s-live">Зараз</span>' : (st === 'soon' ? 'Скоро' : 'Завершено');
-        let html = `<section class="season ${st} ${s.format}${s.cal ? ' cal-s' : ''}" id="${s.id}">` +
+        // Сезон календаря — з декоративною плашкою-квитком «Сезон 01 · 2026–2027» (лише прикраса: назва — у h2)
+        let years = [s.start, s.end].filter(Boolean).map(d => d.slice(0, 4)).filter((y, i, a) => a.indexOf(y) === i).join('–');
+        let plate = s.cal ? `<div class="s-plate" aria-hidden="true"><span class="sp-k">Сезон</span><span class="sp-n">${pad2(s.n)}</span>` +
+            (years ? `<span class="sp-y">${years}</span>` : '') + '</div>' : '';
+        let html = `<section class="season ${st} ${s.format}${s.cal ? ' cal-s' : ''}" id="${s.id}">` + plate +
             `<div class="s-lbl">${s.title ? 'Сезон ' + s.n + (st === 'live' ? ' ' : ' · ') : ''}${stLbl}</div>` +
             `<h2 class="s-title">${esc(s.title || 'Сезон ' + s.n)}</h2>` +
             (s.about ? `<p class="s-about">${esc(s.about)}</p>` : '');
