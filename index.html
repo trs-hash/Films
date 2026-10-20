@@ -302,7 +302,7 @@
         .note-tags .chip.card{font:inherit;font-size:13px;font-weight:600;cursor:pointer}
         .card-prev{margin-top:14px;text-align:center;color:rgba(255,255,255,.8);font-size:13px}
         .card-prev img{display:block;width:min(260px,70vw);margin:0 auto 10px;border-radius:12px}
-        /* «⋯» на клітинці (телефон): аркуш дня — записка, «Мій день», картка, посилання; дотик по кадру й далі веде в застосунок */
+        /* «⋯» на клітинці (телефон): аркуш дня — записка, картка, посилання; дотик по кадру й далі веде в застосунок */
         .v-more{position:absolute;right:0;bottom:0;z-index:22;width:44px;height:40px;padding:0 7px 7px 0;box-sizing:border-box;border:0;background:none;cursor:pointer;display:flex;align-items:flex-end;justify-content:flex-end}
         .v-more span{position:relative;width:28px;height:22px;border-radius:11px;background:rgba(0,0,0,.5)}
         .v-more span::before{content:'';position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:#fff;box-shadow:-7px 0 #fff,7px 0 #fff}
@@ -313,17 +313,6 @@
         .since-new{color:var(--txt);font-weight:600}
         .since-new .act{color:var(--red);margin-left:6px}
         .since-seen{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}
-        /* 🎂 «Мій день»: день і місяць → цей день у щоденнику (найсвіжіший рік; інші роки — кнопками) */
-        .myday{position:absolute;top:34px;right:0;z-index:30;width:min(340px,100%);box-sizing:border-box;padding:14px 16px;background:var(--bg);border:1px solid var(--div);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.12);font-size:13px}
-        .myday[hidden]{display:none}
-        .md-l{display:block;color:var(--mut);margin-bottom:8px}
-        .md-row{display:flex;gap:8px}
-        .md-row select{flex:1;min-width:0;min-height:40px;padding:0 8px;border:1px solid var(--div);border-radius:8px;background:var(--bg);color:var(--txt);font:inherit;font-size:14px}
-        .md-go{min-height:40px;padding:0 14px;border:0;border-radius:8px;background:var(--txt);color:var(--bg);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
-        .md-go:hover{background:var(--red)}
-        .md-msg{margin:10px 0 0;color:var(--txt);line-height:1.45}
-        .md-msg:empty{display:none}
-        .md-msg button{background:none;border:0;padding:4px 2px;font:inherit;font-weight:700;color:var(--red);cursor:pointer}
 
         .cal-hidden{border:2px dashed var(--red);border-radius:10px;padding:12px 16px;margin:0 0 30px;font-size:13px;font-weight:600;line-height:1.5;color:var(--red)}
         .msg-empty a{color:var(--red)}
@@ -364,7 +353,6 @@
             .topics{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -15px 28px;padding:0 15px}
             .chip{min-height:40px}
             .cal-acts{position:static;justify-content:flex-end;flex-wrap:wrap;gap:2px 18px;margin:-6px 0 10px}
-            .myday{position:static;width:100%;margin:0 0 16px}
             .topics:not(.all) .chip.extra{display:inline-flex}   /* на телефоні ряд гортається — видно всі теми */
             .topics .chip.more{display:none}
             .topics::-webkit-scrollbar{display:none}
@@ -1266,13 +1254,12 @@
         // займає кілька екранів (адресу й вибрану тему кнопка не чіпає)
         let n = eps.filter(playable).length;
         let acts = (n > 1 ? '<button type="button" class="act" onclick="randomDay()">🎲 Випадковий день</button>' : '') +
-            (n ? `<button type="button" class="act" onclick="myDayToggle(this)" aria-expanded="${MD_OPEN}" aria-controls="myday">🎂 Мій день</button>` : '') +
             (+today.slice(8) > 6 ? `<a class="act to-today" href="#cal-${today}" onclick="event.preventDefault();showDay('${today}')">Сьогодні ↓</a>` : '');
         // Відлік стіни — від дня першого відео (calendar.start лише відсікає старіші проби): без порожніх тижнів до старту
         let wall = eps.length ? dailyHtml(Object.assign({}, s, { start: eps[0].date }), 'live', today, eps) : '';
         let since = sinceInner();
         if (since) html = html.replace('<section class="cal-home', `<div class="since" id="since">${since}</div><section class="cal-home`);
-        return html + (wall && acts ? `<div class="cal-acts">${acts}</div>${mydayHtml()}` : '') + (wall || soon) + '</section>';
+        return html + (wall && acts ? `<div class="cal-acts">${acts}</div>` : '') + (wall || soon) + '</section>';
     }
 
     // ── 🎞 Фільми ───────────────────────────────────────────────────────────────
@@ -1611,7 +1598,7 @@
         let list = ctx === 'topic' || (ctx === 'films' && TOPIC) ? (ctx === 'films' ? EPS.films || [] : allRecs()).filter(r => recTopics(r).includes(TOPIC)) : (EPS[ctx] || []);
         return list.filter(playable).slice().sort(byTs);
     }
-    // Застосунок YouTube поза кліком по посиланню (кнопки «Дивитися», «підряд», «Мій день»)
+    // Застосунок YouTube поза кліком по посиланню (кнопки «Дивитися», «підряд»)
     function openInApp(p) {
         if (IS_ANDROID) openApp('intent://www.youtube.com/watch?v=' + encodeURIComponent(p.y) +
             '#Intent;scheme=https;package=com.google.android.youtube;S.browser_fallback_url=' + encodeURIComponent(ytWatch(p)) + ';end');
@@ -1802,67 +1789,7 @@
         else if (html && cal) cal.insertAdjacentHTML('beforebegin', `<div class="since" id="since">${html}</div>`);
     }
 
-    // ── 🎂 «Мій день» ───────────────────────────────────────────────────────────
-    // День і місяць (день народження, річниця) → цей день у щоденнику: найсвіжіший рік, інші роки — кнопками.
-    // Відео того дня нема — найближчий день із відео. Ще не настав — коли зʼявиться. Вибір памʼятає браузер.
-    let MD_OPEN = false, MD_MSG = '';
-    const validDay = d => { let [y, m, dd] = d.split('-').map(Number), t = new Date(Date.UTC(y, m - 1, dd)); return t.getUTCMonth() === m - 1 && t.getUTCDate() === dd; };
-    function mdSaved() { let m = /^(\d{2})-(\d{2})$/.exec(lsGet('md') || ''); return m && +m[1] >= 1 && +m[1] <= 12 && +m[2] >= 1 && +m[2] <= 31 ? { m: +m[1], d: +m[2] } : null; }
-    function mydayHtml() {
-        if (!MD_OPEN) return '<div class="myday" id="myday" hidden></div>';
-        let t = todayStr(), sv = mdSaved() || { m: +t.slice(5, 7), d: +t.slice(8) };
-        let days = Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}"${i + 1 === sv.d ? ' selected' : ''}>${i + 1}</option>`).join('');
-        let months = MONTHS_GEN.map((m, i) => `<option value="${i + 1}"${i + 1 === sv.m ? ' selected' : ''}>${m}</option>`).join('');
-        return `<div class="myday" id="myday"><form onsubmit="event.preventDefault();myDayFind()">` +
-            `<label class="md-l" for="mdD">Твій день — день народження чи інша важлива дата</label>` +
-            `<div class="md-row"><select id="mdD" aria-label="День">${days}</select><select id="mdM" aria-label="Місяць">${months}</select>` +
-            `<button type="submit" class="md-go">Знайти</button></div><p class="md-msg" id="mdMsg" aria-live="polite">${MD_MSG}</p></form></div>`;
-    }
-    window.myDayToggle = function(btn) {
-        MD_OPEN = !MD_OPEN; MD_MSG = '';
-        let el = $('myday'); if (el) el.outerHTML = mydayHtml();
-        if (btn) btn.setAttribute('aria-expanded', String(MD_OPEN));
-        if (MD_OPEN) { let sel = $('mdD'); if (sel) sel.focus(); }
-    };
-    // Телефон: день підсвічуємо й відкриваємо аркуш дня (картка «мій день» — у два дотики); компʼютер — відео
-    function openDay(rec) {
-        if (isAppVideo(toP(rec))) { showDay(rec.date, rec.key, false); QUEUE_ON = false; lastFocus = document.activeElement; showRec(toP(rec, 'cal'), 'cal'); }
-        else showDay(rec.date, rec.key, true);
-    }
-    function mdSay(html) { MD_MSG = html; let el = $('mdMsg'); if (el) el.innerHTML = html; }
-    window.myDayFind = function() {
-        let d = +($('mdD') || {}).value, m = +($('mdM') || {}).value, today = todayStr();
-        if (!(d >= 1 && d <= 31 && m >= 1 && m <= 12)) return;
-        lsSet('md', pad2(m) + '-' + pad2(d));
-        let human = d + ' ' + MONTHS_GEN[m - 1];
-        if (!validDay(`2024-${pad2(m)}-${pad2(d)}`)) { mdSay(`${esc(human)} — такого дня в календарі нема.`); return; }
-        let cal = (EPS.cal || []).filter(playable).sort(byTs);
-        if (!cal.length) { mdSay('Щоденник поки порожній.'); return; }
-        let first = cal[0].date, ty = +today.slice(0, 4), years = [];
-        for (let y = ty; y >= +first.slice(0, 4); y--) {
-            let ds = `${y}-${pad2(m)}-${pad2(d)}`;
-            if (validDay(ds) && ds >= first && ds <= today) years.push(ds);
-        }
-        if (!years.length) {
-            let next = '';
-            for (let y = ty; y <= ty + 8 && !next; y++) { let ds = `${y}-${pad2(m)}-${pad2(d)}`; if (validDay(ds) && ds > today) next = ds; }
-            mdSay(`${esc(human)} ще не потрапив у щоденник — він почався ${esc(fmtDay(first, true))}.` + (next ? ` Цей день буде тут ${esc(fmtDay(next, true))}.` : ''));
-            return;
-        }
-        myDayGo(years[0], years);
-    };
-    window.myDayGo = function(target, years) {
-        let cal = (EPS.cal || []).filter(playable).sort(byTs);
-        if (!cal.length || !DATE_RE.test(target)) return;
-        let exact = cal.find(r => r.date === target);
-        let rec = exact || cal.reduce((b, r) => Math.abs(dayNum(r.date) - dayNum(target)) < Math.abs(dayNum(b.date) - dayNum(target)) ? r : b);
-        let y = todayStr().slice(0, 4);
-        years = years || [];
-        let others = years.filter(x => x !== target);
-        mdSay((exact ? `${esc(fmtDayLong(target))} ↓` : `${esc(fmtDay(target, target.slice(0, 4) !== y))} відео нема — найближчий день: ${esc(fmtDay(rec.date, rec.date.slice(0, 4) !== y))}.`) +
-            (others.length ? ' Інші роки: ' + others.map(x => `<button type="button" onclick="myDayGo('${x}', ${esc(JSON.stringify(years))})">${x.slice(0, 4)}</button>`).join(' ') : ''));
-        openDay(rec);
-    };
+    try { localStorage.removeItem('md'); } catch (e) {}   // «Мій день» прибрано (власник) — його запамʼятований день більше не потрібен
 
     // ── 🖼 Картка дня: вертикальна картинка 1080×1920 для Stories (Instagram, Telegram) ─────────────
     // Кадр (постер із сайту — він «свій», тож полотно можна зберегти), дата, назва, рядки записки, адреса дня.

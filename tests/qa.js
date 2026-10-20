@@ -977,50 +977,15 @@ const CASES = [
       const ta = await frameTop(a.b64), tb = await frameTop(b.b64);
       return ta > 450 && tb < 330 && ta - tb > 150;            // без опису кадр помітно нижче — блок по центру
     }],
-  // --- 🎂 «Мій день»
-  ['Y01 компʼютер: «Мій день» 23 вересня — день підсвічено, відео відкрито; вибір запамʼятовано', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] }, shot: 'Y01-myday' },
-    async r => {
-      await r.page.click('.cal-acts .act:has-text("Мій день")'); await r.page.selectOption('#mdD', '23'); await r.page.selectOption('#mdM', '9');
-      await r.page.click('.md-go'); await r.page.waitForTimeout(300);
-      const src = await r.page.getAttribute('#ytIframe', 'src'), msg = await r.page.innerText('#mdMsg');
-      return src.includes('/embed/g3') && msg.includes('23 вересня 2026 · середа') && await r.page.evaluate(() => localStorage.getItem('md')) === '09-23';
-    }],
-  ['Y02 того дня відео нема — найближчий день із відео й пояснення', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
-    async r => { await r.page.click('.cal-acts .act:has-text("Мій день")'); await r.page.selectOption('#mdD', '27'); await r.page.selectOption('#mdM', '9');
-      await r.page.click('.md-go'); await r.page.waitForTimeout(300);
-      return (await r.page.innerText('#mdMsg')).includes('27 вересня відео нема — найближчий день: 24 вересня') && (await r.page.getAttribute('#ytIframe', 'src')).includes('/embed/g4'); }],
-  ['Y03 день ще не потрапив у щоденник (день народження навесні) — коли зʼявиться; 31 квітня — «такого дня нема»; 29 лютого — найближчий високосний', {
-      seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
-    async r => {
-      const ask = async (d, m) => { await r.page.selectOption('#mdD', String(d)); await r.page.selectOption('#mdM', String(m)); await r.page.click('.md-go'); await r.page.waitForTimeout(120); return r.page.innerText('#mdMsg'); };
-      await r.page.click('.cal-acts .act:has-text("Мій день")');
-      const a = await ask(15, 3), b = await ask(31, 4), c = await ask(29, 2);
-      return a.includes('15 березня ще не потрапив у щоденник — він почався 21 вересня 2026. Цей день буде тут 15 березня 2027.')
-        && b.includes('такого дня в календарі нема') && c.includes('29 лютого 2028') && await r.page.locator('#vidModal.show').count() === 0;
-    }],
-  ['Y04 кілька років у щоденнику — найсвіжіший рік, інші — кнопками', { now: '2027-10-01T12:00:00+03:00', seasons: CAL({ start: '2026-09-01' }),
-      api: { UU1: [vid('y27', 'Двадцять сьомий', '2027-09-23T10:00:00Z'), vid('y26', 'Двадцять шостий', '2026-09-23T10:00:00Z')], SH: [] } },
-    async r => { await r.page.click('.cal-acts .act:has-text("Мій день")'); await r.page.selectOption('#mdD', '23'); await r.page.selectOption('#mdM', '9');
-      await r.page.click('.md-go'); await r.page.waitForTimeout(250);
-      const first = await r.page.getAttribute('#ytIframe', 'src'); await r.page.keyboard.press('Escape');
-      await r.page.click('#mdMsg button:has-text("2026")'); await r.page.waitForTimeout(250);
-      return first.includes('/embed/y27') && (await r.page.getAttribute('#ytIframe', 'src')).includes('/embed/y26'); }],
-  ['Y05 зіпсований запамʼятований вибір («99-99», «abc») — форма з сьогоднішньою датою, без помилок', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] },
-      initScript: () => { try { localStorage.setItem('md', '99-99'); } catch (e) {} } },
-    async r => { await r.page.click('.cal-acts .act:has-text("Мій день")');
-      const d = await r.page.inputValue('#mdD'), m = await r.page.inputValue('#mdM');
-      await r.page.evaluate(() => localStorage.setItem('md', 'abc')); await r.page.click('.cal-acts .act:has-text("Мій день")'); await r.page.click('.cal-acts .act:has-text("Мій день")');
-      return d === '29' && m === '9' && await r.page.inputValue('#mdD') === '29' && r.errs.length === 0; }],
-  ['Y06 iPhone: «Мій день» — день підсвічено й відкрито аркуш дня (картка поруч), не застосунок', { ua: UA_IPHONE, mobile: true, viewport: { width: 390, height: 844 },
-      seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] } },
-    async r => { await r.page.tap('.cal-acts .act:has-text("Мій день")'); await r.page.selectOption('#mdD', '22'); await r.page.selectOption('#mdM', '9');
-      await r.page.tap('.md-go'); await r.page.waitForTimeout(300);
-      return await r.page.locator('#vidModal.show').count() === 1 && await r.page.getAttribute('#modPlay', 'href') === 'https://www.youtube.com/watch?v=g2'
-        && !(await r.page.evaluate(() => window.__opened)) && (await r.page.innerText('#modNote')).includes('Картка для Stories'); }],
-  ['U05 телефон 320px: повернення («з твого візиту»), усі дії над стіною й форма «Мій день» — без горизонтального скролу', { ua: UA_IPHONE, mobile: true,
+  // --- 🎂 «Мій день» — прибрано на прохання власника
+  ['Y01 «Мій день» прибрано: нема кнопки, форми й стилів; старий запамʼятований день (md) стерто; «Випадковий день» лишився', { seasons: CAL({ start: '2026-09-20' }), api: { UU1: TAGGED, SH: [] },
+      initScript: () => { try { if (!sessionStorage.getItem('__md')) { sessionStorage.setItem('__md', '1'); localStorage.setItem('md', '09-23'); } } catch (e) {} } },
+    async r => !has(r, 'Мій день') && await r.page.locator('#myday, .myday, #mdD, .md-go').count() === 0 && await r.page.evaluate(() => localStorage.getItem('md')) === null
+      && await r.page.evaluate(() => typeof window.myDayToggle === 'undefined' && ![...document.styleSheets].some(sh => [...sh.cssRules].some(c => /\.myday|\.md-/.test(c.cssText))))
+      && await r.page.locator('.cal-acts .act:has-text("Випадковий день")').count() === 1 && r.errs.length === 0],
+  ['U05 телефон 320px: повернення («з твого візиту») і всі дії над стіною — без горизонтального скролу', { ua: UA_IPHONE, mobile: true,
       viewport: { width: 320, height: 640 }, seasons: CAL({ start: '2026-09-20' }), api: V_API, initScript: visitedAt('2026-09-27T12:00:00Z'), now: '2026-09-29T15:00:00+03:00', shot: 'U05-mobile' },
-    async r => { const a = await noHScroll(r); await r.page.tap('.cal-acts .act:has-text("Мій день")'); await r.page.waitForTimeout(100);
-      return a && await noHScroll(r) && await r.page.locator('#since .since-new').count() === 1 && await r.page.locator('#myday select').count() === 2; }],
+    async r => await noHScroll(r) && await r.page.locator('#since .since-new').count() === 1 && await r.page.locator('.cal-acts .act').count() >= 1],
 
   // --- 🗄 Календар схований про запас (calendar.enabled: false) і повертається одним рядком
   ['E01 справжній seasons.json, відео ще нема: головна — стіна днів зі спокійним «Скоро тут зʼявиться перша стрічка»; ні дати старту, ні шапки сезону, ні плашки; фільмів нема', { api: REAL_API, shot: 'E01-real-before' },

@@ -128,14 +128,6 @@ async function siteRun(browser, i) {
     if (await page.locator('#since .act').count() && chance(0.5)) {      // «дивитися підряд»
       await page.locator('#since .act').click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(150); await page.keyboard.press('Escape');
     }
-    const myd = page.locator('.cal-acts .act:has-text("Мій день")');    // «мій день» з випадковою датою
-    if (await myd.count() && chance(0.5)) {
-      await myd.click({ timeout: 1500 }).catch(() => {});
-      await page.selectOption('#mdD', String(int(1, 31)), { timeout: 1500 }).catch(() => {});
-      await page.selectOption('#mdM', String(int(1, 12)), { timeout: 1500 }).catch(() => {});
-      await page.locator('.md-go').click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(200);
-      await page.keyboard.press('Escape');
-    }
     if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) problems.push('горизонтальний скрол після дій');
   } catch (e) { problems.push('EXC: ' + e.message.split('\n')[0]); }
   await ctx.close();
