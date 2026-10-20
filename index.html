@@ -210,7 +210,7 @@
         .install{margin-left:auto;padding:6px 0;background:none;border:0;font:inherit;font-size:11px;letter-spacing:.5px;color:var(--mut);opacity:.6;cursor:pointer}
         .install:hover{opacity:1;color:var(--red)}
         .install[hidden]{display:none}
-        .cal-soon{font-size:17px;color:var(--mut);margin:14px 0 0}
+        .cal-soon{font-size:17px;color:var(--mut);margin:0}
         /* Вибрана тема: у календарі приглушено відео інших тем — видно, коли тема «жила» */
         .cal-home.filtering .v-lnk:not(.hit){opacity:.18;filter:grayscale(1)}
         .note-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
@@ -1253,7 +1253,7 @@
             calSeasonHtml(today) + homeInner(today);
     }
     function homeInner(today) {
-        let s = CAL, soon = '<div class="s-lbl">Стіна днів</div><p class="cal-soon">Скоро тут зʼявиться перша стрічка.</p>';
+        let s = CAL, soon = '<p class="cal-soon">Скоро тут зʼявиться перша стрічка.</p>';   // без підпису «Стіна днів» (власник)
         if (s.start && today < s.start)                // ще до першого дня — спокійна заглушка (без відліку й дедлайну)
             return `<section class="cal-home" id="cal">${soon}</section>`;
         let eps = (EPS.cal || []).slice().sort((a, b) => a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0);

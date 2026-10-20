@@ -1026,7 +1026,8 @@ const CASES = [
   ['E01 справжній seasons.json, відео ще нема: головна — стіна днів зі спокійним «Скоро тут зʼявиться перша стрічка»; ні дати старту, ні шапки сезону, ні плашки; фільмів нема', { api: REAL_API, shot: 'E01-real-before' },
     async r => has(r, 'Скоро тут зʼявиться перша стрічка') && await r.page.locator('#cal').count() === 1
       && await r.page.locator('section.season, .s-plate, .cal-s, #films, .cal-hidden, .poster').count() === 0 && !has(r, 'Сезон') && !has(r, 'Старт')
-      && r.apiCalls.includes('UURSKTGA5a2hLrai_MXNaoUQ') && r.durCalls.length === 0 && !has(r, 'Скоро тут буде нове') && r.errs.length === 0],
+      && r.apiCalls.includes('UURSKTGA5a2hLrai_MXNaoUQ') && r.durCalls.length === 0 && !has(r, 'Скоро тут буде нове') && r.errs.length === 0
+      && await r.page.$$eval('#app *', a => a.every(e => !/Стіна днів/.test(e.textContent) || e.closest('.sr-only') || e.querySelector('.sr-only')))],   // «Стіна днів» — лише для читачів екрана
   ['E02 ?check на справжньому seasons.json: фільми — у попередньому перегляді з позначкою «сховано», календар — без дати старту, помилок нема', { path: '?check', api: REAL_API },
     async r => await r.page.locator('.cal-hidden').count() === 1 && has(r, 'глядачі фільмів не бачать') && await r.page.locator('#films').count() === 1
       && await r.page.locator('#cal').count() === 1 && has(r, 'відлік від першого відео') && !has(r, 'старіші за') && has(r, 'Помилок не знайдено')],
@@ -1093,7 +1094,8 @@ const CASES = [
     async r => {
       const first = await r.page.$eval('#cal .cell', c => c.id);
       return first === 'cal-2026-10-23' && await r.page.locator('#cal-2026-10-22').count() === 0 && await r.page.locator('#cal .v-lnk').count() === 10
-        && !has(r, 'Шортс') && await r.page.locator('section.season, .s-plate').count() === 0 && !has(r, 'Скоро тут') && r.errs.length === 0;
+        && !has(r, 'Шортс') && await r.page.locator('section.season, .s-plate').count() === 0 && !has(r, 'Скоро тут') && r.errs.length === 0
+        && await r.page.$$eval('#app *', a => a.every(e => !/Стіна днів/.test(e.textContent) || e.closest('.sr-only') || e.querySelector('.sr-only')));   // підпис лише для читачів екрана
     }],
   ['E03 сховано, але є сезон — показано сезон, без заглушки; посилання #d= і «мій день» тихо нічого не роблять', { path: '#d=2026-09-21',
       seasons: Object.assign(CAL({ start: '2026-09-20', enabled: false }), { seasons: [S1()] }), api: { UU1: TAGGED, SH: [], PL1: TWO } },
