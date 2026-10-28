@@ -29,7 +29,9 @@
     компʼютер — вбудований Instagram (`igEmbed`, `.iframe-wrap.ig`), телефон — застосунок. `IG`, `normIG`, `mergeIG`.
   - **Лекції** = YouTube від `lectures.start` (26.10), полиці **широких тем** (`lecShelves`, `lecturesHtml`), картки —
     горизонтальні афіші з резерву фільмів (`posterHtml(…, 'lec:'+тема, LEC_OF)`). Теми — `lectures.json` від
-    локальної ШІ-моделі на сервері власника (`tools/lectures/`; встановлення — `PROMPT.md`). Без теми — «Нові
+    локальної ШІ-моделі на сервері власника (`tools/lectures/`; встановлення — `PROMPT.md`). Whisper — **наявний на
+    сервері** (власник: «ймовірно, вже стоїть»): `whisper_backend` auto / faster-whisper / openai-whisper / command / http,
+    `lectures.py transcribe ФАЙЛ`; другий не ставити, наявний не чіпати. Без теми — «Нові
     лекції» згори; без файлу — «Усі лекції». `LEC`, `LECT`, `normLect`, `durOf`.
   - **«Навчання» тем — тут:** власник каже («злий А і Б», «назви …», «лекцію X — у тему Y») → правити
     `tools/lectures/overrides.json` (rename/about/lock/merge/pin/split_off), дивлячись на `tools/lectures/report.md`;

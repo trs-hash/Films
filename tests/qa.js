@@ -1180,7 +1180,7 @@ const CASES = [
       const b = await r2.page.locator('.lpeek').count() === 0 && await r2.page.locator('.tabs').count() === 0 && await r2.page.locator('#cal').count() === 1 && r2.errs.length === 0; await c2.close();
       return a && b && r.errs.length === 0;
     }],
-  ['LT01 теми лекцій (tools/lectures): правила тем і весь конвеєр із підставними YouTube та Ollama — python unittest', {},
+  ['LT01 теми лекцій (tools/lectures): правила тем, весь конвеєр із підставними YouTube та Ollama, наявний Whisper (команда, служба) — python unittest', {},
     async () => { const p = require('child_process').spawnSync('python3', ['-I', '-m', 'unittest', 'discover', '-s', path.join(ROOT, 'tools/lectures'), '-p', 'test_*.py'], { encoding: 'utf8' });
       if (p.status) console.log(p.stderr.slice(-800)); return p.status === 0 && /OK/.test(p.stderr); }],
   ['LZ01 рік на стіні: «Раніше» малюється лише при розгортанні; клік по дню звідти — те саме відео; після перемальовування — так само', { seasons: CAL({ start: '2026-05-01' }), api: pagedApi(DAILY120, { SH: [] }), wait: 1500 },

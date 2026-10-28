@@ -9,7 +9,10 @@
 ## Як народжуються теми
 
 1. **Розшифровка** лекції: власний файл з `inbox_dir` (`<YouTube ID>.mp4` тощо) → субтитри YouTube → звук з YouTube
-   і Whisper. Мова — українська.
+   і Whisper. Мова — українська. Whisper — той, що вже є на сервері (`whisper_backend` у `config.json`):
+   бібліотека `faster-whisper` / `openai-whisper`, будь-яка команда (`command`: whisper.cpp, CLI openai-whisper…)
+   чи Whisper-служба по HTTP (`http`: OpenAI-сумісна, whisper.cpp server, whisper-asr-webservice). `auto` — сам
+   знайде бібліотеку. Перевірити на своєму файлі: `lectures.py transcribe ФАЙЛ` (текст і швидкість).
 2. **Розуміння:** мовна модель (Ollama, напр. `gemma3:12b`) читає розшифровку частинами й пише зміст (2–3 речення),
    5–8 ключових понять і широку галузь.
 3. **Відбиток** змісту (embedding, модель `bge-m3`) — щоб рахувати, наскільки лекції схожі.
@@ -40,8 +43,8 @@
 
 ## Файли
 
-- `lectures.py` — конвеєр (`run`, `run --dry`, `report`, `check`);
+- `lectures.py` — конвеєр (`run`, `run --dry`, `report`, `check`, `transcribe ФАЙЛ`);
 - `topics.py` — правила тем (без моделей), `test_topics.py` — їхні тести, `test_e2e.py` — увесь конвеєр із підставними
-  YouTube й Ollama. Запуск: `python3 -m unittest discover -s tools/lectures -p 'test_*.py'` (і в `node tests/qa.js` — кейс LT01);
+  YouTube й Ollama, `test_whisper.py` — підключення наявного Whisper (команда, служба) з підставними. Запуск: `python3 -m unittest discover -s tools/lectures -p 'test_*.py'` (і в `node tests/qa.js` — кейс LT01);
 - `config.example.json` — зразок налаштувань (`config.json` — лише на сервері, у .gitignore);
 - `overrides.json` — правки власника; `report.md` — звіт останнього запуску (пише сервер).

@@ -4,30 +4,38 @@
   python3 tools/lectures/lectures.py run        # нові лекції: розшифрувати, зрозуміти, розкласти по темах, опублікувати
   python3 tools/lectures/lectures.py run --dry   # те саме, але без git push (подивитися, що вийде)
   python3 tools/lectures/lectures.py report     # схожість лекцій і тем — щоб підкрутити пороги (пише report.md)
-  python3 tools/lectures/lectures.py check      # чи все встановлено: Ollama, моделі, yt-dlp, faster-whisper, git
+  python3 tools/lectures/lectures.py check      # чи все встановлено: Ollama, моделі, yt-dlp, Whisper, git
+  python3 tools/lectures/lectures.py transcribe ФАЙЛ   # розпізнати файл тим Whisper, що в config.json (перевірка й швидкість)
 
 Кроки для кожної нової лекції (кеш — у state_dir, повторно не робимо):
   1. розшифровка: власний файл лекції з inbox_dir (ID.mp4/.m4a/.wav…) → субтитри YouTube (yt-dlp) → звук з YouTube
-     і Whisper (faster-whisper). Мова — українська;
+     і Whisper — той, що вже є на сервері (whisper_backend: faster-whisper, openai-whisper, команда на кшталт
+     whisper.cpp або Whisper-служба по HTTP). Мова — українська;
   2. зміст: локальна модель (Ollama) читає розшифровку частинами й пише короткий зміст, ключові поняття, галузь;
   3. відбиток (embedding) змісту — модель bge-m3 (Ollama);
   4. теми — topics.py (широкі теми, ≥ 3 лекції на тему, злиття схожих, правки власника з overrides.json);
   5. lectures.json (його читає сайт) + report.md → git commit/push, лише коли щось змінилось.
 
 Налаштування — config.json поруч (зразок — config.example.json). Лише стандартна бібліотека Python;
-faster-whisper і yt-dlp потрібні тільки для розшифровки.
+Whisper і yt-dlp потрібні тільки для розшифровки.
 """
 import argparse
 import datetime as dt
 import glob
+import importlib.util
 import json
 import os
 import re
+import shlex
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -236,16 +244,118 @@ def youtube_audio(cfg, vid):
     return files[0] if files else ""
 
 
-_WHISPER = None
+# Whisper — той, що вже стоїть на сервері (whisper_backend у config.json):
+#   faster-whisper / openai-whisper — бібліотека Python (у тому середовищі, яким запускають lectures.py);
+#   command — будь-яка команда (whisper.cpp, CLI openai-whisper, whisper-ctranslate2…), whisper_command;
+#   http — Whisper-служба: OpenAI-сумісна (…/v1/audio/transcriptions), whisper.cpp server (…/inference)
+#          чи whisper-asr-webservice (…/asr?output=txt, поле файлу audio_file), whisper_url;
+#   auto (типово) — whisper_url → http, whisper_command → command, інакше бібліотека, яку знайдемо.
+def _has(mod):
+    try:
+        return importlib.util.find_spec(mod) is not None
+    except (ImportError, ValueError):
+        return False
+
+
+def whisper_backend(cfg):
+    b = str(cfg.get("whisper_backend") or "auto").strip().lower()
+    if b != "auto":
+        return b
+    if cfg.get("whisper_url"):
+        return "http"
+    if cfg.get("whisper_command"):
+        return "command"
+    if _has("faster_whisper"):
+        return "faster-whisper"
+    if _has("whisper"):                                # не плутати з whisper від Graphite (база даних): там нема load_model
+        try:
+            if hasattr(importlib.import_module("whisper"), "load_model"):
+                return "openai-whisper"
+        except Exception:
+            pass
+    return "none"
+
+
 def whisper(cfg, path):
+    """Розпізнати звук (мова — cfg.language) тим Whisper, що є на сервері. Повертає текст одним рядком."""
+    b = whisper_backend(cfg)
+    if b == "http":
+        return whisper_http(cfg, path)
+    if b == "command":
+        return whisper_command(cfg, path)
+    if b in ("faster-whisper", "openai-whisper"):
+        return whisper_lib(cfg, path, b)
+    raise RuntimeError(f"Whisper не знайдено (whisper_backend: {b}) — config.json: whisper_backend / whisper_command / whisper_url "
+                       "(див. tools/lectures/README.md)")
+
+
+_WHISPER = None
+def whisper_lib(cfg, path, b):
     global _WHISPER
-    from faster_whisper import WhisperModel           # лише коли справді треба розпізнавати
+    lang, name, dev = cfg.get("language", "uk"), cfg.get("whisper_model") or "medium", cfg.get("whisper_device", "auto")
+    root = cfg.get("whisper_download_root") or None    # де вже лежать моделі (щоб не качати вдруге)
+    if b == "faster-whisper":
+        from faster_whisper import WhisperModel       # лише коли справді треба розпізнавати
+        if _WHISPER is None:
+            ct = cfg.get("whisper_compute_type") or ("float16" if dev == "cuda" else "int8")
+            _WHISPER = WhisperModel(name, device=dev, compute_type=ct, download_root=root)
+        segs, _ = _WHISPER.transcribe(path, language=lang, vad_filter=True, beam_size=5)
+        return " ".join(s.text.strip() for s in segs).strip()
+    import whisper as openai_whisper                   # openai-whisper
     if _WHISPER is None:
-        dev = cfg.get("whisper_device", "auto")
-        ct = cfg.get("whisper_compute_type") or ("float16" if dev == "cuda" else "int8")
-        _WHISPER = WhisperModel(cfg.get("whisper_model", "medium"), device=dev, compute_type=ct)
-    segs, _ = _WHISPER.transcribe(path, language=cfg.get("language", "uk"), vad_filter=True, beam_size=5)
-    return " ".join(s.text.strip() for s in segs).strip()
+        _WHISPER = openai_whisper.load_model(name, device=None if dev == "auto" else dev, download_root=root)
+    return " ".join(str(_WHISPER.transcribe(path, language=lang).get("text", "")).split())
+
+
+def whisper_command(cfg, path):
+    """whisper_command — список або рядок (без оболонки). Підстановки: {audio} — файл; {wav} — він же у WAV 16 кГц моно
+    (ffmpeg; whisper.cpp хоче саме такий); {outdir} — тимчасова тека; {out} — {outdir}/transcript; {lang}; {model}.
+    Текст — з .txt (потім .srt, .vtt) у {outdir}, а якщо файлів нема — зі стандартного виводу."""
+    tpl = cfg["whisper_command"]
+    tpl = shlex.split(tpl) if isinstance(tpl, str) else [str(x) for x in tpl]
+    with tempfile.TemporaryDirectory(prefix="films-whisper-") as tmp:
+        vals = {"audio": path, "outdir": tmp, "out": os.path.join(tmp, "transcript"), "lang": cfg.get("language", "uk"),
+                "model": str(cfg.get("whisper_model") or ""), "wav": ""}
+        if any("{wav}" in t for t in tpl):
+            vals["wav"] = os.path.join(tmp, "audio.wav")
+            sh(["ffmpeg", "-nostdin", "-loglevel", "error", "-i", path, "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", vals["wav"]])
+        cmd = [re.sub(r"\{(\w+)\}", lambda m: vals.get(m.group(1), m.group(0)), t) for t in tpl]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=int(cfg.get("whisper_timeout", 6 * 3600)))
+        if r.returncode:
+            raise RuntimeError(f"whisper_command: код {r.returncode}: {(r.stderr or r.stdout).strip()[-400:]}")
+        for ext in (".txt", ".srt", ".vtt"):
+            files = sorted(glob.glob(os.path.join(tmp, "*" + ext)))
+            if files:
+                raw = open(files[0], encoding="utf-8", errors="replace").read()
+                return " ".join((raw if ext == ".txt" else vtt_to_text(raw)).split())
+        out = re.sub(r"\[\d[\d:.,]* --> \d[\d:.,]*\]", " ", r.stdout)   # whisper.cpp друкує [00:00:00.000 --> 00:00:05.000]
+        return " ".join(out.split())
+
+
+def whisper_http(cfg, path):
+    """Файл — multipart (поле whisper_file_field, типово file) + language, response_format=text, model (якщо задано)."""
+    fields = {"language": cfg.get("language", "uk"), "response_format": "text"}
+    if cfg.get("whisper_model"):
+        fields["model"] = str(cfg["whisper_model"])
+    bnd = "films" + uuid.uuid4().hex
+    head = b"".join(f'--{bnd}\r\nContent-Disposition: form-data; name="{k}"\r\n\r\n{v}\r\n'.encode() for k, v in fields.items())
+    head += (f'--{bnd}\r\nContent-Disposition: form-data; name="{cfg.get("whisper_file_field") or "file"}"; '
+             f'filename="{os.path.basename(path)}"\r\nContent-Type: application/octet-stream\r\n\r\n').encode()
+    with open(path, "rb") as f:
+        data = head + f.read() + f"\r\n--{bnd}--\r\n".encode()
+    headers = {"Content-Type": "multipart/form-data; boundary=" + bnd}
+    if cfg.get("whisper_api_key"):
+        headers["Authorization"] = "Bearer " + cfg["whisper_api_key"]
+    req = urllib.request.Request(cfg["whisper_url"], data=data, headers=headers)
+    with urllib.request.urlopen(req, timeout=int(cfg.get("whisper_timeout", 6 * 3600))) as r:
+        body = r.read().decode("utf-8", errors="replace")
+    try:
+        j = json.loads(body)
+        if isinstance(j, dict):
+            body = str(j.get("text", ""))
+    except ValueError:
+        pass                                           # простий текст
+    return " ".join(body.split())
 
 
 # ── 2–3. Розуміння: Ollama ──
@@ -415,13 +525,32 @@ def check(cfg):
             row(f"модель {m}", any(t in (m, m + ":latest") for t in tags), f"ollama pull {m}")
     except Exception as e:
         row("Ollama працює", False, f"{e} (systemctl status ollama)")
-    row("yt-dlp", sh([cfg.get("yt_dlp", "yt-dlp"), "--version"], check=False).returncode == 0, "pip install -U yt-dlp")
-    try:
-        import faster_whisper  # noqa: F401
-        row("faster-whisper", True)
-    except ImportError:
-        row("faster-whisper", False, "pip install faster-whisper")
-    row("ffmpeg", sh(["ffmpeg", "-version"], check=False).returncode == 0, "apt install ffmpeg")
+    def runs(cmd):                                     # програми може не бути зовсім — це ❌, а не падіння
+        try:
+            return sh(cmd, check=False).returncode == 0
+        except OSError:
+            return False
+    row("yt-dlp", runs([cfg.get("yt_dlp", "yt-dlp"), "--version"]), "pip install -U yt-dlp")
+    b = whisper_backend(cfg)
+    if b == "http":
+        try:
+            urllib.request.urlopen(cfg["whisper_url"], timeout=10)
+            good = True
+        except urllib.error.HTTPError:
+            good = True                                # відповіла (хай і 404/405 на GET) — служба жива
+        except Exception:
+            good = False
+        row(f"Whisper-служба {cfg['whisper_url']}", good, "служба не відповідає (systemctl / docker ps)")
+    elif b == "command":
+        tpl = cfg["whisper_command"]
+        exe = (shlex.split(tpl) if isinstance(tpl, str) else [str(x) for x in tpl] or [""])[0]
+        row(f"Whisper-команда {exe}", bool(shutil.which(exe)), "нема такої програми або її не видно користувачу служби")
+    elif b in ("faster-whisper", "openai-whisper"):
+        row(f"Whisper: {b} (модель {cfg.get('whisper_model') or 'medium'})", _has("faster_whisper" if b == "faster-whisper" else "whisper"),
+            f"цей Python ({sys.executable}) не бачить {b}")
+    else:
+        row("Whisper", False, "не знайдено — whisper_backend / whisper_command / whisper_url у config.json або pip install faster-whisper")
+    row("ffmpeg", runs(["ffmpeg", "-version"]), "apt install ffmpeg")
     row("ключ YouTube API", bool(cfg.get("youtube_api_key")), "config.json → youtube_api_key")
     row("git push (сухий)", sh(["git", "push", "--dry-run", "--quiet"], cwd=cfg["repo_dir"], check=False).returncode == 0, "deploy key з правом запису")
     return 0 if ok else 1
@@ -429,12 +558,20 @@ def check(cfg):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("cmd", choices=["run", "report", "check"])
+    ap.add_argument("cmd", choices=["run", "report", "check", "transcribe"])
+    ap.add_argument("file", nargs="?", help="для transcribe: аудіо- чи відеофайл")
     ap.add_argument("--dry", action="store_true", help="без git push")
     a = ap.parse_args()
     cfg = load_config()
     if a.cmd == "check":
         sys.exit(check(cfg))
+    if a.cmd == "transcribe":                          # перевірити Whisper на своєму файлі: що розпізнав і як швидко
+        if not a.file or not os.path.exists(a.file):
+            sys.exit("transcribe ФАЙЛ — потрібен наявний файл")
+        t0 = time.time()
+        text = whisper(cfg, a.file)
+        print(f"Whisper: {whisper_backend(cfg)}; {time.time() - t0:.1f} с; {len(text.split())} слів\n{text[:1500]}")
+        sys.exit(0 if text else 1)
     if a.cmd == "report":
         a.dry = True
     sys.exit(run(cfg, dry=a.dry))
