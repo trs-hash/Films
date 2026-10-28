@@ -1102,7 +1102,7 @@ const CASES = [
       const shelves = await r.page.$$eval('#lectures .lt', a => a.map(x => x.querySelector('.lt-h').firstChild.textContent + ':' + [...x.querySelectorAll('.poster')].map(p => p.dataset.k.slice(-1)).join('')));
       const no = await r.page.innerText('[data-k="lec0000001"] .pst-no'), bill = (await r.page.innerText('[data-k="lec0000001"] .pst-bill')).toLowerCase();
       return shelves.join('|') === 'Нові студії:5|Звички й воля:421|Стоїцизм:3' && no === '№ 01' && bill === 'тарас максим’як · 45 хв' && !/лекці/i.test(await r.page.innerText('body'))
-        && has(r, 'Чому ми відкладаємо і як закріплюються звички') && await r.page.locator('#lectures .pst-new').count() === 1 && !has(r, 'Шортс')
+        && has(r, 'Чому ми відкладаємо і як закріплюються звички') && (await r.page.locator('#lectures .pst-new').allInnerTexts()).map(t => t.toLowerCase()).join() === 'нова' && !has(r, 'Шортс')
         && (await r.page.locator('.tabs .tab.on').innerText()).toLowerCase() === 'студії' && await r.page.locator('.lpeek').count() === 0;
     }],
   ['LC02 плеєр лекції: гортання в межах теми («Звички й воля · 2 із 3»), тривалість у шапці; Esc — назад', {

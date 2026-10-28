@@ -1441,7 +1441,7 @@
         let hit = TOPIC && recTopics(rec).includes(TOPIC) ? ' hit' : '', seen = watched.includes(rec.key) ? ' watched' : '';
         return `<div class="film${hit}" data-date="${rec.date}">` +
             `<a class="poster${seen}" href="${ytHref(rec)}" target="_blank" rel="noopener" data-k="${esc(rec.key)}" onclick="openVid(event, ${idx}, this)" aria-label="${esc(title)} — № ${no}, ${date}${dur ? ', ' + dur : ''}">` +
-            `<span class="pst-frame">${img}` + (isNew ? '<span class="pst-new">Новий</span>' : '') + '<span class="pst-play"></span><span class="pst-seen">Переглянуто</span></span>' +
+            `<span class="pst-frame">${img}` + (isNew ? `<span class="pst-new">${/^lec:/.test(ctx) ? 'Нова' : 'Новий'}</span>` : '') + '<span class="pst-play"></span><span class="pst-seen">Переглянуто</span></span>' +
             `<span class="pst-band"><span class="pst-top"><span class="pst-no">№ ${pad2(no)}</span><span>${date}</span></span>` +
             `<span class="pst-t" style="font-size:${titleSize(title)}cqw">${esc(curly(title))}</span>` +
             `<span class="pst-bill">${by}${dur ? ' · ' + dur : ''}</span></span></a>` +
