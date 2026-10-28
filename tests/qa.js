@@ -339,11 +339,13 @@ const CASES = [
       return (Math.max(fg, bg) + .05) / (Math.min(fg, bg) + .05) >= 4.5; })],
   ['A04 скелет на першому візиті, поки YouTube думає', { seasons: { seasons: [S1()] }, api: { PL1: TWO }, apiDelay: 1500, wait: 500 },
     async r => await r.page.locator('.ep-th.sk').count() === 3 && has(r, 'Тема') && !has(r, '0 серій')],
-  ['A07 шапка — один ряд: Instagram ліворуч, поруч імʼя; пошти нема; на компʼютері й телефоні шапка не вища за кнопку', { api: REAL_API },
+  ['A07 шапка — один ряд: Instagram і YouTube (канал) ліворуч, поруч імʼя; пошти нема; на компʼютері й телефоні шапка не вища за кнопку', { api: REAL_API },
     async r => {
-      const check = async () => { const name = await r.page.locator('.intro .name').boundingBox(), ig = await r.page.locator('.links a.primary').boundingBox(),
-        h = await r.page.$eval('.intro', e => e.getBoundingClientRect().height);
-        return Math.abs((name.y + name.height / 2) - (ig.y + ig.height / 2)) <= 2 && ig.x + ig.width < name.x && name.x - (ig.x + ig.width) < 30 && h <= ig.height + 1
+      const check = async () => { const name = await r.page.locator('.intro .name').boundingBox(), ig = await r.page.locator('.links a[aria-label="Instagram"]').boundingBox(),
+        yt = await r.page.locator('.links a[aria-label="YouTube"]').boundingBox(), h = await r.page.$eval('.intro', e => e.getBoundingClientRect().height);
+        return Math.abs((name.y + name.height / 2) - (ig.y + ig.height / 2)) <= 2 && Math.abs(yt.y - ig.y) <= 1 && ig.x + ig.width < yt.x && yt.x - (ig.x + ig.width) <= 10
+          && yt.x + yt.width < name.x && name.x - (yt.x + yt.width) < 30 && h <= ig.height + 1
+          && await r.page.getAttribute('.links a[aria-label="YouTube"]', 'href') === 'https://www.youtube.com/@Taras.maksymiak'
           && await r.page.$eval('.intro', e => e.querySelector('a.primary').compareDocumentPosition(e.querySelector('.name')) & Node.DOCUMENT_POSITION_FOLLOWING); };
       const desk = await check(); await r.page.setViewportSize({ width: 320, height: 640 }); await r.page.waitForTimeout(100);
       return desk && await check() && await r.page.locator('a[href^="mailto:"], .mail').count() === 0 && !has(r, 'hello@') && await noHScroll(r);
@@ -676,7 +678,7 @@ const CASES = [
       && has(r, 'вимкнено: глядачі не бачать') && has(r, 'у url ще приклад') && has(r, 'Помилок не знайдено') && !has(r, 'спонсор')],
   ['S03 шапка — один ряд: Instagram і поруч тихе посилання на збір; без спонсорства, картки й рядка в плеєрі', { seasons: SUP(), api: API1, shot: 'S03-support-on' },
     async r => {
-      const f = r.page.locator('#sup a.fund-link'), ig = r.page.locator('.links a.primary');
+      const f = r.page.locator('#sup a.fund-link'), ig = r.page.locator('.links a[aria-label="Instagram"]');
       const look = await f.evaluate(e => { const c = getComputedStyle(e); return { size: parseFloat(c.fontSize), bg: c.backgroundColor, h: e.getBoundingClientRect().height }; });
       const [bi, bf] = [await ig.boundingBox(), await f.boundingBox()];
       await r.page.click('#cal .v-lnk'); await r.page.waitForTimeout(200);
@@ -685,7 +687,7 @@ const CASES = [
         && await f.getAttribute('id') === 'f-dron' && (await f.getAttribute('title')).replace(/[\u00a0\u202f]/g, ' ') === 'Збираємо на мавік для побратимів.\n18 500 ₴ з 50 000 ₴ (37%)'
         && (await f.innerText()).trim().startsWith('Збір: Дрон для бригади ↗') && look.size <= 12 && look.bg === 'rgba(0, 0, 0, 0)' && look.h >= 24
         && Math.abs((bi.y + bi.height / 2) - (bf.y + bf.height / 2)) <= 2 && bf.x > bi.x + bi.width        // той самий ряд, праворуч від іконки
-        && await r.page.locator('.links > *').count() === 2 && !has(r, 'спонсор')
+        && await r.page.locator('.links > *').count() === 3 && !has(r, 'спонсор')   // Instagram, YouTube, збори — і нічого більше
         && await r.page.locator('#app .funds, #app .fund, .note-sup').count() === 0 && !has(r, '18 500') && !has(r, 'Долучитися')
         && !note.includes('Дрон');
     }],
@@ -734,7 +736,7 @@ const CASES = [
       fundraisers: [FUND({ title: 'Дуже довга назва збору, яка не вміщується в один рядок на маленькому телефоні' }), FUND({ id: 'b', title: 'Генератор', url: 'https://send.monobank.ua/jar/Other1' })] }), api: API1,
       viewport: { width: 320, height: 640 }, dark: true, shot: 'S11-mobile' },
     async r => {
-      const ig = await r.page.locator('.links a.primary').boundingBox(), name = await r.page.locator('.intro .name').boundingBox(), first = await r.page.locator('#sup a').first().boundingBox();
+      const ig = await r.page.locator('.links a[aria-label="Instagram"]').boundingBox(), name = await r.page.locator('.intro .name').boundingBox(), first = await r.page.locator('#sup a').first().boundingBox();
       return await noHScroll(r) && await r.page.locator('#sup a').count() === 3 && Math.abs((name.y + name.height / 2) - (ig.y + ig.height / 2)) <= 2
         && ig.x + ig.width < name.x && first.y >= ig.y + ig.height && first.x < 40
         && Math.min(...await r.page.$$eval('#sup a', l => l.map(e => e.getBoundingClientRect().height))) >= 24;
