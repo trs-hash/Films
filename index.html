@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарас Максимʼяк</title>
-    <meta name="description" content="Фільми Тараса Максимʼяка: кожне відео — окремий фільм зі своєю афішею, за датою виходу.">
+    <meta name="description" content="Тарас Максимʼяк: щоденний влог — день за днем, і лекції, зібрані за темами.">
 
     <meta property="og:title" content="Тарас Максимʼяк — фільми">
-    <meta property="og:description" content="Кожне відео — окремий фільм зі своєю афішею.">
+    <meta property="og:description" content="Щоденний влог і лекції за темами.">
     <meta property="og:image" content="https://taras.kyiv.ua/image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
@@ -270,7 +270,7 @@
         .fl-soon{align-self:center;font-size:15px;line-height:1.55;color:var(--mut);max-width:340px;margin:0}
         .fl-soon a{color:var(--red);text-decoration:none}
 
-        /* ── Вкладки «Щоденник / Лекції» (коли є обидва формати) — тихі, як заголовки місяців ── */
+        /* ── Вкладки «Щоденний влог / Лекції» (коли є обидва формати) — тихі, як заголовки місяців ── */
         .tabs{display:flex;gap:28px;margin:0 0 34px;border-bottom:1px solid var(--div)}
         .tab{position:relative;padding:4px 0 12px;font-family:var(--disp);font-size:22px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);text-decoration:none;transition:color .2s}
         .tab:hover{color:var(--txt)}
@@ -281,6 +281,25 @@
         .lt{scroll-margin-top:20px}
         .lt-h{font-size:34px;overflow-wrap:anywhere}
         .lt-about{margin:-10px 0 22px;font-size:15px;line-height:1.5;color:var(--mut);max-width:640px}
+        /* Лекції визирають над стіною влогу: три найновіші темні квитки (як афіші лекцій) і «Усі лекції →» */
+        .lpeek{margin:-12px 0 38px}
+        .lp-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 10px}
+        .lp-h{margin:0;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut)}
+        .lp-all{color:var(--red)}
+        .lp-all:hover{color:var(--txt)}
+        .lp-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+        .lp{display:flex;gap:12px;min-width:0;padding:7px;border-radius:6px;background:#1b1916;color:#fff;text-decoration:none;box-shadow:0 8px 20px -14px rgba(0,0,0,.6)}
+        .lp-img{position:relative;flex:0 0 40%;aspect-ratio:16/9;border-radius:3px;overflow:hidden;background:#000}
+        .lp-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:filter .3s}
+        .lp.watched .lp-img img{filter:grayscale(.7) brightness(.85)}
+        .lp-img::after{content:'';position:absolute;top:50%;left:50%;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:var(--red) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M3.5 2.5v5l4-2.5z' fill='%23fff'/%3E%3C/svg%3E") center/16px no-repeat;opacity:0;transform:scale(.8);transition:opacity .2s,transform .2s}
+        .lp-txt{display:flex;flex-direction:column;min-width:0;padding:1px 4px 1px 0}
+        .lp-topic{font-family:var(--disp);font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .lp-topic::before{content:'';display:inline-block;width:6px;height:6px;margin:0 6px 2px 0;border-radius:50%;background:var(--red);vertical-align:middle}
+        .lp-t{margin-top:3px;font-family:var(--disp);font-size:16px;font-weight:600;line-height:1.08;text-transform:uppercase;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+        .lp-meta{margin-top:auto;padding-top:4px;font-family:var(--disp);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.6);font-variant-numeric:tabular-nums}
+        .lp:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+        .lp:focus-visible .lp-img::after{opacity:1;transform:scale(1)}
         .cal-soon a{color:var(--red);text-decoration:none}
         /* Плеєр Instagram (допис із підписом — вищий за 16:9): своя висота, по центру */
         .iframe-wrap.ig{padding-bottom:0;height:min(80vh,780px);max-width:560px;margin:0 auto;background:#fff}
@@ -348,7 +367,13 @@
         .close{position:absolute;top:-15px;right:20px;color:#fff;font:inherit;font-size:40px;line-height:1;cursor:pointer;z-index:10;background:none;border:0;padding:0 6px}
         .close:hover{color:var(--red)}
         .footer{text-align:center;padding:60px 0;font-family:var(--disp);font-size:12px;font-weight:500;color:var(--mut);letter-spacing:.2em}
+        @media (hover:hover) and (pointer:fine){.lp:hover .lp-img::after{opacity:1;transform:scale(1)}}
         @media(max-width:1024px){
+            /* планшет і телефон: квитки лекцій — стрічка вбік, видно край наступного (лекції «визирають») */
+            .lp-row{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:46%;overflow-x:auto;scroll-snap-type:x mandatory;
+                margin:0 -20px;padding:0 20px 8px;scroll-padding:0 20px;scrollbar-width:none}
+            .lp-row::-webkit-scrollbar{display:none}
+            .lp{scroll-snap-align:start}
             .eps,.season.done .eps{grid-template-columns:repeat(2,1fr)}
             .season.live .s-title{font-size:56px}
             .grid{grid-template-columns:repeat(4,1fr)}
@@ -372,6 +397,9 @@
             .lt .fl-grid::-webkit-scrollbar{display:none}
             .lt .film{scroll-snap-align:start}
             .tabs{gap:22px;margin-bottom:26px}
+            .lpeek{margin:-8px 0 26px}
+            .lp-row{grid-auto-columns:80%;margin:0 -15px;padding:0 15px 8px;scroll-padding:0 15px}
+            .lp-t{font-size:15px}
             .tab{font-size:19px}
             .intro .name{font-size:17px}
             /* теми на телефоні — один рядок з прокруткою: календар лишається на першому екрані */
@@ -471,7 +499,7 @@
     let LEC_HIDDEN = false;
     let LECT = { topics: [], of: {}, dur: {} };   // lectures.json — теми лекцій, які формує локальна ШІ-модель на сервері
     let IG = [];                 // щоденник з Instagram (instagram.json, оновлює GitHub Action) — записи, як у стіни днів
-    let TAB = 'cal';             // вкладка головної: 'cal' — щоденник, 'lec' — лекції (адреса #lectures)
+    let TAB = 'cal';             // вкладка головної: 'cal' — щоденний влог, 'lec' — лекції (адреса #lectures)
     let FILMS = null;            // фільмотека головної: {k:'films', id:'films', start, playlist, exclude:[]} — кожне відео як фільм з афішею
     let FILMS_HIDDEN = false;    // фільмотеку сховано (films.enabled: false) — так само, як календар
     let FILMS_NOTE = '';         // чому фільмотека порожня (для ?check)
@@ -1193,7 +1221,7 @@
         let tabs = !!(CAL && LEC);                       // два формати — дві вкладки
         TAB = tabs ? (tabFromHash() || TAB) : (CAL ? 'cal' : 'lec');
         if (tabs) html += tabsHtml();
-        if (CAL && TAB === 'cal') html += homeHtml(today);
+        if (CAL && TAB === 'cal') html += (tabs ? lecPeekHtml() : '') + homeHtml(today);   // над стіною визирають лекції
         if (LEC && TAB === 'lec') html += lecturesHtml(today);
         let own = SEASONS.filter(s => !s.cal);           // сезони календаря вже показані шапкою над стіною
         if (!own.length && !FILMS && !LEC) {
@@ -1474,10 +1502,26 @@
             (sh.about ? `<p class="lt-about">${esc(sh.about)}</p>` : '') +
             '<div class="fl-grid">' + sh.recs.slice().reverse().map(r => posterHtml(r, no.get(r.key), r.key === fresh, 'lec:' + sh.id, LEC_OF)).join('') + '</div></section>').join('') + '</section>';
     }
-    // Вкладки, коли є обидва формати: щоденник (стіна днів: YouTube + Instagram) і лекції. Вибір — в адресі (#lectures)
+    // Лекції «визирають» над стіною щоденного влогу: три найновіші — щоб глядач влогу помітив і лекції.
+    // Дотик — та сама лекція (плеєр гортає її тему); «Усі лекції →» — вкладка лекцій. Лекцій ще нема — нічого (без «скоро»)
+    function lecPeekHtml() {
+        let all = (EPS.lec || []).filter(playable).slice().sort(byTs);
+        if (!all.length) return '';
+        let title = id => (LECT.topics.find(t => t.id === id) || {}).title || '';
+        return '<section class="lpeek" aria-label="Нові лекції"><div class="lp-head"><h2 class="lp-h">Нові лекції</h2>' +
+            `<a class="act lp-all" href="#lectures">Усі лекції · ${all.length} →</a></div><div class="lp-row">` +
+            all.slice(-3).reverse().map(r => {
+                let t = lecTopic(r), name = showTitle(r.title) || 'Без назви', dur = fmtDur(durOf(r)), [, m, d] = r.date.split('-').map(Number);
+                let img = r.thumb ? `<img src="${esc(r.thumb)}"` + (r.srcset ? ` srcset="${esc(r.srcset)}" sizes="(max-width:600px) 30vw, 200px"` : '') + ' decoding="async" alt="">' : '';
+                return `<a class="lp${watched.includes(r.key) ? ' watched' : ''}" href="${ytHref(r)}" target="_blank" rel="noopener" data-k="${esc(r.key)}" onclick="openVid(event, ${playIdx(r, 'lec:' + (t || 'new'))}, this)">` +
+                    `<span class="lp-img">${img}</span><span class="lp-txt">` + (title(t) ? `<span class="lp-topic">${esc(curly(title(t)))}</span>` : '') +
+                    `<span class="lp-t">${esc(curly(name))}</span><span class="lp-meta">${d} ${MONTHS_GEN[m - 1]}${dur ? ' · ' + dur : ''}</span></span></a>`;
+            }).join('') + '</div></section>';
+    }
+    // Вкладки, коли є обидва формати: щоденний влог (стіна днів: YouTube + Instagram) і лекції. Вибір — в адресі (#lectures)
     function tabsHtml() {
         let t = (k, href, label) => `<a class="tab${TAB === k ? ' on' : ''}" href="${href}"${TAB === k ? ' aria-current="page"' : ''}>${label}</a>`;
-        return `<nav class="tabs" aria-label="Розділи">${t('cal', '#diary', 'Щоденник')}${t('lec', '#lectures', 'Лекції')}</nav>`;
+        return `<nav class="tabs" aria-label="Розділи">${t('cal', '#diary', 'Щоденний влог')}${t('lec', '#lectures', 'Лекції')}</nav>`;
     }
     // Вкладка з адреси: #lectures (#lt-тема) — лекції; порожня адреса, #diary, #t=, #cal-… — щоденник;
     // #d=дата — там, де того дня є відео (є і там, і там — щоденник). Інше (#f-збір…) — лишається поточна
@@ -1652,8 +1696,8 @@
                 (FILMS.start ? `; старіші за ${fmtDay(FILMS.start, true)} не беремо` : '') + (FILMS_NOTE ? ` — ${esc(FILMS_NOTE)}` : '') + '</li>';
         }
         if (CAL && CAL.instagram)
-            rows += `<li><b>Щоденник з Instagram</b> — ${IG.length ? IG.length + ' ' + plural(IG.length, 'відео', 'відео', 'відео') + ', останнє ' + esc(fmtDay(IG.reduce((m, r) => r.date > m ? r.date : m, ''), true)) : 'поки нема (instagram.json ще не створено — потрібен токен Instagram, див. README)'}` +
-                (CAL.end ? `; з YouTube у щоденнику — відео до ${esc(fmtDay(CAL.end, true))}` : '') + '</li>';
+            rows += `<li><b>Щоденний влог з Instagram</b> — ${IG.length ? IG.length + ' ' + plural(IG.length, 'відео', 'відео', 'відео') + ', останнє ' + esc(fmtDay(IG.reduce((m, r) => r.date > m ? r.date : m, ''), true)) : 'поки нема (instagram.json ще не створено — потрібен токен Instagram, див. README)'}` +
+                (CAL.end ? `; YouTube-влоги — до ${esc(fmtDay(CAL.end, true))}` : '') + '</li>';
         if (LEC) {
             let { all, shelves } = lecShelves(), none = (shelves.find(x => x.id === 'new') || { recs: [] }).recs.length;
             rows += `<li><b>Лекції</b>${LEC_HIDDEN ? ' — <b>сховано від глядачів</b>;' : ' —'} YouTube${LEC.start ? ' з ' + esc(fmtDay(LEC.start, true)) : ''}: ${all.length} ${plural(all.length, 'лекція', 'лекції', 'лекцій')}; ` +

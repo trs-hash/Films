@@ -1101,7 +1101,7 @@ const CASES = [
       const no = await r.page.innerText('[data-k="lec0000001"] .pst-no'), bill = (await r.page.innerText('[data-k="lec0000001"] .pst-bill')).toLowerCase();
       return shelves.join('|') === 'Нові лекції:5|Звички й воля:421|Стоїцизм:3' && no === '№ 01' && bill.includes('лекція') && bill.includes('45 хв')
         && has(r, 'Чому ми відкладаємо і як закріплюються звички') && await r.page.locator('#lectures .pst-new').count() === 1 && !has(r, 'Шортс')
-        && await r.page.locator('.tabs .tab.on').innerText() === 'ЛЕКЦІЇ' || (await r.page.locator('.tabs .tab.on').innerText()).toLowerCase() === 'лекції';
+        && (await r.page.locator('.tabs .tab.on').innerText()).toLowerCase() === 'лекції' && await r.page.locator('.lpeek').count() === 0;
     }],
   ['LC02 плеєр лекції: гортання в межах теми («Звички й воля · 2 із 3»), тривалість у шапці; Esc — назад', {
       path: '#lectures', now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: LJ },
@@ -1142,9 +1142,42 @@ const CASES = [
       const tabs = await r.page.$$eval('.tabs .tab', a => a.map(x => Math.round(x.getBoundingClientRect().top)));
       return shelf.n === 3 && shelf.sw > shelf.cw && new Set(shelf.tops).size === 1 && tabs[0] === tabs[1] && await noHScroll(r);
     }],
-  ['LC06 ?check: рядки «Щоденник з Instagram» і «Лекції» (скільки, теми, без теми); помилок нема', { path: '?check', now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: LJ, ig: IGJ },
-    async r => has(r, 'Щоденник з Instagram — 4 відео') && has(r, 'з YouTube у щоденнику — відео до 25 жовтня 2026') && has(r, 'Лекції — YouTube з 26 жовтня 2026: 5 лекцій')
+  ['LC06 ?check: рядки «Щоденний влог з Instagram» і «Лекції» (скільки, теми, без теми); помилок нема', { path: '?check', now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: LJ, ig: IGJ },
+    async r => has(r, 'Щоденний влог з Instagram — 4 відео') && has(r, 'YouTube-влоги — до 25 жовтня 2026') && has(r, 'Лекції — YouTube з 26 жовтня 2026: 5 лекцій')
       && has(r, 'тем 2 (Звички й воля, Стоїцизм)') && has(r, 'без теми: 1') && has(r, 'Помилок не знайдено')],
+  ['LP01 над стіною влогу визирають 3 найновіші лекції (з темою, датою, хвилинами); дотик — плеєр гортає тему; «Усі лекції · 5 →» — вкладка лекцій', {
+      now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: LJ, ig: IGJ, shot: 'LP01-peek' },
+    async r => {
+      const cards = await r.page.$$eval('.lpeek .lp', a => a.map(x => x.dataset.k.slice(-1) + ':' + ((x.querySelector('.lp-topic') || {}).textContent || '')));
+      const meta = (await r.page.innerText('.lpeek [data-k="lec0000004"] .lp-meta')).toLowerCase(), all = (await r.page.innerText('.lp-all')).toLowerCase();
+      const above = await r.page.evaluate(() => document.querySelector('.lpeek').getBoundingClientRect().bottom <= document.querySelector('#cal').getBoundingClientRect().top);
+      const oneRow = new Set(await r.page.$$eval('.lpeek .lp', a => a.map(x => Math.round(x.getBoundingClientRect().top)))).size === 1;
+      await r.page.click('.lpeek [data-k="lec0000004"]'); await r.page.waitForTimeout(200);
+      const nav = (await r.page.innerText('#modNav')).toLowerCase(), src = await r.page.getAttribute('#ytIframe', 'src');
+      await r.page.keyboard.press('Escape'); await r.page.waitForTimeout(150);
+      const seen = await r.page.locator('.lpeek .lp.watched[data-k="lec0000004"]').count() === 1;
+      await r.page.click('.lp-all'); await r.page.waitForTimeout(250);
+      const tab = (await r.page.innerText('.tabs .tab.on')).toLowerCase(), hash = await r.page.evaluate(() => location.hash);
+      return cards.join('|') === '5:|4:Звички й воля|3:Стоїцизм' && meta.includes('3 листопада') && meta.includes('хв') && all.includes('усі лекції · 5') && above && oneRow
+        && nav.includes('звички й воля · 3 із 3') && src.includes('/embed/lec0000004') && seen && tab === 'лекції' && hash === '#lectures'
+        && await r.page.locator('.lpeek').count() === 0 && await r.page.locator('#lectures').count() === 1 && r.errs.length === 0;
+    }],
+  ['LP02 телефон: лекції над стіною — стрічка вбік (видно край наступної), стіна лишається на першому екрані; дотик — у застосунок YouTube; без горизонтального скролу', {
+      ua: UA_ANDROID, mobile: true, viewport: { width: 360, height: 780 }, now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: LJ, ig: IGJ, shot: 'LP02-peek-phone' },
+    async r => {
+      const row = await r.page.$eval('.lp-row', g => ({ sw: g.scrollWidth, cw: g.clientWidth, w: g.children[0].getBoundingClientRect().width,
+        tops: [...g.children].map(c => Math.round(c.getBoundingClientRect().top)) }));
+      const calTop = await r.page.$eval('#cal .cell', c => c.getBoundingClientRect().top), href = await r.page.getAttribute('.lpeek .lp', 'href');
+      return row.sw > row.cw && row.w > 250 && row.w < 320 && new Set(row.tops).size === 1 && calTop < 780 * 0.6 && href.includes('youtube.com/watch?v=lec0000005') && await noHScroll(r);
+    }],
+  ['LP03 лекцій ще нема — над стіною нічого (без «скоро»); лекції сховано — ні вкладок, ні стрічки', {
+      now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: { UU1: DUAL_API.UU1.filter(v => !/^lec/.test(v.snippet.resourceId.videoId)), SH: DUAL_API.SH }, lect: LJ },
+    async r => {
+      const a = await r.page.locator('.lpeek').count() === 0 && await r.page.locator('.tabs').count() === 1 && !has(r, 'Нові лекції');
+      const { r: r2, ctx: c2 } = await scenario(r.browser, { now: '2026-11-05T12:00:00+02:00', seasons: DUAL({ lec: { enabled: false } }), api: DUAL_API, lect: LJ });
+      const b = await r2.page.locator('.lpeek').count() === 0 && await r2.page.locator('.tabs').count() === 0 && await r2.page.locator('#cal').count() === 1 && r2.errs.length === 0; await c2.close();
+      return a && b && r.errs.length === 0;
+    }],
   ['LT01 теми лекцій (tools/lectures): правила тем і весь конвеєр із підставними YouTube та Ollama — python unittest', {},
     async () => { const p = require('child_process').spawnSync('python3', ['-I', '-m', 'unittest', 'discover', '-s', path.join(ROOT, 'tools/lectures'), '-p', 'test_*.py'], { encoding: 'utf8' });
       if (p.status) console.log(p.stderr.slice(-800)); return p.status === 0 && /OK/.test(p.stderr); }],
@@ -1190,7 +1223,7 @@ const CASES = [
       const b = !r2.apiUrls.some(u => /playlistId=UC/.test(u)) && r2.apiUrls.filter(u => /UURSKTGA5a2hLrai_MXNaoUQ/.test(u)).length === 1 && await r2.page.locator('#cal .v-lnk').count() === 4;
       await c2.close(); return a && b;
     }],
-  ['E07 справжній seasons.json: щоденник — YouTube-влоги до 25.10 (далі — Instagram), лекції — YouTube з 26.10; дві вкладки; Shorts — ні', {
+  ['E07 справжній seasons.json: щоденний влог — YouTube-влоги до 25.10 (далі — Instagram), лекції — YouTube з 26.10; дві вкладки; Shorts — ні', {
       now: '2026-11-05T12:00:00+02:00', shot: 'E07-real-live',
       api: { UURSKTGA5a2hLrai_MXNaoUQ: [vid('alXg_sVZAQM', 'Нам все вдасться', '2026-10-20T12:00:00Z'), vid('leeX8C1WJag', 'Повернення', '2026-10-24T12:00:00Z'),
         vid('3Dn4Ilcs-1g', 'Я любив тут жити', '2026-10-25T12:00:00Z'), vid('lecAAAAAAA1', 'Перша лекція', '2026-10-27T12:00:00Z'), vid('lecAAAAAAA2', 'Друга лекція', '2026-10-30T12:00:00Z'),
@@ -1200,7 +1233,7 @@ const CASES = [
       const first = await r.page.$eval('#cal .cell', c => c.id), cells = await r.page.locator('#cal .v-lnk').count(), today = await r.page.locator('#cal-2026-11-05.today').count();
       await r.page.click('.tabs .tab:has-text("Лекції")'); await r.page.waitForTimeout(200);
       const lec = await r.page.$$eval('#lectures .poster', a => a.map(x => x.dataset.k)), shelf = await r.page.innerText('#lectures .lt-h');
-      return tabs.join() === 'Щоденник*,Лекції' && first === 'cal-2026-10-20' && cells === 3 && today === 1 && lec.join() === 'lecAAAAAAA2,lecAAAAAAA1'
+      return tabs.join() === 'Щоденний влог*,Лекції' && first === 'cal-2026-10-20' && cells === 3 && today === 1 && lec.join() === 'lecAAAAAAA2,lecAAAAAAA1'
         && shelf.toLowerCase().startsWith('усі лекції') && !has(r, 'Шортс') && await r.page.locator('#cal').count() === 0 && r.errs.length === 0;
     }],
   ['E03 сховано, але є сезон — показано сезон, без заглушки; посилання #d= і «мій день» тихо нічого не роблять', { path: '#d=2026-09-21',
