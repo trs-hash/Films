@@ -104,7 +104,7 @@ async function siteRun(browser, i) {
     about: maybe(nasty()), videos: Array.from({ length: int(0, 4) }, () => pick(['v' + int(0, 20), nasty(), 7])) })), videos: pick([{ v1: { topic: 't0', dur: pick([2400, -5, nasty()]) } }, nasty(), []]) }), '{', JSON.stringify(nasty()), '']) }));
   await ctx.route(/state\.json/, r => r.fulfill({ contentType: 'application/json', body: pick(['{"mode":"youtube"}', '{"mode":"doomsday"}', '{', '']) }));
   await ctx.route(/archive\.json/, r => r.fulfill({ contentType: 'application/json', body: pick(['{"base":"","days":{}}', JSON.stringify({ days: { [day()]: [{ t: nasty(), y: 'a1', d: nasty(), dur: pick([754, -1, nasty()]), ph: pick(['posters/a1-hd.jpg', nasty(), 7]) }], [String(nasty())]: nasty() } }), '{']) }));
-  const hash = pick(['', '', '#lectures', '#lectures', '#lt-' + encodeURIComponent(String(nasty())), '#diary', '#t=' + encodeURIComponent(String(nasty())), '#t=%E0%A4%A', '#d=' + day(), '#f-dron', '#%', '#cal-2026-09-21', '#d=' + String(nasty())]);
+  const hash = pick(['', '', '#lectures', '#studii', '#dni', '#lt-' + encodeURIComponent(String(nasty())), '#diary', '#t=' + encodeURIComponent(String(nasty())), '#t=%E0%A4%A', '#d=' + day(), '#f-dron', '#%', '#cal-2026-09-21', '#d=' + String(nasty())]);
   const url = 'http://localhost:8767/' + pick(['', '', '?check']) + hash;
   try {
     await page.goto(url); await page.waitForTimeout(500);
