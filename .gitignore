@@ -7,3 +7,7 @@ sw.js.bak.*
 
 # Скриншоти QA-прогону
 tests/qa-shots/
+
+# Сервер тем лекцій: config.json має ключ YouTube — лише на сервері
+tools/lectures/config.json
+__pycache__/

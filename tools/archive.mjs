@@ -53,10 +53,11 @@ const cfg = loose(read(process.env.ARCHIVE_SEASONS || path.join(SRC, 'seasons.js
 function source(c) {
     c = cfg && !Array.isArray(cfg) && c && typeof c === 'object' && !Array.isArray(c) ? c : null;
     return { on: !!c && !/^(false|ні|no|0|off)$/i.test(String(c.enabled ?? 'true').trim()),   // сховано — без сторінок днів
-        pl: c ? playlistId(c.playlist) : '', start: c ? normDate(c.start) : '', exclude: c ? [].concat(c.exclude || []).map(playlistId).filter(Boolean) : [] };
+        pl: c ? playlistId(c.playlist) : '', start: c ? normDate(c.start) : '', end: c ? normDate(c.end) : '', exclude: c ? [].concat(c.exclude || []).map(playlistId).filter(Boolean) : [] };
 }
-const films = source(cfg && cfg.films), cal = source(cfg && cfg.calendar);
-const calOn = cal.on, filmsOn = films.on, pagesOn = calOn || filmsOn;
+// calendar.end — YouTube-відео щоденника до цієї дати (далі на YouTube — лекції); lectures — лекції з YouTube
+const films = source(cfg && cfg.films), cal = source(cfg && cfg.calendar), lec = source(cfg && cfg.lectures);
+const calOn = cal.on, filmsOn = films.on, pagesOn = calOn || filmsOn || lec.on;
 const seasonPls = (Array.isArray(cfg) ? cfg : (cfg.seasons || [])).map(s => s && playlistId(s.playlist)).filter(Boolean);
 
 // ── YouTube ──
@@ -193,7 +194,7 @@ img{width:100%;border-radius:8px}a{color:#e62117}.k{font-size:12px;letter-spacin
 <p class="k"><a href="/">Тарас Максимʼяк</a> · ${filmsOn ? 'фільми' : 'стіна днів'}</p>
 <h1>${esc(human)}</h1>
 ${items.map(v => `<h2>${esc(showTitle(v.t))}</h2>
-${v.y ? `<p><a href="https://www.youtube.com/watch?v=${esc(v.y)}">Дивитися на YouTube</a></p>` : ''}
+${v.y ? `<p><a href="https://www.youtube.com/watch?v=${esc(v.y)}">Дивитися на YouTube</a></p>` : ''}${v.ig ? `<p><a href="${esc(v.ig)}">Дивитися в Instagram</a></p>` : ''}
 ${cleanNote(v.desc) ? `<p>${esc(cleanNote(v.desc))}</p>` : ''}`).join('\n')}
 <p><a href="${hash}">${filmsOn ? 'Відкрити на сайті' : 'Відкрити на стіні днів'} →</a></p>
 </body>
@@ -202,13 +203,14 @@ ${cleanNote(v.desc) ? `<p>${esc(cleanNote(v.desc))}</p>` : ''}`).join('\n')}
 }
 
 // ── Головне ──
-const pls = [...new Set([films.pl, ...films.exclude, cal.pl, ...cal.exclude, ...seasonPls].filter(Boolean))];
+const pls = [...new Set([films.pl, ...films.exclude, cal.pl, ...cal.exclude, lec.pl, ...lec.exclude, ...seasonPls].filter(Boolean))];
 const byPl = {};
 for (const pid of pls) byPl[pid] = publicVideos(await playlistItems(pid));
 const vids = new Map(), filmIds = new Set();
-[films, cal].forEach(S => {                                  // усе з джерела від start, крім відео з плейлистів-винятків (Shorts)
+[films, cal, lec].forEach(S => {                             // усе з джерела від start (до end), крім відео з плейлистів-винятків (Shorts)
     let skip = new Set(S.exclude.flatMap(pid => byPl[pid].map(v => v.y)));
-    (byPl[S.pl] || []).filter(v => !skip.has(v.y) && (!S.start || v.date >= S.start)).forEach(v => { vids.set(v.y, v); if (S === films) filmIds.add(v.y); });
+    (byPl[S.pl] || []).filter(v => !skip.has(v.y) && (!S.start || v.date >= S.start) && (!S.end || v.date <= S.end))
+        .forEach(v => { vids.set(v.y, v); if (S === films || S === lec) filmIds.add(v.y); });   // тривалість — для афіш фільмів і лекцій
 });
 seasonPls.forEach(pid => byPl[pid].forEach(v => vids.set(v.y, v)));
 
@@ -245,10 +247,19 @@ function kyivStamp(now = new Date()) {
 if (JSON.stringify(sortedDays) !== JSON.stringify(archive.days || {}))
     writeIfChanged('archive.json', JSON.stringify({ base: archive.base || '', days: sortedDays, generated: kyivStamp() }, null, 2) + '\n');
 
-// Сторінки днів і sitemap (з усього архіву, не лише з того, що зараз на YouTube)
+// Сторінки днів і sitemap (з усього архіву, не лише з того, що зараз на YouTube) + дні щоденника з Instagram
+// (instagram.json пише tools/instagram.mjs; кадр — свій posters/ig/ID.jpg)
+const igOn = calOn && !/^(false|ні|no|0|off|)$/i.test(String((cfg && cfg.calendar && cfg.calendar.instagram) ?? '').trim());
+const igItems = (() => { if (!igOn) return []; try { let d = JSON.parse(read(path.join(OUT, 'instagram.json'), '')); return Array.isArray(d.items) ? d.items : []; } catch (e) { return []; } })();
+const pageDays = JSON.parse(JSON.stringify(sortedDays));
+igItems.forEach(it => {
+    if (!it || !/^\d{4}-\d{2}-\d{2}$/.test(it.date) || !/^https:\/\/www\.instagram\.com\//.test(it.url || '')) return;
+    let cap = String(it.caption || ''), first = cap.split('\n')[0].trim();
+    (pageDays[it.date] = Array.isArray(pageDays[it.date]) ? pageDays[it.date] : []).push({ t: first, desc: cap.split('\n').slice(1).join('\n'), ig: it.url, p: it.poster || '' });
+});
 const thumbOf = it => { let v = vids.get(it.y); return v ? bestThumb(v.thumbs) : null; };
-const dates = !pagesOn ? [] : Object.keys(sortedDays).filter(d => Array.isArray(sortedDays[d]) && sortedDays[d].some(it => it && (it.y || it.p)));
-dates.forEach(d => writeIfChanged(`d/${d}/index.html`, dayPage(d, sortedDays[d].filter(it => it && (it.y || it.p)), thumbOf)));
+const dates = !pagesOn ? [] : Object.keys(pageDays).sort().filter(d => Array.isArray(pageDays[d]) && pageDays[d].some(it => it && (it.y || it.p || it.ig)));
+dates.forEach(d => writeIfChanged(`d/${d}/index.html`, dayPage(d, pageDays[d].filter(it => it && (it.y || it.p || it.ig)), thumbOf)));
 writeIfChanged('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>${SITE}/</loc></url>

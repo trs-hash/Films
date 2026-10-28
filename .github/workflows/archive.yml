@@ -1,5 +1,6 @@
 # Архів без компʼютера: раз на годину (і вручну — кнопка «Run workflow») tools/archive.mjs збирає з YouTube
 # усі публічні відео й оновлює archive.json, posters/, сторінки днів d/РРРР-ММ-ДД/ і sitemap.xml.
+# Перед ним tools/instagram.mjs — щоденник з Instagram (instagram.json, posters/ig/), коли є секрет IG_TOKEN.
 # Тут же tools/fundraisers.mjs оновлює fundraisers.json — суми в банках monobank для зборів на сайті (секрет MONO_TOKEN
 # необовʼязковий; без зборів із банками крок нічого не робить). Комітить лише коли щось змінилось.
 # Ключ YouTube — секрет YT_API_KEY (див. README); без нього — ключ сайту.
@@ -30,6 +31,22 @@ jobs:
         with:
           node-version: 20
 
+      # Щоденник з Instagram (без секрету IG_TOKEN нічого не робить). Не має зупиняти архів.
+      # Продовжений Instagram'ом токен — одразу в секрет IG_TOKEN (потрібен секрет SECRETS_PAT з правом Secrets: write)
+      - name: Щоденник з Instagram
+        continue-on-error: true
+        run: |
+          node tools/instagram.mjs
+          if [ -s "$IG_NEW_TOKEN_FILE" ]; then
+            if [ -n "$GH_TOKEN" ]; then gh secret set IG_TOKEN --repo "$GITHUB_REPOSITORY" < "$IG_NEW_TOKEN_FILE" && echo "Секрет IG_TOKEN оновлено."
+            else echo "::warning::Instagram видав новий токен, а секрету SECRETS_PAT нема — онови IG_TOKEN вручну, поки старий не скінчився (60 днів)"; fi
+            rm -f "$IG_NEW_TOKEN_FILE"
+          fi
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          IG_NEW_TOKEN_FILE: ${{ runner.temp }}/ig_token
+          GH_TOKEN: ${{ secrets.SECRETS_PAT }}
+
       - name: Зібрати архів
         run: node tools/archive.mjs
         env:
@@ -46,7 +63,7 @@ jobs:
         id: commit
         run: |
           # поштучно: git add з відсутнім шляхом (ще нема постерів чи зборів) не додав би й решту
-          for f in archive.json posters d sitemap.xml fundraisers.json; do
+          for f in archive.json posters d sitemap.xml fundraisers.json instagram.json; do
             if [ -e "$f" ]; then git add -- "$f"; fi
           done
           if git diff --cached --quiet; then

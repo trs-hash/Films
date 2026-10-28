@@ -45,11 +45,11 @@
                 p.catch(function () {});            // помилку обробить основний скрипт
                 return p;
             }
-            try { window.BOOT = { seasons: get('seasons.json'), state: get('state.json'), pl: {} }; } catch (e) { window.BOOT = {}; return; }
+            try { window.BOOT = { seasons: get('seasons.json'), state: get('state.json'), ig: get('instagram.json'), lec: get('lectures.json'), pl: {} }; } catch (e) { window.BOOT = {}; return; }
             // plReady — «рішення ухвалено»: основний скрипт чекає його перед своїми запитами, щоб не запитати те саме вдруге
             BOOT.plReady = BOOT.seasons.then(function (r) { return r.ok ? r.clone().text() : ''; }).then(function (t) {
                 var c; try { c = JSON.parse(t); } catch (e) { c = JSON.parse(t.replace(/,(\s*[}\]])/g, '$1')); }
-                [c.films, c.calendar].forEach(function (src) {
+                [c.films, c.calendar, c.lectures].forEach(function (src) {
                     if (!src || typeof src !== 'object' || (src.enabled != null && !/^(true|так|yes|1|on)$/i.test(String(src.enabled).trim()))) return;
                     [src.playlist].concat(src.exclude || []).forEach(function (pid) {
                         pid = String(pid || '').trim();
@@ -270,6 +270,23 @@
         .fl-soon{align-self:center;font-size:15px;line-height:1.55;color:var(--mut);max-width:340px;margin:0}
         .fl-soon a{color:var(--red);text-decoration:none}
 
+        /* ── Вкладки «Щоденник / Лекції» (коли є обидва формати) — тихі, як заголовки місяців ── */
+        .tabs{display:flex;gap:28px;margin:0 0 34px;border-bottom:1px solid var(--div)}
+        .tab{position:relative;padding:4px 0 12px;font-family:var(--disp);font-size:22px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);text-decoration:none;transition:color .2s}
+        .tab:hover{color:var(--txt)}
+        .tab.on{color:var(--txt)}
+        .tab.on::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--red);border-radius:2px}
+        /* ── 🎓 Лекції: полиці за темами (афіші — ті самі, що в резервних «Фільмах») ── */
+        .lectures{margin:0 0 80px}
+        .lt{scroll-margin-top:20px}
+        .lt-h{font-size:34px;overflow-wrap:anywhere}
+        .lt-about{margin:-10px 0 22px;font-size:15px;line-height:1.5;color:var(--mut);max-width:640px}
+        .cal-soon a{color:var(--red);text-decoration:none}
+        /* Плеєр Instagram (допис із підписом — вищий за 16:9): своя висота, по центру */
+        .iframe-wrap.ig{padding-bottom:0;height:min(80vh,780px);max-width:560px;margin:0 auto;background:#fff}
+        .mod-ext{display:inline-block;margin-top:8px;padding:6px 0;font-size:13px;font-weight:600;color:rgba(255,255,255,.75);text-decoration:none}
+        .mod-ext:hover{color:var(--red)}
+
         /* ── Підтримка (seasons.json → support). Типово вимкнено ──
            Шапка — один ряд: іконка Instagram і поруч тихі посилання «● Збір: Назва ↗» (та «Підтримати ↗», якщо увімкнено).
            Без кнопок, карток, прогресу й закликів у плеєрі. */
@@ -348,6 +365,14 @@
             .eps.compact{grid-template-columns:repeat(2,1fr)}
             .fl-grid{grid-template-columns:minmax(0,1fr);gap:28px;margin-bottom:48px}
             .fl-year{font-size:32px;margin-bottom:16px}
+            .lt-h{font-size:26px}
+            /* Телефон: полиця теми — горизонтальна стрічка (гортати пальцем), видно край наступної афіші */
+            .lt .fl-grid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:84%;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;
+                margin:0 -15px 40px;padding:0 15px 14px;scroll-padding:0 15px;scrollbar-width:none}
+            .lt .fl-grid::-webkit-scrollbar{display:none}
+            .lt .film{scroll-snap-align:start}
+            .tabs{gap:22px;margin-bottom:26px}
+            .tab{font-size:19px}
             .intro .name{font-size:17px}
             /* теми на телефоні — один рядок з прокруткою: календар лишається на першому екрані */
             .topics{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -15px 28px;padding:0 15px}
@@ -442,6 +467,11 @@
     let TOPIC = '';              // вибрана тема з адреси (#t=подорожі)
     let CAL_NOTE = '';           // чому календар порожній (для ?check)
     let CAL_HIDDEN = false;      // календар сховано (seasons.json → calendar.enabled: false): глядачі його не бачать, ?check — бачить
+    let LEC = null;              // лекції (YouTube): {k:'lec', start, playlist, exclude} — групуються за темами з lectures.json
+    let LEC_HIDDEN = false;
+    let LECT = { topics: [], of: {}, dur: {} };   // lectures.json — теми лекцій, які формує локальна ШІ-модель на сервері
+    let IG = [];                 // щоденник з Instagram (instagram.json, оновлює GitHub Action) — записи, як у стіни днів
+    let TAB = 'cal';             // вкладка головної: 'cal' — щоденник, 'lec' — лекції (адреса #lectures)
     let FILMS = null;            // фільмотека головної: {k:'films', id:'films', start, playlist, exclude:[]} — кожне відео як фільм з афішею
     let FILMS_HIDDEN = false;    // фільмотеку сховано (films.enabled: false) — так само, як календар
     let FILMS_NOTE = '';         // чому фільмотека порожня (для ?check)
@@ -649,8 +679,10 @@
     }
 
     // Увесь seasons.json: календар, теми, сезони. Старий формат (просто список сезонів) теж розуміємо.
-    const TOP_KEYS = ['films', 'calendar', 'topics', 'ignore_tags', 'seasons', 'support'];
-    const CAL_KEYS = ['enabled', 'start', 'playlist', 'exclude'];   // ті самі поля — і в films
+    const TOP_KEYS = ['films', 'calendar', 'lectures', 'topics', 'ignore_tags', 'seasons', 'support'];
+    const CAL_KEYS = ['enabled', 'start', 'playlist', 'exclude'];   // ті самі поля — і в films, і в lectures
+    // Лише в calendar: end — YouTube-відео щоденника до цієї дати (далі на YouTube — лекції); instagram — додати щоденник з Instagram
+    const CAL_EXTRA = ['end', 'instagram'];
     const TOPIC_KEYS = ['tag', 'title', 'about', 'aliases'];
     const bareTag = v => str(v).replace(/^#/, '').toLowerCase();
     // Найімовірніша ручна помилка в календарі — вставити канал замість плейлиста.
@@ -670,21 +702,27 @@
     }
     // Джерело головної (фільмотека чи календар): {enabled, start, playlist, exclude}. Повертає [сховано?, обʼєкт або null].
     // Сховане бачить лише ?check — як попередній перегляд.
-    function normSource(c, part, k, what) {
+    function normSource(c, part, k, what, extra = []) {
         if (c == null) return [false, null];
         if (typeof c !== 'object' || Array.isArray(c)) { issue(`seasons.json, ${part}: очікую обʼєкт {"playlist": …}`); return [false, null]; }
-        Object.keys(c).forEach(x => { if (!CAL_KEYS.includes(x)) issue(`seasons.json, ${part}: невідоме поле «${x}» — відомі: ${CAL_KEYS.join(', ')}`); });
+        let known = CAL_KEYS.concat(extra);
+        Object.keys(c).forEach(x => { if (!known.includes(x)) issue(`seasons.json, ${part}: невідоме поле «${x}» — відомі: ${known.join(', ')}`); });
         let hidden = c.enabled != null && !flag(c.enabled, 'seasons.json, ' + part);
         if (hidden && !CHECK) return [true, null];
         let ex = Array.isArray(c.exclude) ? c.exclude : (c.exclude ? [c.exclude] : []);
         let o = { k, id: k, format: 'daily', end: '', start: normDate(c.start, `seasons.json, ${part}.start`),
             playlist: calPlaylist(c.playlist, part),
             exclude: ex.map(pl => normPlaylist(pl, `seasons.json, ${part}.exclude`)).filter(Boolean) };
-        if (!o.playlist) issue(`seasons.json, ${part}: нема playlist — ${what} не знає, звідки брати відео (усі завантаження каналу — ID на UU…)`);
+        if (extra.includes('end')) {
+            o.end = normDate(c.end, `seasons.json, ${part}.end`);
+            if (o.start && o.end && o.end < o.start) { issue(`seasons.json, ${part}: end (${o.end}) раніше за start (${o.start}) — end ігнорую`); o.end = ''; }
+        }
+        if (extra.includes('instagram')) o.instagram = c.instagram != null && flag(c.instagram, `seasons.json, ${part}.instagram`);
+        if (!o.playlist && !o.instagram) issue(`seasons.json, ${part}: нема playlist — ${what} не знає, звідки брати відео (усі завантаження каналу — ID на UU…)`);
         return [hidden, o];
     }
     function normConfig(raw) {
-        CAL = null; CAL_HIDDEN = false; FILMS = null; FILMS_HIDDEN = false; TOPICS = { cfg: {}, alias: {}, ignore: new Set(IGNORE_TAGS) }; SUPPORT = normSupport(null);
+        CAL = null; CAL_HIDDEN = false; FILMS = null; FILMS_HIDDEN = false; LEC = null; LEC_HIDDEN = false; TOPICS = { cfg: {}, alias: {}, ignore: new Set(IGNORE_TAGS) }; SUPPORT = normSupport(null);
         if (Array.isArray(raw)) { SEASONS = normSeasons(raw); return; }
         if (!raw || typeof raw !== 'object') { issue('seasons.json: очікую обʼєкт {…}'); SEASONS = []; return; }
         Object.keys(raw).forEach(k => { if (!TOP_KEYS.includes(k)) issue(`seasons.json: невідоме поле «${k}» — описка? Відомі: ${TOP_KEYS.join(', ')}`); });
@@ -692,7 +730,9 @@
         // Календар (стіна днів) — сховано про запас (щоденний формат — пізніше): "enabled": false. Глядачі його не бачать,
         // ?check — попередній перегляд, як він виглядатиме, коли повернеш "enabled": true.
         [FILMS_HIDDEN, FILMS] = normSource(raw.films, 'films', 'films', 'фільмотека');
-        [CAL_HIDDEN, CAL] = normSource(raw.calendar, 'calendar', 'cal', 'календар');
+        [CAL_HIDDEN, CAL] = normSource(raw.calendar, 'calendar', 'cal', 'календар', CAL_EXTRA);
+        // Лекції — YouTube (з дати start), теми — з lectures.json (локальна ШІ-модель на сервері, tools/lectures/)
+        [LEC_HIDDEN, LEC] = normSource(raw.lectures, 'lectures', 'lec', 'лекції');
         let tl = raw.topics == null ? [] : raw.topics;
         if (!Array.isArray(tl)) { issue('seasons.json, topics: очікую список [ … ]'); tl = []; }
         tl.forEach((t, i) => {
@@ -706,7 +746,7 @@
         });
         (Array.isArray(raw.ignore_tags) ? raw.ignore_tags : []).forEach(a => { a = bareTag(a); if (a) TOPICS.ignore.add(a); });
         SEASONS = raw.seasons == null ? [] : normSeasons(Array.isArray(raw.seasons) ? raw.seasons : raw);
-        if (!CAL && !FILMS && !CAL_HIDDEN && !FILMS_HIDDEN && raw.seasons == null) issue('seasons.json: нема ні films, ні calendar, ні seasons — сторінці нічого показувати');
+        if (!CAL && !FILMS && !LEC && !CAL_HIDDEN && !FILMS_HIDDEN && !LEC_HIDDEN && raw.seasons == null) issue('seasons.json: нема ні films, ні calendar, ні seasons — сторінці нічого показувати');
         SUPPORT = normSupport(raw.support);
     }
 
@@ -867,12 +907,13 @@
     function applyPlaylists(byPl) {
         EPS = {};
         SEASONS.forEach(s => { EPS[s.k] = cleanList(s.playlist && byPl[s.playlist]); });
-        [FILMS, CAL].forEach(S => {                    // фільмотека й календар: усе з джерела від start, крім плейлистів-винятків (Shorts)
+        [FILMS, CAL, LEC].forEach(S => {               // фільмотека, календар, лекції: усе з джерела від start (до end), крім плейлистів-винятків (Shorts)
             if (!S) return;
             let skip = new Set();
             S.exclude.forEach(pl => cleanList(byPl[pl]).forEach(r => skip.add(r.key)));
-            EPS[S.k] = cleanList(S.playlist && byPl[S.playlist]).filter(r => !skip.has(r.key) && (!S.start || r.date >= S.start));
+            EPS[S.k] = cleanList(S.playlist && byPl[S.playlist]).filter(r => !skip.has(r.key) && (!S.start || r.date >= S.start) && (!S.end || r.date <= S.end));
         });
+        mergeIG();
     }
 
     // Мініатюри: браузер сам бере розмір під картку (320…1280 px) — телефон не тягне 1280, коли вистачає 640
@@ -921,7 +962,7 @@
         try {
             if (BOOT.plReady) await BOOT.plReady;      // ранні запити з <head> уже пішли (або вирішено їх не робити)
             CAL_NOTE = FILMS_NOTE = '';
-            let pls = [...new Set([...SEASONS.map(s => s.playlist), ...[FILMS, CAL].flatMap(S => S ? [S.playlist, ...S.exclude] : [])].filter(Boolean))];
+            let pls = [...new Set([...SEASONS.map(s => s.playlist), ...[FILMS, CAL, LEC].flatMap(S => S ? [S.playlist, ...S.exclude] : [])].filter(Boolean))];
             let pages = {};
             await Promise.all(pls.map(async pid => {
                 try { pages[pid] = await fetchPages(pid, '', 1); }
@@ -931,7 +972,7 @@
                     let none = 'на каналі ще нема жодного публічного відео', uu = /^UU/.test(pid);
                     if (uu && FILMS && pid === FILMS.playlist) FILMS_NOTE = none;
                     if (uu && CAL && pid === CAL.playlist) CAL_NOTE = none;
-                    if (!(uu && ((FILMS && pid === FILMS.playlist) || (CAL && pid === CAL.playlist)))) issue(`плейлист ${pid} не знайдено або він закритий — перевір ID і доступ «Загальнодоступний»`);
+                    if (!(uu && [FILMS, CAL, LEC].some(S => S && pid === S.playlist))) issue(`плейлист ${pid} не знайдено або він закритий — перевір ID і доступ «Загальнодоступний»`);
                     pages[pid] = { items: [], next: '' };
                 }
             }));
@@ -972,7 +1013,7 @@
         return m ? (+m[1] || 0) * 86400 + (+m[2] || 0) * 3600 + (+m[3] || 0) * 60 + (+m[4] || 0) : 0;
     }
     async function loadDurations() {
-        let ids = (EPS.films || []).filter(r => r.y && metaById[r.key] && !metaById[r.key].dur).map(r => r.y), got = false;
+        let ids = [...new Set([...(EPS.films || []), ...(EPS.lec || [])].filter(r => r.y && metaById[r.key] && !metaById[r.key].dur).map(r => r.y))], got = false;
         for (let i = 0; i < ids.length; i += 50) {
             try {
                 let res = await fetch('https://www.googleapis.com/youtube/v3/videos?part=contentDetails&maxResults=50&id=' +
@@ -988,6 +1029,66 @@
         return got;
     }
 
+    // ── Щоденник з Instagram: instagram.json (його пише GitHub Action, tools/instagram.mjs) ──
+    // {updated, items:[{id, url, date, ts, caption, poster}]}. Довгі горизонтальні відео мають адресу допису /p/КОД/.
+    // Кадр — свій файл posters/ig/ID.jpg (адреси кадрів Instagram живуть лише кілька днів). Кривий запис — пропускаємо.
+    const IG_URL = /^https:\/\/www\.instagram\.com\/(?:p|tv)\/[\w-]+\/?$/;   // рілси (/reel/) на сайті не показуємо — лише довгі відео
+    const IG_POSTER = /^posters\/ig\/[\w-]+\.jpg$/;
+    function normIG(data) {
+        let items = data && Array.isArray(data.items) ? data.items : [], out = [], seen = new Set();
+        items.forEach(it => {
+            if (!it || typeof it !== 'object') return;
+            let id = str(it.id).replace(/[^\w-]/g, ''), url = str(it.url).replace(/[?#].*$/, '');
+            let date = DATE_RE.test(str(it.date)) ? str(it.date) : localDay(it.ts);
+            if (!id || seen.has(id) || !IG_URL.test(url) || !date || !validDate(date)) return;
+            seen.add(id);
+            let caption = typeof it.caption === 'string' ? it.caption.slice(0, 2200) : '', pd = parseDesc(caption);
+            let first = showTitle(caption.split('\n')[0].trim()).slice(0, 90);
+            let poster = typeof it.poster === 'string' && (IG_POSTER.test(it.poster) || okImg(it.poster)) ? it.poster : '';
+            out.push({ key: 'ig' + id, ig: url.replace(/\/?$/, '/'), title: first, y: '', v: '', tags: tagsOf(caption), thumb: poster, srcset: '',
+                imp: pd.important, date, ts: str(it.ts) || date + 'T12:00' });
+            metaById['ig' + id] = Object.assign(metaById['ig' + id] || {}, { title: first, time: pd.time, body: pd.body.split('\n').slice(1).join('\n').trim(), important: pd.important });
+        });
+        return out;
+    }
+    const validDate = d => { let [y, m, dd] = d.split('-').map(Number), t = new Date(Date.UTC(y, m - 1, dd)); return t.getUTCMonth() === m - 1 && t.getUTCDate() === dd; };
+    // Щоденник = YouTube (до calendar.end) + Instagram. Можна викликати скільки завгодно разів — без дублів
+    function mergeIG() {
+        if (!CAL) return;
+        let yt = (EPS.cal || []).filter(r => !r.ig);
+        EPS.cal = CAL.instagram ? yt.concat(IG.filter(r => !CAL.start || r.date >= CAL.start)) : yt;
+    }
+    // ── Теми лекцій: lectures.json (пише сервер із локальною ШІ-моделлю, tools/lectures/) ──
+    // {topics:[{id, title, about, videos:[YouTube id]}], videos:{id:{topic, dur}}}. Нема файлу — лекції без тем («Усі лекції»).
+    function normLect(data) {
+        let out = { topics: [], of: {}, dur: {} }, ids = new Set();
+        let tl = data && Array.isArray(data.topics) ? data.topics : [], vids = data && isObj(data.videos) ? data.videos : {};
+        tl.forEach(t => {
+            if (!t || typeof t !== 'object') return;
+            let id = str(t.id).toLowerCase().replace(/[^\w-]/g, ''), title = str(t.title).slice(0, 80);
+            if (!id || !title || ids.has(id)) return;
+            ids.add(id);
+            out.topics.push({ id, title, about: str(t.about).slice(0, 300) });
+            (Array.isArray(t.videos) ? t.videos : []).forEach(v => { if (typeof v === 'string' && /^[\w-]{6,20}$/.test(v)) out.of[v] = id; });
+        });
+        Object.keys(vids).forEach(v => {
+            let o = vids[v]; if (!/^[\w-]{6,20}$/.test(v) || !isObj(o)) return;
+            if (typeof o.topic === 'string' && ids.has(o.topic)) out.of[v] = o.topic;
+            if (+o.dur > 0) out.dur[v] = Math.round(+o.dur);   // тривалість знає й сервер — на випадок, коли YouTube не відповів
+        });
+        return out;
+    }
+    async function readJSON(boot, file) {
+        try { let r = await (boot || getFile(file)); if (!r.ok) return null; return await r.clone().json(); } catch(e) { return null; }
+    }
+    // Обидва файли — паралельно з YouTube; прийшли — перемалювати. Кеш браузера — для миттєвого повторного візиту
+    async function loadExtras() {
+        let [ig, lec] = await Promise.all([CAL && CAL.instagram ? readJSON(BOOT.ig, 'instagram.json') : null, LEC ? readJSON(BOOT.lec, 'lectures.json') : null]);
+        if (ig) { IG = normIG(ig); lsSet('ss_ig', JSON.stringify(ig)); mergeIG(); }
+        if (lec) { LECT = normLect(lec); lsSet('ss_lec', JSON.stringify(lec)); }
+        return !!(ig || lec);
+    }
+
     // Судний день: читаємо локальний archive.json (незалежно від YouTube).
     // Форма (site_publisher): {base, days:{date:[{t,p,v,y,d,desc}]}}. Календар і сезони — за датою.
     async function loadArchive() {
@@ -1000,8 +1101,9 @@
             Object.keys(days).forEach(date => {
                 if (!DATE_RE.test(date) || !Array.isArray(days[date])) return;
                 let s = SEASONS.find(x => (!x.start || date >= x.start) && (!x.end || date <= x.end));
-                let inCal = CAL && (!CAL.start || date >= CAL.start), inFilms = FILMS && (!FILMS.start || date >= FILMS.start);
-                if (!s && !inCal && !inFilms) return;
+                let inCal = CAL && CAL.playlist && (!CAL.start || date >= CAL.start) && (!CAL.end || date <= CAL.end), inFilms = FILMS && (!FILMS.start || date >= FILMS.start);
+                let inLec = LEC && (!LEC.start || date >= LEC.start);
+                if (!s && !inCal && !inFilms && !inLec) return;
                 days[date].forEach((it, n) => {
                     let key = it.y || it.v || (date + '_' + n);
                     let pd = parseDesc(it.desc || '');
@@ -1010,11 +1112,13 @@
                     if (s) (eps[s.k] = eps[s.k] || []).push(rec);
                     if (inCal) (eps.cal = eps.cal || []).push(rec);
                     if (inFilms) (eps.films = eps.films || []).push(rec);
+                    if (inLec) (eps.lec = eps.lec || []).push(rec);
                     meta[key] = { title: it.t || '', time: pd.time, body: pd.body, important: pd.important };
                     if (+it.dur > 0) meta[key].dur = Math.round(+it.dur);   // тривалість, секунди (архів пише сам)
                 });
             });
-            EPS = eps; metaById = meta;
+            Object.keys(metaById).forEach(k => { if (k.startsWith('ig') && !meta[k]) meta[k] = metaById[k]; });   // записки з Instagram лишаються
+            EPS = eps; metaById = meta; mergeIG();
             return true;
         } catch(e) {
             console.error('archive.json error:', e.message);
@@ -1034,9 +1138,11 @@
         let raw = lsJSON('ss_seasons', null), pl = lsJSON('ss_pl', null), t = +lsGet('ss_time') || 0;
         if (!raw || !pl || typeof pl !== 'object' || Date.now() - t > 30 * DAY_MS) return false;
         normConfig(raw);
-        if (!SEASONS.length && !CAL && !FILMS) return false;
+        if (!SEASONS.length && !CAL && !FILMS && !LEC) return false;
         TOPIC = topicFromHash();
-        CACHED_PL = pl; applyPlaylists(pl); metaById = lsJSON('ss_meta', {}) || {};
+        metaById = lsJSON('ss_meta', {}) || {};
+        IG = CAL && CAL.instagram ? normIG(lsJSON('ss_ig', null)) : []; LECT = LEC ? normLect(lsJSON('ss_lec', null)) : { topics: [], of: {}, dur: {} };
+        CACHED_PL = pl; applyPlaylists(pl);
         LOADING = false; SRC.eps = 'кеш браузера';
         render();
         return true;
@@ -1053,6 +1159,7 @@
         }
         if (CACHED_PL) applyPlaylists(CACHED_PL);
         render();                                      // свіжі шапки сезонів одразу; серії — з кешу або скелетом
+        let extras = loadExtras().then(got => { if (got) render(); });   // Instagram і теми лекцій — не чекаючи YouTube
         // «Свіжість» для інкрементного оновлення рахуємо від останнього ПОВНОГО перезбору (ss_full), а не від будь-якого візиту
         let ytOk = await loadYouTube(CACHED_PL, Date.now() - (+lsGet('ss_full') || 0));
         if (ytOk) {
@@ -1068,9 +1175,10 @@
         } else {                                       // показуємо все одно — без відео
             LOAD_FAILED = true; SRC.eps = 'нічого — YouTube і архів недоступні';
         }
+        await extras;
         LOADING = false;
         render();
-        if (ytOk && FILMS && await loadDurations()) { lsSet('ss_meta', JSON.stringify(metaById)); render(); }
+        if (ytOk && (FILMS || LEC) && await loadDurations()) { lsSet('ss_meta', JSON.stringify(metaById)); render(); }
     }
 
     // ── Малювання ──────────────────────────────────────────────────────────────
@@ -1082,9 +1190,13 @@
         let today = todayStr(), rank = { live: 0, soon: 1, done: 2 };
         let html = CHECK ? checkHtml(today) : '';
         if (FILMS) html += filmsHtml(today);
-        if (CAL) html += homeHtml(today);
+        let tabs = !!(CAL && LEC);                       // два формати — дві вкладки
+        TAB = tabs ? (tabFromHash() || TAB) : (CAL ? 'cal' : 'lec');
+        if (tabs) html += tabsHtml();
+        if (CAL && TAB === 'cal') html += homeHtml(today);
+        if (LEC && TAB === 'lec') html += lecturesHtml(today);
         let own = SEASONS.filter(s => !s.cal);           // сезони календаря вже показані шапкою над стіною
-        if (!own.length && !FILMS) {
+        if (!own.length && !FILMS && !LEC) {
             if ((CAL_HIDDEN || FILMS_HIDDEN) && !CAL) html += `<div class="msg-empty">Скоро тут буде нове.<br>А поки всі відео — на <a href="${CHANNEL_URL}" target="_blank" rel="noopener">YouTube ↗</a></div>`;
             else if (!CAL) html += '<div class="msg-empty">Скоро тут зʼявиться перший сезон.</div>';
         } else {
@@ -1163,7 +1275,7 @@
         }).catch(() => {});
     }
 
-    function ytHref(rec) { return rec.y ? 'https://www.youtube.com/watch?v=' + encodeURIComponent(rec.y) : '#'; }
+    function ytHref(rec) { return rec.y ? 'https://www.youtube.com/watch?v=' + encodeURIComponent(rec.y) : rec.ig || '#'; }
     function imgTag(rec, cls, sizes) {
         if (!rec.thumb) return '';
         let load = EAGER-- > 0 ? (FIRST_IMG ? ' fetchpriority="high"' : '') : ' loading="lazy"';
@@ -1256,7 +1368,8 @@
         let acts = (n > 1 ? '<button type="button" class="act" onclick="randomDay()">🎲 Випадковий день</button>' : '') +
             (+today.slice(8) > 6 ? `<a class="act to-today" href="#cal-${today}" onclick="event.preventDefault();showDay('${today}')">Сьогодні ↓</a>` : '');
         // Відлік стіни — від дня першого відео (calendar.start лише відсікає старіші проби): без порожніх тижнів до старту
-        let wall = eps.length ? dailyHtml(Object.assign({}, s, { start: eps[0].date }), 'live', today, eps) : '';
+        // end календаря лише відсікає YouTube-відео (далі там лекції) — стіна йде до сьогодні: Instagram продовжує щоденник
+        let wall = eps.length ? dailyHtml(Object.assign({}, s, { start: eps[0].date, end: '' }), 'live', today, eps) : '';
         let since = sinceInner();
         if (since) html = html.replace('<section class="cal-home', `<div class="since" id="since">${since}</div><section class="cal-home`);
         return html + (wall && acts ? `<div class="cal-acts">${acts}</div>` : '') + (wall || soon) + '</section>';
@@ -1281,8 +1394,9 @@
         let words = t.split(/\s+/), w = Math.max(...words.map(x => [...x].length)), n = [...t].length;
         return Math.max(4.4, Math.min(7.6, 90 / (.56 * w), 330 / n)).toFixed(1);
     }
-    function posterHtml(rec, no, isNew) {
-        let idx = playIdx(rec, 'films'), dur = fmtDur((metaById[rec.key] || {}).dur);
+    // ctx — звідки гортати в плеєрі ('films' чи 'lec:тема'); by — «титри» під назвою
+    function posterHtml(rec, no, isNew, ctx = 'films', by = FILM_OF) {
+        let idx = playIdx(rec, ctx), dur = fmtDur(durOf(rec));
         let title = showTitle(rec.title) || 'Без назви', [y, m, d] = rec.date.split('-').map(Number), date = `${d} ${MONTHS_GEN[m - 1]} ${y}`;
         let src = rec.pst || rec.thumb, img = '';       // pst — найбільше превʼю (maxres 1280×720); thumb — запасне
         if (src) {
@@ -1296,8 +1410,8 @@
             `<span class="pst-frame">${img}` + (isNew ? '<span class="pst-new">Новий</span>' : '') + '<span class="pst-play"></span><span class="pst-seen">Переглянуто</span></span>' +
             `<span class="pst-band"><span class="pst-top"><span class="pst-no">№ ${pad2(no)}</span><span>${date}</span></span>` +
             `<span class="pst-t" style="font-size:${titleSize(title)}cqw">${esc(curly(title))}</span>` +
-            `<span class="pst-bill">${FILM_OF}${dur ? ' · ' + dur : ''}</span></span></a>` +
-            (OPEN_IN_APP ? `<button type="button" class="v-more" onclick="daySheet(${idx}, this)" aria-label="Про фільм: ${esc(title)}"><span></span></button>` : '') +
+            `<span class="pst-bill">${by}${dur ? ' · ' + dur : ''}</span></span></a>` +
+            (OPEN_IN_APP ? `<button type="button" class="v-more" onclick="daySheet(${idx}, this)" aria-label="Детальніше: ${esc(title)}"><span></span></button>` : '') +
             '</div>';
     }
     function filmsHtml(today) {
@@ -1327,6 +1441,53 @@
         let since = sinceInner();
         if (since) html = html.replace('<div id="fl-body">', `<div class="since" id="since">${since}</div><div id="fl-body">`);
         return html + '</section>';
+    }
+
+    // ── 🎓 Лекції: YouTube, згруповані за темами з lectures.json ─────────────────
+    // Полиця = тема (назва, рядок опису, афіші лекцій — новіші першими). Полиці — від теми з найсвіжішою лекцією.
+    // Лекції, яким сервер ще не підібрав тему, — згори «Нові лекції» (без тем узагалі — «Усі лекції»).
+    // № — порядковий номер лекції від першої. Гортання в плеєрі — у межах полиці.
+    const LEC_OF = 'Лекція Тараса Максим’яка';
+    const durOf = r => { let d = (metaById[r.key] || {}).dur; return d > 0 ? d : LECT.dur[r.y] || 0; };
+    const lecTopic = r => LECT.of[r.y] || '';
+    function lecShelves() {
+        let all = (EPS.lec || []).filter(playable).slice().sort(byTs), groups = new Map();
+        all.forEach(r => { let t = lecTopic(r); if (!groups.has(t)) groups.set(t, []); groups.get(t).push(r); });
+        let last = sh => sh.recs[sh.recs.length - 1].ts;
+        let shelves = LECT.topics.filter(t => groups.has(t.id)).map(t => ({ id: t.id, title: t.title, about: t.about, recs: groups.get(t.id) }))
+            .sort((a, b) => last(a) < last(b) ? 1 : -1);
+        let rest = groups.get('') || [];
+        if (rest.length) shelves.unshift({ id: 'new', title: shelves.length ? 'Нові лекції' : 'Усі лекції', about: '', recs: rest });
+        return { all, shelves };
+    }
+    function lecturesHtml(today) {
+        let { all, shelves } = lecShelves();
+        let html = (LEC_HIDDEN ? '<p class="cal-hidden">Сховано: глядачі лекцій не бачать (seasons.json → lectures.enabled: false). Це попередній перегляд; повернути — "enabled": true.</p>' : '') +
+            '<section class="lectures" id="lectures" aria-label="Лекції"><h2 class="sr-only">Лекції</h2>';
+        if (LOAD_FAILED && !all.length) return html + '<p class="s-msg">Не вдалось завантажити лекції. Спробуйте оновити сторінку.</p></section>';
+        if (LOADING && !all.length) return html + '<div class="fl-grid">' + '<div class="film"><div class="poster sk"></div></div>'.repeat(3) + '</div></section>';
+        if (!all.length) return html + `<p class="cal-soon">Перша лекція — скоро. А поки всі відео — на <a href="${CHANNEL_URL}" target="_blank" rel="noopener">YouTube ↗</a></p></section>`;
+        let no = new Map(all.map((r, i) => [r.key, i + 1])), newest = all[all.length - 1];
+        let fresh = !watched.includes(newest.key) && dayNum(today) - dayNum(newest.date) < 14 ? newest.key : '';
+        return html + shelves.map(sh => `<section class="lt" id="lt-${esc(sh.id)}"><h3 class="fl-year lt-h">${esc(sh.title)}` +
+            `<span class="fl-yc">${sh.recs.length} ${plural(sh.recs.length, 'лекція', 'лекції', 'лекцій')}</span></h3>` +
+            (sh.about ? `<p class="lt-about">${esc(sh.about)}</p>` : '') +
+            '<div class="fl-grid">' + sh.recs.slice().reverse().map(r => posterHtml(r, no.get(r.key), r.key === fresh, 'lec:' + sh.id, LEC_OF)).join('') + '</div></section>').join('') + '</section>';
+    }
+    // Вкладки, коли є обидва формати: щоденник (стіна днів: YouTube + Instagram) і лекції. Вибір — в адресі (#lectures)
+    function tabsHtml() {
+        let t = (k, href, label) => `<a class="tab${TAB === k ? ' on' : ''}" href="${href}"${TAB === k ? ' aria-current="page"' : ''}>${label}</a>`;
+        return `<nav class="tabs" aria-label="Розділи">${t('cal', '#diary', 'Щоденник')}${t('lec', '#lectures', 'Лекції')}</nav>`;
+    }
+    // Вкладка з адреси: #lectures (#lt-тема) — лекції; порожня адреса, #diary, #t=, #cal-… — щоденник;
+    // #d=дата — там, де того дня є відео (є і там, і там — щоденник). Інше (#f-збір…) — лишається поточна
+    function tabFromHash() {
+        let h = safeDecode(location.hash.slice(1)), d = dayFromHash();
+        if (!h) return 'cal';                            // «назад» до адреси без # — щоденник
+        if (/^(lectures|lt-)/.test(h)) return 'lec';
+        if (d) return LEC && !(EPS.cal || []).some(r => r.date === d) && (EPS.lec || []).some(r => r.date === d) ? 'lec' : 'cal';
+        if (/^(diary|t=|cal)/.test(h)) return 'cal';
+        return '';
     }
 
     // Усі відомі відео (календар + сезони) без дублів — для каталогу тем
@@ -1490,6 +1651,15 @@
                 (n ? `, тривалість відома для ${durs}` : '') + (FILMS.exclude.length ? `; без відео з ${esc(FILMS.exclude.join(', '))}` : '') +
                 (FILMS.start ? `; старіші за ${fmtDay(FILMS.start, true)} не беремо` : '') + (FILMS_NOTE ? ` — ${esc(FILMS_NOTE)}` : '') + '</li>';
         }
+        if (CAL && CAL.instagram)
+            rows += `<li><b>Щоденник з Instagram</b> — ${IG.length ? IG.length + ' ' + plural(IG.length, 'відео', 'відео', 'відео') + ', останнє ' + esc(fmtDay(IG.reduce((m, r) => r.date > m ? r.date : m, ''), true)) : 'поки нема (instagram.json ще не створено — потрібен токен Instagram, див. README)'}` +
+                (CAL.end ? `; з YouTube у щоденнику — відео до ${esc(fmtDay(CAL.end, true))}` : '') + '</li>';
+        if (LEC) {
+            let { all, shelves } = lecShelves(), none = (shelves.find(x => x.id === 'new') || { recs: [] }).recs.length;
+            rows += `<li><b>Лекції</b>${LEC_HIDDEN ? ' — <b>сховано від глядачів</b>;' : ' —'} YouTube${LEC.start ? ' з ' + esc(fmtDay(LEC.start, true)) : ''}: ${all.length} ${plural(all.length, 'лекція', 'лекції', 'лекцій')}; ` +
+                (LECT.topics.length ? `тем ${LECT.topics.length} (${LECT.topics.map(t => esc(t.title)).join(', ')})` : 'тем ще нема — lectures.json формує сервер (tools/lectures)') +
+                (none ? `; без теми: ${none}` : '') + '</li>';
+        }
         if (FILMS || CAL) {
             let tl = topicCounts(allRecs());
             rows += `<li><b>Теми</b> — ${tl.length ? tl.map(([t, e]) => esc(topicLabel(t)) + ' (' + e.n + ')').join(', ') : 'поки жодного хештегу в назвах чи описах відео'}</li>`;
@@ -1583,23 +1753,26 @@
     // Телефон: дотик по дню — застосунок YouTube; «⋯» на дні відкриває «аркуш дня» без плеєра: кадр, записка,
     // картка для Stories, посилання, гортання; «▶ Дивитися в YouTube» — у застосунок.
     // Контекст гортання — звідки відкрили: стіна днів, вибрана тема, сезон або «з твого візиту» (черга нових днів).
-    const toP = (rec, ctx) => ({ key: rec.key, y: rec.y || '', v: rec.v || '', tags: rec.tags || [], date: rec.date, title: rec.title, thumb: rec.pst || rec.thumb || '', ctx });
+    const toP = (rec, ctx) => ({ key: rec.key, y: rec.y || '', v: rec.v || '', ig: rec.ig || '', tags: rec.tags || [], date: rec.date, title: rec.title, thumb: rec.pst || rec.thumb || '', ctx });
     function playIdx(rec, ctx) { return PLAY.push(toP(rec, ctx)) - 1; }
     const byTs = (a, b) => a.ts < b.ts ? -1 : a.ts > b.ts ? 1 : 0;
-    const playable = r => !!(r && (r.y || r.v));
-    const isAppVideo = p => OPEN_IN_APP && !!p.y && !(BASE && p.v);     // телефон + відео з YouTube → застосунок
-    const ytWatch = p => 'https://www.youtube.com/watch?v=' + encodeURIComponent(p.y);
+    const playable = r => !!(r && (r.y || r.v || r.ig));
+    const isAppVideo = p => OPEN_IN_APP && !!(p.y || p.ig) && !(BASE && p.v);     // телефон + відео з YouTube чи Instagram → застосунок
+    const ytWatch = p => p.ig && !p.y ? p.ig : 'https://www.youtube.com/watch?v=' + encodeURIComponent(p.y);   // «дивитися» — у Instagram чи YouTube
+    const igEmbed = u => u.replace(/\/?$/, '/') + 'embed/';                                                  // плеєр Instagram для сайту
     const $ = id => document.getElementById(id);
-    const isFilm = p => p.ctx === 'films' || (p.ctx === 'queue' && !!FILMS);
+    const isFilm = p => p.ctx === 'films' || /^lec:/.test(p.ctx || '') || (p.ctx === 'queue' && !!FILMS);   // афіші: «Посилання», «Картка»
     let lastFocus = null, CUR = null, QUEUE = [], QUEUE_ON = false;
 
     function navList(ctx) {
         if (ctx === 'queue') return QUEUE;
+        if (/^lec:/.test(ctx)) { let t = ctx.slice(4); return (EPS.lec || []).filter(r => playable(r) && (lecTopic(r) || 'new') === t).sort(byTs); }
         let list = ctx === 'topic' || (ctx === 'films' && TOPIC) ? (ctx === 'films' ? EPS.films || [] : allRecs()).filter(r => recTopics(r).includes(TOPIC)) : (EPS[ctx] || []);
         return list.filter(playable).slice().sort(byTs);
     }
     // Застосунок YouTube поза кліком по посиланню (кнопки «Дивитися», «підряд»)
     function openInApp(p) {
+        if (p.ig && !p.y) { openApp(p.ig); return; }    // Instagram: посилання на допис — система відкриє застосунок Instagram
         if (IS_ANDROID) openApp('intent://www.youtube.com/watch?v=' + encodeURIComponent(p.y) +
             '#Intent;scheme=https;package=com.google.android.youtube;S.browser_fallback_url=' + encodeURIComponent(ytWatch(p)) + ';end');
         else openApp(ytWatch(p));                       // iOS: перехід на youtube.com — система відкриє застосунок
@@ -1612,7 +1785,7 @@
             // iOS: звичайний перехід за посиланням youtube.com — система сама відкриє застосунок (Universal Link).
             // Android: intent — застосунок YouTube, а якщо його нема — сторінка відео в браузері.
             markWatched(p.key);
-            if (IS_ANDROID) { e.preventDefault(); openInApp(p); }
+            if (IS_ANDROID && p.y) { e.preventDefault(); openInApp(p); }   // Instagram — звичайний перехід за посиланням (App Links)
             return;
         }
         e.preventDefault();
@@ -1625,10 +1798,10 @@
         QUEUE_ON = false; lastFocus = btn || document.activeElement;
         showRec(p, p.ctx || 'cal');
     };
-    window.playSheet = function(e) {                    // «▶ Дивитися в YouTube» з аркуша дня
+    window.playSheet = function(e) {                    // «▶ Дивитися в YouTube / Instagram» з аркуша дня
         if (!CUR) return;
         markWatched(CUR.p.key);
-        if (IS_ANDROID) { e.preventDefault(); openInApp(CUR.p); }
+        if (IS_ANDROID && CUR.p.y) { e.preventDefault(); openInApp(CUR.p); }
     };
 
     const WD_FULL = ['неділя', 'понеділок', 'вівторок', 'середа', 'четвер', 'пʼятниця', 'субота'];
@@ -1639,14 +1812,15 @@
         let lbl = r => fmtDay(r.date, r.date.slice(0, 4) !== y);
         let mid = ctx === 'queue' ? `З твого візиту · ${i + 1} із ${list.length}`
             : ctx === 'topic' || (ctx === 'films' && TOPIC) ? `${esc(topicLabel(TOPIC))} · ${i + 1} / ${list.length}`
-            : ctx === 'films' ? `№ ${filmNo(list[i].key)} із ${(EPS.films || []).length}` : `${i + 1} / ${list.length}`;   // «із»: велике «З» схоже на 3
+            : ctx === 'films' ? `№ ${filmNo(list[i].key)} із ${(EPS.films || []).length}`
+            : /^lec:/.test(ctx) ? `${esc((lecShelves().shelves.find(x => 'lec:' + x.id === ctx) || {}).title || 'Лекції')} · ${i + 1} із ${list.length}` : `${i + 1} / ${list.length}`;   // «із»: велике «З» схоже на 3
         return `<button type="button" class="mnav" onclick="navStep(-1)"${prev ? ` aria-label="Попередній: ${esc(lbl(prev))}"` : ' disabled'}>‹ ${prev ? esc(lbl(prev)) : ''}</button>` +
             `<span class="mnav-pos">${mid}</span>` +
             `<button type="button" class="mnav" onclick="navStep(1)"${next ? ` aria-label="Наступний: ${esc(lbl(next))}"` : ' disabled'}>${next ? esc(lbl(next)) : ''} ›</button>`;
     }
     function stopPlayers() {
         let iframe = $('ytIframe'), loc = $('locVideo');
-        iframe.src = ''; iframe.style.display = 'none';
+        iframe.src = ''; iframe.style.display = 'none'; iframe.parentNode.classList.remove('ig');
         try { loc.pause(); } catch(_) {} loc.removeAttribute('src'); loc.style.display = 'none'; loc.onended = null;
     }
     function showRec(p, ctx) {
@@ -1655,9 +1829,10 @@
         if (!sheet) markWatched(p.key);                  // на аркуші дня відео ще не дивились — лише читаєш
         let list = navList(ctx), i = list.findIndex(r => r.key === p.key);
         $('modNav').innerHTML = navHtml(list, i, ctx);
-        let dur = fmtDur((metaById[p.key] || {}).dur);
+        let dur = fmtDur(durOf(p));
         $('modHead').innerHTML = (DATE_RE.test(p.date || '') ? `<div class="mod-date">${esc(fmtDayLong(p.date))}${dur ? ' · ' + dur : ''}</div>` : '') +
-            (p.title ? `<div class="mod-title">${esc(showTitle(p.title))}</div>` : '');
+            (p.title ? `<div class="mod-title">${esc(showTitle(p.title))}</div>` : '') +
+            (p.ig && !p.y ? `<a class="mod-ext" href="${esc(p.ig)}" target="_blank" rel="noopener">Дивитися в Instagram ↗</a>` : '');
         // Записка серії під плеєром (щоденник): текст веде, штамп часу — підпис знизу; зірка, якщо важливо.
         let meta = metaById[p.key] || {}, topics = recTopics(p), dated = DATE_RE.test(p.date || '');
         $('modNote').innerHTML = ((meta.time || meta.body)
@@ -1675,11 +1850,14 @@
         stopPlayers();
         if (sheet) {
             if (p.thumb) { poster.style.backgroundImage = 'url("' + p.thumb.replace(/["\\\n]/g, '') + '")'; poster.hidden = false; }
-            play.href = ytWatch(p); play.hidden = false;
+            play.href = ytWatch(p); play.textContent = p.ig && !p.y ? '▶ Дивитися в Instagram' : '▶ Дивитися в YouTube'; play.hidden = false;
         } else if (BASE && p.v) {
             loc.src = BASE.replace(/\/+$/, '') + '/' + p.v.replace(/^\/+/, ''); loc.style.display = 'block';
             loc.onended = () => { if (QUEUE_ON) queueNext(); };
             try { let pr = loc.play(); if (pr && pr.catch) pr.catch(() => {}); } catch(_) {}   // файлу нема — тихо, без помилки в консолі
+        } else if (p.ig && !p.y) {                      // Instagram: їхній плеєр допису (вище за 16:9 — з підписом); не грає — посилання вище
+            iframe.parentNode.classList.add('ig'); iframe.style.display = 'block';
+            iframe.src = igEmbed(p.ig);
         } else if (p.y) {
             iframe.style.display = 'block';
             iframe.src = 'https://www.youtube.com/embed/' + p.y + '?autoplay=1' + (QUEUE_ON ? '&enablejsapi=1&origin=' + encodeURIComponent(location.origin) : '');
@@ -1943,7 +2121,7 @@
     // (той самий клік по плитці: компʼютер — вікно, телефон — застосунок YouTube)
     // Фільмотека: перша афіша того дня
     function dayEl(date) {
-        let f = FILMS && document.querySelector(`#films .film[data-date="${date}"]`);
+        let f = (FILMS && document.querySelector(`#films .film[data-date="${date}"]`)) || (TAB === 'lec' && document.querySelector(`#lectures .film[data-date="${date}"]`));
         if (f) return f;
         if (!document.getElementById('cal-' + date)) fillAllLazy();   // день у згорнутому «Раніше» — домалювати
         return document.getElementById('cal-' + date);
@@ -2009,6 +2187,12 @@
     });
     // Вибір теми живе в адресі (#t=…): «назад» у браузері повертає попередній вибір, посиланням можна поділитися
     window.addEventListener('hashchange', () => {
+        let nt = CAL && LEC ? tabFromHash() : '';     // інша вкладка (щоденник / лекції)
+        if (nt && nt !== TAB) {
+            TAB = nt; closeModal(); render();
+            let tb = document.querySelector('.tabs');
+            if (tb && tb.getBoundingClientRect().top < 0) tb.scrollIntoView({ block: 'start' });
+        }
         let d = dayFromHash();
         if (d && d !== DAY_DONE) { DAY_DONE = d; closeModal(); showDay(d, '', !OPEN_IN_APP); return; }
         if (location.hash.startsWith('#f-')) render();  // посилання на збір — підсвітити його в шапці

@@ -1,0 +1,25 @@
+{
+  "_що_це": "Скопіюй у config.json (його в git нема — там ключ) і заповни. Значення «ENV:ІМʼЯ» — зі змінної середовища.",
+  "repo_dir": "/srv/films",
+  "state_dir": "/var/lib/films-lectures",
+  "inbox_dir": "/srv/lectures-inbox",
+  "youtube_api_key": "ENV:YT_API_KEY",
+  "ollama_url": "http://127.0.0.1:11434",
+  "llm_model": "gemma3:12b",
+  "embed_model": "bge-m3",
+  "num_ctx": 8192,
+  "chunk_words": 1800,
+  "whisper_model": "large-v3",
+  "whisper_device": "auto",
+  "language": "uk",
+  "use_youtube_subs": true,
+  "yt_dlp_cookies": "",
+  "topics": {
+    "min_topic_size": 3,
+    "assign_threshold": 0.62,
+    "gray_threshold": 0.52,
+    "cluster_threshold": 0.58,
+    "merge_threshold": 0.80,
+    "max_topics": 12
+  }
+}

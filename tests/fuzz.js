@@ -38,7 +38,10 @@ function config() {
   if (chance(0.7)) c.films = chance(0.1) ? nasty() : { playlist: pick(['UU1', 'UU1', 'UCabcdefghijklmnopqrstuv', nasty()]), exclude: pick([['SH'], 'SH', nasty()]),
     start: maybe(pick([day(), '01.09.2026', nasty()]), 0.3), enabled: maybe(pick([true, false, 'ні', 'так', nasty()]), 0.3) };
   if (chance(0.9)) c.calendar = chance(0.1) ? nasty() : { start: pick([day(), '2026-08-01', nasty()]), playlist: pick(['UU1', 'UU1', 'UCabcdefghijklmnopqrstuv', nasty()]),
-    exclude: pick([['SH'], 'SH', nasty()]), enabled: maybe(pick([true, false, 'ні', 'так', nasty()]), 0.3) };
+    exclude: pick([['SH'], 'SH', nasty()]), enabled: maybe(pick([true, false, 'ні', 'так', nasty()]), 0.3),
+    end: maybe(pick([day(), '2026-09-15', nasty()]), 0.4), instagram: maybe(pick([true, 'так', false, nasty()]), 0.6) };
+  if (chance(0.6)) c.lectures = chance(0.1) ? nasty() : { playlist: pick(['UU1', 'UU1', nasty()]), start: maybe(pick([day(), '2026-09-10', nasty()]), 0.6),
+    exclude: pick([['SH'], nasty()]), enabled: maybe(pick([true, false, 'ні', nasty()]), 0.2) };
   if (chance(0.5)) c.topics = chance(0.2) ? nasty() : [{ tag: pick(['подорожі', nasty()]), title: maybe(nasty()), about: maybe(nasty()), aliases: maybe(pick([['мандри'], nasty()])) }];
   if (chance(0.3)) c.ignore_tags = pick([['shorts'], nasty()]);
   if (chance(0.3)) c.seasons = chance(0.2) ? nasty() : [{ n: pick([1, '2', nasty()]), format: pick(['weekly', 'daily', nasty()]), title: nasty(), about: maybe(nasty()),
@@ -93,9 +96,15 @@ async function siteRun(browser, i) {
   await ctx.route(/seasons\.json/, r => r.fulfill({ contentType: 'application/json', body: typeof cfg === 'string' ? cfg : JSON.stringify(cfg) }));
   await ctx.route(/fundraisers\.json/, r => chance(0.3) ? r.fulfill({ status: 404 }) : r.fulfill({ contentType: 'application/json',
     body: pick([JSON.stringify({ jars: { AbC123xyz: { raised: pick([41000, -5, 'x', 1e12]), goal: pick([60000, 0, nasty()]) } } }), '{"jars":', JSON.stringify(nasty())]) }));
+  const igItem = k => ({ id: pick(['17' + k, nasty(), k]), url: pick([`https://www.instagram.com/p/C${k}x/`, `https://www.instagram.com/reel/R${k}/`, nasty()]),
+    date: pick([day(), '2026-02-30', nasty(), undefined]), ts: pick([new Date(Date.UTC(2026, 8, int(1, 29), 18)).toISOString(), nasty()]), caption: pick(['Ранок\nопис #київ', nasty(), 5, undefined]),
+    poster: pick([`posters/ig/17${k}.jpg`, nasty(), 'https://x.example/a.jpg']) });
+  await ctx.route(/instagram\.json/, r => r.fulfill({ contentType: 'application/json', body: pick([JSON.stringify({ items: Array.from({ length: int(0, 12) }, (_, k) => igItem(k)) }), '{"items":', JSON.stringify(nasty()), '{"items": 5}']) }));
+  await ctx.route(/lectures\.json/, r => r.fulfill({ contentType: 'application/json', body: pick([JSON.stringify({ topics: Array.from({ length: int(0, 4) }, (_, k) => ({ id: pick(['t' + k, nasty()]), title: pick(['Тема ' + k, nasty(), '']),
+    about: maybe(nasty()), videos: Array.from({ length: int(0, 4) }, () => pick(['v' + int(0, 20), nasty(), 7])) })), videos: pick([{ v1: { topic: 't0', dur: pick([2400, -5, nasty()]) } }, nasty(), []]) }), '{', JSON.stringify(nasty()), '']) }));
   await ctx.route(/state\.json/, r => r.fulfill({ contentType: 'application/json', body: pick(['{"mode":"youtube"}', '{"mode":"doomsday"}', '{', '']) }));
   await ctx.route(/archive\.json/, r => r.fulfill({ contentType: 'application/json', body: pick(['{"base":"","days":{}}', JSON.stringify({ days: { [day()]: [{ t: nasty(), y: 'a1', d: nasty(), dur: pick([754, -1, nasty()]), ph: pick(['posters/a1-hd.jpg', nasty(), 7]) }], [String(nasty())]: nasty() } }), '{']) }));
-  const hash = pick(['', '', '#t=' + encodeURIComponent(String(nasty())), '#t=%E0%A4%A', '#d=' + day(), '#f-dron', '#%', '#cal-2026-09-21', '#d=' + String(nasty())]);
+  const hash = pick(['', '', '#lectures', '#lectures', '#lt-' + encodeURIComponent(String(nasty())), '#diary', '#t=' + encodeURIComponent(String(nasty())), '#t=%E0%A4%A', '#d=' + day(), '#f-dron', '#%', '#cal-2026-09-21', '#d=' + String(nasty())]);
   const url = 'http://localhost:8767/' + pick(['', '', '?check']) + hash;
   try {
     await page.goto(url); await page.waitForTimeout(500);
@@ -110,7 +119,8 @@ async function siteRun(browser, i) {
     if (chk.jsLinks) problems.push(`javascript:-посилань: ${chk.jsLinks}`);
     if (!chk.app) problems.push('порожня сторінка');
     if (chk.hscroll) problems.push('горизонтальний скрол: ' + chk.wide.join(', '));
-    const v = page.locator('#cal .v-lnk, .ep, #films .poster[data-k]').first();
+    if (await page.locator('.tabs .tab').count() && chance(0.4)) { await page.locator('.tabs .tab').nth(int(0, 1)).click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(150); }   // вкладки
+    const v = page.locator('#cal .v-lnk, .ep, #films .poster[data-k], #lectures .poster[data-k]').first();
     if (!mobile && await v.count()) {
       await v.click({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(150);
       for (let k = int(0, 4); k > 0; k--) await page.keyboard.press(pick(['ArrowLeft', 'ArrowRight']));   // гортати дні
@@ -118,7 +128,7 @@ async function siteRun(browser, i) {
       await page.waitForTimeout(chance(0.3) ? 600 : 50);
       await page.keyboard.press('Escape');
     }
-    const more = page.locator('#cal .v-more, #films .v-more').first();   // телефон: аркуш дня / фільму
+    const more = page.locator('#cal .v-more, #films .v-more, #lectures .v-more').first();   // телефон: аркуш дня / фільму / лекції
     if (mobile && await more.count()) {
       await more.tap({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(150);
       if (chance(0.5)) await page.locator('#modNav .mnav:not([disabled])').first().tap({ timeout: 1500 }).catch(() => {});

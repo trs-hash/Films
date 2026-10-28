@@ -10,6 +10,16 @@
   "calendar": {
     "enabled": true,
     "start": "",
+    "end": "2026-10-25",
+    "playlist": "UURSKTGA5a2hLrai_MXNaoUQ",
+    "exclude": [
+      "PLS50DDpfd-9w"
+    ],
+    "instagram": true
+  },
+  "lectures": {
+    "enabled": true,
+    "start": "2026-10-26",
     "playlist": "UURSKTGA5a2hLrai_MXNaoUQ",
     "exclude": [
       "PLS50DDpfd-9w"
