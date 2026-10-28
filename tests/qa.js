@@ -1096,14 +1096,14 @@ const CASES = [
       const page = fs.readFileSync(path.join(out, 'd/2026-10-26/index.html'), 'utf8'), sm = fs.readFileSync(path.join(out, 'sitemap.xml'), 'utf8');
       return page.includes('Дивитися в Instagram') && page.includes('https://www.instagram.com/p/DeIG1abc/') && page.includes('Ранок у Києві') && sm.includes('/d/2026-10-28/');
     }],
-  ['LC01 лекції за темами: полиці від теми з найсвіжішою лекцією, згори «Нові лекції» (ще без теми); № від першої; тривалість від сервера; криві теми — ні', {
+  ['LC01 студії за темами (стара адреса #lectures працює): полиці від теми з найсвіжішою, згори «Нові студії» (ще без теми); № від першої; тривалість від сервера; криві теми — ні', {
       path: '#lectures', now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, ig: IGJ, lect: LJ, shot: 'LC01-lectures' },
     async r => {
       const shelves = await r.page.$$eval('#lectures .lt', a => a.map(x => x.querySelector('.lt-h').firstChild.textContent + ':' + [...x.querySelectorAll('.poster')].map(p => p.dataset.k.slice(-1)).join('')));
       const no = await r.page.innerText('[data-k="lec0000001"] .pst-no'), bill = (await r.page.innerText('[data-k="lec0000001"] .pst-bill')).toLowerCase();
-      return shelves.join('|') === 'Нові лекції:5|Звички й воля:421|Стоїцизм:3' && no === '№ 01' && bill.includes('лекція') && bill.includes('45 хв')
+      return shelves.join('|') === 'Нові студії:5|Звички й воля:421|Стоїцизм:3' && no === '№ 01' && bill === 'тарас максим’як · 45 хв' && !/лекці/i.test(await r.page.innerText('body'))
         && has(r, 'Чому ми відкладаємо і як закріплюються звички') && await r.page.locator('#lectures .pst-new').count() === 1 && !has(r, 'Шортс')
-        && (await r.page.locator('.tabs .tab.on').innerText()).toLowerCase() === 'лекції' && await r.page.locator('.lpeek').count() === 0;
+        && (await r.page.locator('.tabs .tab.on').innerText()).toLowerCase() === 'студії' && await r.page.locator('.lpeek').count() === 0;
     }],
   ['LC02 плеєр лекції: гортання в межах теми («Звички й воля · 2 із 3»), тривалість у шапці; Esc — назад', {
       path: '#lectures', now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: LJ },
@@ -1114,22 +1114,22 @@ const CASES = [
       const src2 = await r.page.getAttribute('#ytIframe', 'src');
       return nav.includes('звички й воля · 2 із 3') && head.includes('33 хв') && src.includes('/embed/lec0000002') && src2.includes('/embed/lec0000004');
     }],
-  ['LC03 без lectures.json — «Усі лекції»; зіпсований lectures.json — так само, без помилок; лекцій ще нема — «Перша лекція — скоро»', {
+  ['LC03 без lectures.json — «Усі студії»; зіпсований lectures.json — так само, без помилок; студій ще нема — «Перша студія — скоро»', {
       path: '#lectures', now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: 404 },
     async r => {
-      const a = (await r.page.innerText('#lectures .lt-h')).toLowerCase().startsWith('усі лекції') && await r.page.locator('#lectures .poster').count() === 5;
+      const a = (await r.page.innerText('#lectures .lt-h')).toLowerCase().startsWith('усі студії') && await r.page.locator('#lectures .poster').count() === 5;
       const { r: r2, ctx: c2 } = await scenario(r.browser, { path: '#lectures', now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: '{"topics": "сміття", "videos": [1,2]' });
       const b = r2.errs.length === 0 && await r2.page.locator('#lectures .poster').count() === 5; await c2.close();
       const { r: r3, ctx: c3 } = await scenario(r.browser, { path: '#lectures', seasons: DUAL(), api: { UU1: [], SH: [] }, lect: LJ });
-      const c = has(r3, 'Перша лекція — скоро') && r3.errs.length === 0; await c3.close();
+      const c = has(r3, 'Перша студія — скоро') && r3.errs.length === 0; await c3.close();
       return a && b && c;
     }],
-  ['LC04 вкладки: клік — інша вкладка й адреса (#lectures), «назад» у браузері — назад; посилання на день лекції (#d=…) відкриває лекції й плеєр', {
+  ['LC04 вкладки: клік — інша вкладка й адреса (#studii), «назад» у браузері — назад; посилання на день лекції (#d=…) відкриває лекції й плеєр', {
       now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: LJ, ig: IGJ },
     async r => {
       const a = await r.page.locator('#cal').count() === 1;
-      await r.page.click('.tabs .tab:has-text("Лекції")'); await r.page.waitForTimeout(200);
-      const b = await r.page.locator('#lectures').count() === 1 && (await r.page.evaluate(() => location.hash)) === '#lectures';
+      await r.page.click('.tabs .tab:has-text("Студії")'); await r.page.waitForTimeout(200);
+      const b = await r.page.locator('#lectures').count() === 1 && (await r.page.evaluate(() => location.hash)) === '#studii';
       await r.page.goBack(); await r.page.waitForTimeout(250);
       const c = await r.page.locator('#cal').count() === 1;
       await r.page.goto('http://localhost:8766/?x#d=2026-11-03'); await r.page.waitForTimeout(1000);   // того дня — лише лекція
@@ -1144,8 +1144,8 @@ const CASES = [
       const tabs = await r.page.$$eval('.tabs .tab', a => a.map(x => Math.round(x.getBoundingClientRect().top)));
       return shelf.n === 3 && shelf.sw > shelf.cw && new Set(shelf.tops).size === 1 && tabs[0] === tabs[1] && await noHScroll(r);
     }],
-  ['LC06 ?check: рядки «Щоденний влог з Instagram» і «Лекції» (скільки, теми, без теми); помилок нема', { path: '?check', now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: LJ, ig: IGJ },
-    async r => has(r, 'Щоденний влог з Instagram — 4 відео') && has(r, 'YouTube-влоги — до 25 жовтня 2026') && has(r, 'Лекції — YouTube з 26 жовтня 2026: 5 лекцій')
+  ['LC06 ?check: рядки «Щоденний влог з Instagram» і «Студії» (скільки, теми, без теми); помилок нема', { path: '?check', now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: LJ, ig: IGJ },
+    async r => has(r, 'Щоденний влог з Instagram — 4 відео') && has(r, 'YouTube-влоги — до 25 жовтня 2026') && has(r, 'Студії (seasons.json → lectures) — YouTube з 26 жовтня 2026: 5 студій')
       && has(r, 'тем 2 (Звички й воля, Стоїцизм)') && has(r, 'без теми: 1') && has(r, 'Помилок не знайдено')],
   ['LP01 над стіною влогу визирають 3 найновіші лекції (з темою, датою, хвилинами); дотик — плеєр гортає тему; «Усі лекції · 5 →» — вкладка лекцій', {
       now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: LJ, ig: IGJ, shot: 'LP01-peek' },
@@ -1160,8 +1160,8 @@ const CASES = [
       const seen = await r.page.locator('.lpeek .lp.watched[data-k="lec0000004"]').count() === 1;
       await r.page.click('.lp-all'); await r.page.waitForTimeout(250);
       const tab = (await r.page.innerText('.tabs .tab.on')).toLowerCase(), hash = await r.page.evaluate(() => location.hash);
-      return cards.join('|') === '5:|4:Звички й воля|3:Стоїцизм' && meta.includes('3 листопада') && meta.includes('хв') && all.includes('усі лекції · 5') && above && oneRow
-        && nav.includes('звички й воля · 3 із 3') && src.includes('/embed/lec0000004') && seen && tab === 'лекції' && hash === '#lectures'
+      return cards.join('|') === '5:|4:Звички й воля|3:Стоїцизм' && meta.includes('3 листопада') && meta.includes('хв') && all.includes('усі студії · 5') && above && oneRow
+        && nav.includes('звички й воля · 3 із 3') && src.includes('/embed/lec0000004') && seen && tab === 'студії' && hash === '#studii'
         && await r.page.locator('.lpeek').count() === 0 && await r.page.locator('#lectures').count() === 1 && r.errs.length === 0;
     }],
   ['LP02 телефон: лекції над стіною — стрічка вбік (видно край наступної), стіна лишається на першому екрані; дотик — у застосунок YouTube; без горизонтального скролу', {
@@ -1175,7 +1175,7 @@ const CASES = [
   ['LP03 лекцій ще нема — над стіною нічого (без «скоро»); лекції сховано — ні вкладок, ні стрічки', {
       now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: { UU1: DUAL_API.UU1.filter(v => !/^lec/.test(v.snippet.resourceId.videoId)), SH: DUAL_API.SH }, lect: LJ },
     async r => {
-      const a = await r.page.locator('.lpeek').count() === 0 && await r.page.locator('.tabs').count() === 1 && !has(r, 'Нові лекції');
+      const a = await r.page.locator('.lpeek').count() === 0 && await r.page.locator('.tabs').count() === 1 && !has(r, 'Нові студії');
       const { r: r2, ctx: c2 } = await scenario(r.browser, { now: '2026-11-05T12:00:00+02:00', seasons: DUAL({ lec: { enabled: false } }), api: DUAL_API, lect: LJ });
       const b = await r2.page.locator('.lpeek').count() === 0 && await r2.page.locator('.tabs').count() === 0 && await r2.page.locator('#cal').count() === 1 && r2.errs.length === 0; await c2.close();
       return a && b && r.errs.length === 0;
@@ -1233,10 +1233,10 @@ const CASES = [
     async r => {
       const tabs = await r.page.$$eval('.tabs .tab', a => a.map(x => x.textContent + (x.classList.contains('on') ? '*' : '')));
       const first = await r.page.$eval('#cal .cell', c => c.id), cells = await r.page.locator('#cal .v-lnk').count(), today = await r.page.locator('#cal-2026-11-05.today').count();
-      await r.page.click('.tabs .tab:has-text("Лекції")'); await r.page.waitForTimeout(200);
+      await r.page.click('.tabs .tab:has-text("Студії")'); await r.page.waitForTimeout(200);
       const lec = await r.page.$$eval('#lectures .poster', a => a.map(x => x.dataset.k)), shelf = await r.page.innerText('#lectures .lt-h');
-      return tabs.join() === 'Щоденний влог*,Лекції' && first === 'cal-2026-10-20' && cells === 3 && today === 1 && lec.join() === 'lecAAAAAAA2,lecAAAAAAA1'
-        && shelf.toLowerCase().startsWith('усі лекції') && !has(r, 'Шортс') && await r.page.locator('#cal').count() === 0 && r.errs.length === 0;
+      return tabs.join() === 'Щоденний влог*,Студії' && first === 'cal-2026-10-20' && cells === 3 && today === 1 && lec.join() === 'lecAAAAAAA2,lecAAAAAAA1'
+        && shelf.toLowerCase().startsWith('усі студії') && !has(r, 'Шортс') && await r.page.locator('#cal').count() === 0 && r.errs.length === 0;
     }],
   ['E03 сховано, але є сезон — показано сезон, без заглушки; посилання #d= і «мій день» тихо нічого не роблять', { path: '#d=2026-09-21',
       seasons: Object.assign(CAL({ start: '2026-09-20', enabled: false }), { seasons: [S1()] }), api: { UU1: TAGGED, SH: [], PL1: TWO } },

@@ -502,7 +502,7 @@ def report(videos, emb, state, failed):
         lines.append("")
     free = [v for v in videos if not any(v in t["members"] for t in state["topics"])]
     if free:
-        lines.append("## Без теми (на сайті — «Нові лекції»)")
+        lines.append("## Без теми (на сайті — «Нові студії»)")
         for v in free:
             near = sorted(((T.cos(emb[v], c), tid) for tid, c in centers.items() if c), reverse=True)[:2]
             lines.append(f"- {videos[v]['date']} «{videos[v]['title']}» — найближче: " + (", ".join(f"`{tid}` {s:.2f}" for s, tid in near) or "тем ще нема"))

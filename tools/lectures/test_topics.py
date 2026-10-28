@@ -54,7 +54,7 @@ class TopicsTest(unittest.TestCase):
     def test_no_topics_from_one_or_two(self):
         emb = self.make({"a": (self.A, 2), "b": (self.B, 1), "c": (self.C, 2)})
         st = T.Topics({}, emb, namer=Namer(), log=lambda *_: None).run(list(emb))
-        self.assertEqual(st["topics"], [])          # 1–2 лекції — не тема: чекають у «Нові лекції»
+        self.assertEqual(st["topics"], [])          # 1–2 лекції — не тема: чекають у «Нові студії»
 
     def test_three_similar_make_one_topic(self):
         emb = self.make({"a": (self.A, 3), "b": (self.B, 2)})
@@ -162,7 +162,7 @@ class TopicsTest(unittest.TestCase):
         t = out["topics"][0]
         self.assertRegex(t["id"], r"^[\w-]+$")
         self.assertEqual(t["videos"], ["a_1", "a_2", "a_3"])           # хронологічно
-        self.assertNotIn("topic", out["videos"]["b_1"])                 # без теми → на сайті «Нові лекції»
+        self.assertNotIn("topic", out["videos"]["b_1"])                 # без теми → на сайті «Нові студії»
         self.assertEqual(out["videos"]["a_1"], {"topic": t["id"], "dur": 2400, "summary": "Зміст."})
 
     def test_slug(self):

@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тарас Максимʼяк</title>
-    <meta name="description" content="Тарас Максимʼяк: щоденний влог — день за днем, і лекції, зібрані за темами.">
+    <meta name="description" content="Тарас Максимʼяк: щоденний влог — день за днем, і студії, зібрані за темами.">
 
     <meta property="og:title" content="Тарас Максимʼяк — фільми">
-    <meta property="og:description" content="Щоденний влог і лекції за темами.">
+    <meta property="og:description" content="Щоденний влог і студії за темами.">
     <meta property="og:image" content="https://taras.kyiv.ua/image.png">
     <meta property="og:url" content="https://taras.kyiv.ua/">
     <meta name="twitter:card" content="summary_large_image">
@@ -273,18 +273,18 @@
         .fl-soon{align-self:center;font-size:15px;line-height:1.55;color:var(--mut);max-width:340px;margin:0}
         .fl-soon a{color:var(--red);text-decoration:none}
 
-        /* ── Вкладки «Щоденний влог / Лекції» (коли є обидва формати) — тихі, як заголовки місяців ── */
+        /* ── Вкладки «Щоденний влог / Студії» (коли є обидва формати) — тихі, як заголовки місяців ── */
         .tabs{display:flex;gap:28px;margin:0 0 34px;border-bottom:1px solid var(--div)}
         .tab{position:relative;padding:4px 0 12px;font-family:var(--disp);font-size:22px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);text-decoration:none;transition:color .2s}
         .tab:hover{color:var(--txt)}
         .tab.on{color:var(--txt)}
         .tab.on::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--red);border-radius:2px}
-        /* ── 🎓 Лекції: полиці за темами (афіші — ті самі, що в резервних «Фільмах») ── */
+        /* ── 🎓 Студії (у коді й seasons.json — lectures): полиці за темами (афіші — ті самі, що в резервних «Фільмах») ── */
         .lectures{margin:0 0 80px}
         .lt{scroll-margin-top:20px}
         .lt-h{font-size:34px;overflow-wrap:anywhere}
         .lt-about{margin:-10px 0 22px;font-size:15px;line-height:1.5;color:var(--mut);max-width:640px}
-        /* Лекції визирають над стіною влогу: три найновіші темні квитки (як афіші лекцій) і «Усі лекції →» */
+        /* Студії визирають над стіною влогу: три найновіші темні квитки (як афіші студій) і «Усі студії →» */
         .lpeek{margin:-12px 0 38px}
         .lp-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:0 0 10px}
         .lp-h{margin:0;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut)}
@@ -372,7 +372,7 @@
         .footer{text-align:center;padding:60px 0;font-family:var(--disp);font-size:12px;font-weight:500;color:var(--mut);letter-spacing:.2em}
         @media (hover:hover) and (pointer:fine){.lp:hover .lp-img::after{opacity:1;transform:scale(1)}}
         @media(max-width:1024px){
-            /* планшет і телефон: квитки лекцій — стрічка вбік, видно край наступного (лекції «визирають») */
+            /* планшет і телефон: квитки студій — стрічка вбік, видно край наступного (студії «визирають») */
             .lp-row{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:46%;overflow-x:auto;scroll-snap-type:x mandatory;
                 margin:0 -20px;padding:0 20px 8px;scroll-padding:0 20px;scrollbar-width:none}
             .lp-row::-webkit-scrollbar{display:none}
@@ -501,11 +501,11 @@
     let TOPIC = '';              // вибрана тема з адреси (#t=подорожі)
     let CAL_NOTE = '';           // чому календар порожній (для ?check)
     let CAL_HIDDEN = false;      // календар сховано (seasons.json → calendar.enabled: false): глядачі його не бачать, ?check — бачить
-    let LEC = null;              // лекції (YouTube): {k:'lec', start, playlist, exclude} — групуються за темами з lectures.json
+    let LEC = null;              // студії (YouTube; у коді й seasons.json — lectures): {k:'lec', start, playlist, exclude} — групуються за темами з lectures.json
     let LEC_HIDDEN = false;
     let LECT = { topics: [], of: {}, dur: {} };   // lectures.json — теми лекцій, які формує локальна ШІ-модель на сервері
     let IG = [];                 // щоденник з Instagram (instagram.json, оновлює GitHub Action) — записи, як у стіни днів
-    let TAB = 'cal';             // вкладка головної: 'cal' — щоденний влог, 'lec' — лекції (адреса #lectures)
+    let TAB = 'cal';             // вкладка головної: 'cal' — щоденний влог, 'lec' — студії (адреса #studii; стара #lectures теж працює)
     let FILMS = null;            // фільмотека головної: {k:'films', id:'films', start, playlist, exclude:[]} — кожне відео як фільм з афішею
     let FILMS_HIDDEN = false;    // фільмотеку сховано (films.enabled: false) — так само, як календар
     let FILMS_NOTE = '';         // чому фільмотека порожня (для ?check)
@@ -766,7 +766,7 @@
         [FILMS_HIDDEN, FILMS] = normSource(raw.films, 'films', 'films', 'фільмотека');
         [CAL_HIDDEN, CAL] = normSource(raw.calendar, 'calendar', 'cal', 'календар', CAL_EXTRA);
         // Лекції — YouTube (з дати start), теми — з lectures.json (локальна ШІ-модель на сервері, tools/lectures/)
-        [LEC_HIDDEN, LEC] = normSource(raw.lectures, 'lectures', 'lec', 'лекції');
+        [LEC_HIDDEN, LEC] = normSource(raw.lectures, 'lectures', 'lec', 'розділ «Студії»');
         let tl = raw.topics == null ? [] : raw.topics;
         if (!Array.isArray(tl)) { issue('seasons.json, topics: очікую список [ … ]'); tl = []; }
         tl.forEach((t, i) => {
@@ -1227,7 +1227,7 @@
         let tabs = !!(CAL && LEC);                       // два формати — дві вкладки
         TAB = tabs ? (tabFromHash() || TAB) : (CAL ? 'cal' : 'lec');
         if (tabs) html += tabsHtml();
-        if (CAL && TAB === 'cal') html += (tabs ? lecPeekHtml() : '') + homeHtml(today);   // над стіною визирають лекції
+        if (CAL && TAB === 'cal') html += (tabs ? lecPeekHtml() : '') + homeHtml(today);   // над стіною визирають студії
         if (LEC && TAB === 'lec') html += lecturesHtml(today);
         let own = SEASONS.filter(s => !s.cal);           // сезони календаря вже показані шапкою над стіною
         if (!own.length && !FILMS && !LEC) {
@@ -1481,7 +1481,7 @@
     // Полиця = тема (назва, рядок опису, афіші лекцій — новіші першими). Полиці — від теми з найсвіжішою лекцією.
     // Лекції, яким сервер ще не підібрав тему, — згори «Нові лекції» (без тем узагалі — «Усі лекції»).
     // № — порядковий номер лекції від першої. Гортання в плеєрі — у межах полиці.
-    const LEC_OF = 'Лекція Тараса Максим’яка';
+    const LEC_OF = 'Тарас Максим’як';                // підпис на картці студії: без слова «лекція» (власник: звучить важко)
     const durOf = r => { let d = (metaById[r.key] || {}).dur; return d > 0 ? d : LECT.dur[r.y] || 0; };
     const lecTopic = r => LECT.of[r.y] || '';
     function lecShelves() {
@@ -1491,20 +1491,20 @@
         let shelves = LECT.topics.filter(t => groups.has(t.id)).map(t => ({ id: t.id, title: t.title, about: t.about, recs: groups.get(t.id) }))
             .sort((a, b) => last(a) < last(b) ? 1 : -1);
         let rest = groups.get('') || [];
-        if (rest.length) shelves.unshift({ id: 'new', title: shelves.length ? 'Нові лекції' : 'Усі лекції', about: '', recs: rest });
+        if (rest.length) shelves.unshift({ id: 'new', title: shelves.length ? 'Нові студії' : 'Усі студії', about: '', recs: rest });
         return { all, shelves };
     }
     function lecturesHtml(today) {
         let { all, shelves } = lecShelves();
-        let html = (LEC_HIDDEN ? '<p class="cal-hidden">Сховано: глядачі лекцій не бачать (seasons.json → lectures.enabled: false). Це попередній перегляд; повернути — "enabled": true.</p>' : '') +
-            '<section class="lectures" id="lectures" aria-label="Лекції"><h2 class="sr-only">Лекції</h2>';
-        if (LOAD_FAILED && !all.length) return html + '<p class="s-msg">Не вдалось завантажити лекції. Спробуйте оновити сторінку.</p></section>';
+        let html = (LEC_HIDDEN ? '<p class="cal-hidden">Сховано: глядачі студій не бачать (seasons.json → lectures.enabled: false). Це попередній перегляд; повернути — "enabled": true.</p>' : '') +
+            '<section class="lectures" id="lectures" aria-label="Студії"><h2 class="sr-only">Студії</h2>';
+        if (LOAD_FAILED && !all.length) return html + '<p class="s-msg">Не вдалось завантажити студії. Спробуйте оновити сторінку.</p></section>';
         if (LOADING && !all.length) return html + '<div class="fl-grid">' + '<div class="film"><div class="poster sk"></div></div>'.repeat(3) + '</div></section>';
-        if (!all.length) return html + `<p class="cal-soon">Перша лекція — скоро. А поки всі відео — на <a href="${CHANNEL_URL}" target="_blank" rel="noopener">YouTube ↗</a></p></section>`;
+        if (!all.length) return html + `<p class="cal-soon">Перша студія — скоро. А поки всі відео — на <a href="${CHANNEL_URL}" target="_blank" rel="noopener">YouTube ↗</a></p></section>`;
         let no = new Map(all.map((r, i) => [r.key, i + 1])), newest = all[all.length - 1];
         let fresh = !watched.includes(newest.key) && dayNum(today) - dayNum(newest.date) < 14 ? newest.key : '';
         return html + shelves.map(sh => `<section class="lt" id="lt-${esc(sh.id)}"><h3 class="fl-year lt-h">${esc(sh.title)}` +
-            `<span class="fl-yc">${sh.recs.length} ${plural(sh.recs.length, 'лекція', 'лекції', 'лекцій')}</span></h3>` +
+            `<span class="fl-yc">${sh.recs.length} ${plural(sh.recs.length, 'студія', 'студії', 'студій')}</span></h3>` +
             (sh.about ? `<p class="lt-about">${esc(sh.about)}</p>` : '') +
             '<div class="fl-grid">' + sh.recs.slice().reverse().map(r => posterHtml(r, no.get(r.key), r.key === fresh, 'lec:' + sh.id, LEC_OF)).join('') + '</div></section>').join('') + '</section>';
     }
@@ -1514,8 +1514,8 @@
         let all = (EPS.lec || []).filter(playable).slice().sort(byTs);
         if (!all.length) return '';
         let title = id => (LECT.topics.find(t => t.id === id) || {}).title || '';
-        return '<section class="lpeek" aria-label="Нові лекції"><div class="lp-head"><h2 class="lp-h">Нові лекції</h2>' +
-            `<a class="act lp-all" href="#lectures">Усі лекції · ${all.length} →</a></div><div class="lp-row">` +
+        return '<section class="lpeek" aria-label="Нові студії"><div class="lp-head"><h2 class="lp-h">Нові студії</h2>' +
+            `<a class="act lp-all" href="#studii">Усі студії · ${all.length} →</a></div><div class="lp-row">` +
             all.slice(-3).reverse().map(r => {
                 let t = lecTopic(r), name = showTitle(r.title) || 'Без назви', dur = fmtDur(durOf(r)), [, m, d] = r.date.split('-').map(Number);
                 let img = r.thumb ? `<img src="${esc(r.thumb)}"` + (r.srcset ? ` srcset="${esc(r.srcset)}" sizes="(max-width:600px) 30vw, 200px"` : '') + ' decoding="async" alt="">' : '';
@@ -1527,14 +1527,14 @@
     // Вкладки, коли є обидва формати: щоденний влог (стіна днів: YouTube + Instagram) і лекції. Вибір — в адресі (#lectures)
     function tabsHtml() {
         let t = (k, href, label) => `<a class="tab${TAB === k ? ' on' : ''}" href="${href}"${TAB === k ? ' aria-current="page"' : ''}>${label}</a>`;
-        return `<nav class="tabs" aria-label="Розділи">${t('cal', '#diary', 'Щоденний влог')}${t('lec', '#lectures', 'Лекції')}</nav>`;
+        return `<nav class="tabs" aria-label="Розділи">${t('cal', '#diary', 'Щоденний влог')}${t('lec', '#studii', 'Студії')}</nav>`;
     }
-    // Вкладка з адреси: #lectures (#lt-тема) — лекції; порожня адреса, #diary, #t=, #cal-… — щоденник;
+    // Вкладка з адреси: #studii, #lectures (старі посилання), #lt-тема — студії; порожня адреса, #diary, #t=, #cal-… — щоденник;
     // #d=дата — там, де того дня є відео (є і там, і там — щоденник). Інше (#f-збір…) — лишається поточна
     function tabFromHash() {
         let h = safeDecode(location.hash.slice(1)), d = dayFromHash();
         if (!h) return 'cal';                            // «назад» до адреси без # — щоденник
-        if (/^(lectures|lt-)/.test(h)) return 'lec';
+        if (/^(studii|lectures|lt-)/.test(h)) return 'lec';
         if (d) return LEC && !(EPS.cal || []).some(r => r.date === d) && (EPS.lec || []).some(r => r.date === d) ? 'lec' : 'cal';
         if (/^(diary|t=|cal)/.test(h)) return 'cal';
         return '';
@@ -1706,7 +1706,7 @@
                 (CAL.end ? `; YouTube-влоги — до ${esc(fmtDay(CAL.end, true))}` : '') + '</li>';
         if (LEC) {
             let { all, shelves } = lecShelves(), none = (shelves.find(x => x.id === 'new') || { recs: [] }).recs.length;
-            rows += `<li><b>Лекції</b>${LEC_HIDDEN ? ' — <b>сховано від глядачів</b>;' : ' —'} YouTube${LEC.start ? ' з ' + esc(fmtDay(LEC.start, true)) : ''}: ${all.length} ${plural(all.length, 'лекція', 'лекції', 'лекцій')}; ` +
+            rows += `<li><b>Студії</b> (seasons.json → lectures)${LEC_HIDDEN ? ' — <b>сховано від глядачів</b>;' : ' —'} YouTube${LEC.start ? ' з ' + esc(fmtDay(LEC.start, true)) : ''}: ${all.length} ${plural(all.length, 'студія', 'студії', 'студій')}; ` +
                 (LECT.topics.length ? `тем ${LECT.topics.length} (${LECT.topics.map(t => esc(t.title)).join(', ')})` : 'тем ще нема — lectures.json формує сервер (tools/lectures)') +
                 (none ? `; без теми: ${none}` : '') + '</li>';
         }
@@ -1863,7 +1863,7 @@
         let mid = ctx === 'queue' ? `З твого візиту · ${i + 1} із ${list.length}`
             : ctx === 'topic' || (ctx === 'films' && TOPIC) ? `${esc(topicLabel(TOPIC))} · ${i + 1} / ${list.length}`
             : ctx === 'films' ? `№ ${filmNo(list[i].key)} із ${(EPS.films || []).length}`
-            : /^lec:/.test(ctx) ? `${esc((lecShelves().shelves.find(x => 'lec:' + x.id === ctx) || {}).title || 'Лекції')} · ${i + 1} із ${list.length}` : `${i + 1} / ${list.length}`;   // «із»: велике «З» схоже на 3
+            : /^lec:/.test(ctx) ? `${esc((lecShelves().shelves.find(x => 'lec:' + x.id === ctx) || {}).title || 'Студії')} · ${i + 1} із ${list.length}` : `${i + 1} / ${list.length}`;   // «із»: велике «З» схоже на 3
         return `<button type="button" class="mnav" onclick="navStep(-1)"${prev ? ` aria-label="Попередній: ${esc(lbl(prev))}"` : ' disabled'}>‹ ${prev ? esc(lbl(prev)) : ''}</button>` +
             `<span class="mnav-pos">${mid}</span>` +
             `<button type="button" class="mnav" onclick="navStep(1)"${next ? ` aria-label="Наступний: ${esc(lbl(next))}"` : ' disabled'}>${next ? esc(lbl(next)) : ''} ›</button>`;
@@ -2237,7 +2237,7 @@
     });
     // Вибір теми живе в адресі (#t=…): «назад» у браузері повертає попередній вибір, посиланням можна поділитися
     window.addEventListener('hashchange', () => {
-        let nt = CAL && LEC ? tabFromHash() : '';     // інша вкладка (щоденник / лекції)
+        let nt = CAL && LEC ? tabFromHash() : '';     // інша вкладка (щоденний влог / студії)
         if (nt && nt !== TAB) {
             TAB = nt; closeModal(); render();
             let tb = document.querySelector('.tabs');
