@@ -25,6 +25,24 @@
       "PLS50DDpfd-9w"
     ]
   },
+  "meetings": {
+    "enabled": true,
+    "items": [
+      {
+        "enabled": false,
+        "id": "pryklad",
+        "date": "2026-12-05",
+        "time": "19:00–21:00",
+        "title": "Приклад: назва зустрічі",
+        "city": "Київ",
+        "place": "Назва місця",
+        "address": "вулиця, будинок",
+        "url": "",
+        "price": "Вхід вільний",
+        "about": "Одне-два речення: про що зустріч і для кого."
+      }
+    ]
+  },
   "topics": [],
   "ignore_tags": [],
   "seasons": [],

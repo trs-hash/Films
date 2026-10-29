@@ -304,6 +304,39 @@
         .lp:focus-visible{outline:3px solid var(--red);outline-offset:2px}
         .lp:focus-visible .lp-img::after{opacity:1;transform:scale(1)}
         .cal-soon a{color:var(--red);text-decoration:none}
+        /* ── 📍 Зустрічі: квиток (дата ліворуч, перфорація, виїмки) — паперовий, на відміну від темних відео ── */
+        .meets{margin:0 0 80px}
+        .mt-list{display:grid;gap:24px;margin:0 0 56px}
+        .mt{position:relative;display:grid;grid-template-columns:150px minmax(0,1fr);background:var(--cell);border-radius:10px;scroll-margin-top:20px}
+        .mt::before,.mt::after{content:'';position:absolute;left:150px;width:20px;height:20px;margin-left:-10px;border-radius:50%;background:var(--bg)}
+        .mt::before{top:-10px}
+        .mt::after{bottom:-10px}
+        .mt.flash{animation:flash 1.4s ease-out 2}
+        .mt-date{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:22px 10px;border-right:2px dashed var(--div);text-align:center;font-family:var(--disp);text-transform:uppercase;line-height:1.1}
+        .mt-d{font-size:58px;font-weight:600;line-height:1}
+        .mt-m{font-size:15px;letter-spacing:.12em}
+        .mt-w{font-size:13px;letter-spacing:.1em;color:var(--mut)}
+        .mt-t{margin-top:6px;font-size:16px;letter-spacing:.06em;font-variant-numeric:tabular-nums}
+        .mt-today{margin-top:6px;padding:3px 8px;border-radius:3px;background:var(--red);color:#fff;font-size:12px;letter-spacing:.14em}
+        .mt-body{min-width:0;padding:22px 26px 24px}
+        .mt-where{margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);overflow-wrap:anywhere}
+        .mt-title{margin:0 0 8px;font-family:var(--disp);font-size:30px;font-weight:600;line-height:1.08;overflow-wrap:anywhere}
+        .mt-about{margin:0 0 10px;font-size:15px;line-height:1.55;color:var(--mut);max-width:62ch;overflow-wrap:anywhere}
+        .mt-meta{margin:0 0 16px;font-size:14px;line-height:1.5;color:var(--mut);overflow-wrap:anywhere}
+        .mt-meta a{color:var(--txt);text-decoration:underline;text-decoration-color:var(--div);text-underline-offset:3px}
+        .mt-meta a:hover{color:var(--red);text-decoration-color:currentColor}
+        .mt-acts{display:flex;flex-wrap:wrap;gap:10px}
+        .mt-btn{display:inline-flex;align-items:center;box-sizing:border-box;max-width:100%;min-height:40px;padding:8px 16px;border:1px solid var(--div);border-radius:20px;font-size:13px;font-weight:600;line-height:1.35;color:var(--txt);text-decoration:none;overflow-wrap:anywhere;transition:color .2s,border-color .2s,background .2s}
+        .mt-btn:hover{border-color:var(--red);color:var(--red)}
+        .mt-btn.go{background:var(--red);border-color:var(--red);color:#fff}
+        .mt-btn.go:hover{background:var(--txt);border-color:var(--txt);color:var(--bg)}
+        .mt-old-h{font-size:30px}
+        .mt-old{list-style:none;margin:0;padding:0;border-top:1px solid var(--div)}
+        .mt-old li{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;padding:12px 0;border-bottom:1px solid var(--div);font-size:15px;line-height:1.45;scroll-margin-top:20px}
+        .mt-old-d{min-width:170px;font-family:var(--disp);font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+        .mt-old-t{flex:1;min-width:0;overflow-wrap:anywhere}
+        .mt-old a{color:var(--red);font-size:13px;font-weight:600;text-decoration:none}
+        .meet-link svg{flex:none;margin-top:calc(.7em - 7px);color:var(--red)}
         /* Плеєр Instagram (допис із підписом — вищий за 16:9): своя висота, по центру */
         .iframe-wrap.ig{padding-bottom:0;height:min(80vh,780px);max-width:560px;margin:0 auto;background:#fff}
         .mod-ext{display:inline-block;margin-top:8px;padding:6px 0;font-size:13px;font-weight:600;color:rgba(255,255,255,.75);text-decoration:none}
@@ -401,6 +434,16 @@
             .lt .film{scroll-snap-align:start}
             .tabs{gap:22px;margin-bottom:26px}
             .lpeek{margin:-8px 0 26px}
+            .mt{grid-template-columns:88px minmax(0,1fr)}
+            .mt::before,.mt::after{left:88px}
+            .mt-date{padding:16px 4px}
+            .mt-d{font-size:40px}
+            .mt-m{font-size:12px;letter-spacing:.08em}
+            .mt-w{font-size:11px;letter-spacing:.06em}
+            .mt-t{font-size:14px}
+            .mt-body{padding:16px 16px 18px}
+            .mt-title{font-size:23px}
+            .mt-old-d{min-width:0;width:100%}
             .lp-row{grid-auto-columns:80%;margin:0 -15px;padding:0 15px 8px;scroll-padding:0 15px}
             .lp-t{font-size:15px}
             .tab{font-size:19px}
@@ -503,6 +546,8 @@
     let CAL_HIDDEN = false;      // календар сховано (seasons.json → calendar.enabled: false): глядачі його не бачать, ?check — бачить
     let LEC = null;              // студії (YouTube; у коді й seasons.json — lectures): {k:'lec', start, playlist, exclude} — групуються за темами з lectures.json
     let LEC_HIDDEN = false;
+    let MEET = null;             // зустрічі (офлайн): {items:[…]} із seasons.json → meetings
+    let MEET_HIDDEN = false, MEET_DONE = '';
     let LECT = { topics: [], of: {}, dur: {} };   // lectures.json — теми лекцій, які формує локальна ШІ-модель на сервері
     let IG = [];                 // щоденник з Instagram (instagram.json, оновлює GitHub Action) — записи, як у стіни днів
     let TAB = 'cal';             // вкладка головної: 'cal' — Дні (адреса #dni; стара #diary теж), 'lec' — Студії (#studii; стара #lectures теж)
@@ -713,7 +758,7 @@
     }
 
     // Увесь seasons.json: календар, теми, сезони. Старий формат (просто список сезонів) теж розуміємо.
-    const TOP_KEYS = ['films', 'calendar', 'lectures', 'topics', 'ignore_tags', 'seasons', 'support'];
+    const TOP_KEYS = ['films', 'calendar', 'lectures', 'meetings', 'topics', 'ignore_tags', 'seasons', 'support'];
     const CAL_KEYS = ['enabled', 'start', 'playlist', 'exclude'];   // ті самі поля — і в films, і в lectures
     // Лише в calendar: end — YouTube-відео щоденника до цієї дати (далі на YouTube — лекції); instagram — додати щоденник з Instagram
     const CAL_EXTRA = ['end', 'instagram'];
@@ -756,7 +801,7 @@
         return [hidden, o];
     }
     function normConfig(raw) {
-        CAL = null; CAL_HIDDEN = false; FILMS = null; FILMS_HIDDEN = false; LEC = null; LEC_HIDDEN = false; TOPICS = { cfg: {}, alias: {}, ignore: new Set(IGNORE_TAGS) }; SUPPORT = normSupport(null);
+        CAL = null; CAL_HIDDEN = false; FILMS = null; FILMS_HIDDEN = false; LEC = null; LEC_HIDDEN = false; MEET = null; MEET_HIDDEN = false; TOPICS = { cfg: {}, alias: {}, ignore: new Set(IGNORE_TAGS) }; SUPPORT = normSupport(null);
         if (Array.isArray(raw)) { SEASONS = normSeasons(raw); return; }
         if (!raw || typeof raw !== 'object') { issue('seasons.json: очікую обʼєкт {…}'); SEASONS = []; return; }
         Object.keys(raw).forEach(k => { if (!TOP_KEYS.includes(k)) issue(`seasons.json: невідоме поле «${k}» — описка? Відомі: ${TOP_KEYS.join(', ')}`); });
@@ -782,6 +827,7 @@
         SEASONS = raw.seasons == null ? [] : normSeasons(Array.isArray(raw.seasons) ? raw.seasons : raw);
         if (!CAL && !FILMS && !LEC && !CAL_HIDDEN && !FILMS_HIDDEN && !LEC_HIDDEN && raw.seasons == null) issue('seasons.json: нема ні films, ні calendar, ні seasons — сторінці нічого показувати');
         SUPPORT = normSupport(raw.support);
+        [MEET_HIDDEN, MEET] = normMeetings(raw.meetings);
     }
 
     // ── Підтримка: seasons.json → "support" ─────────────────────────────────────
@@ -860,6 +906,52 @@
             out.funds.push(fund);
         });
         return out;
+    }
+    // ── Зустрічі (офлайн): seasons.json → "meetings": {"enabled": true, "items": [ {date, time, title, city, place, …} ]} ──
+    // Список одразу ([…]) теж розуміємо. Кожна зустріч: date і title — обовʼязково; решта — коли є.
+    const MEET_KEYS = ['enabled', 'items'];
+    const MEET_ITEM_KEYS = ['enabled', 'id', 'date', 'time', 'title', 'city', 'place', 'address', 'map', 'url', 'url_label', 'price', 'about', 'video', 'teaser'];
+    // «19:00», «19.00», «19:00–21:00» → {start, end}; інше — без часу (і пояснення в ?check)
+    function normTime(v, what) {
+        let s = str(v).replace(/\s+/g, '');
+        if (!s) return null;
+        let m = s.match(/^(\d{1,2})[:.](\d{2})(?:[–—-](\d{1,2})[:.](\d{2}))?$/);
+        if (!m || +m[1] > 23 || +m[2] > 59 || (m[3] && (+m[3] > 23 || +m[4] > 59))) {
+            issue(`${what}: time «${str(v)}» — не розумію, показую без часу (пиши 19:00 або 19:00–21:00)`); return null;
+        }
+        return { start: pad2(m[1]) + ':' + m[2], end: m[3] ? pad2(m[3]) + ':' + m[4] : '' };
+    }
+    function normMeetings(raw) {
+        if (raw == null) return [false, null];
+        if (Array.isArray(raw)) raw = { items: raw };
+        if (!isObj(raw)) { issue('seasons.json, meetings: очікую обʼєкт {"enabled": true, "items": [ … ]}'); return [false, null]; }
+        Object.keys(raw).forEach(k => { if (!MEET_KEYS.includes(k)) issue(`seasons.json, meetings: невідоме поле «${k}» — відомі: ${MEET_KEYS.join(', ')}`); });
+        let hidden = raw.enabled != null && !flag(raw.enabled, 'seasons.json, meetings');
+        if (hidden && !CHECK) return [true, null];
+        let list = raw.items == null ? [] : raw.items;
+        if (isObj(list)) { issue('seasons.json, meetings.items: очікую список [ … ] — одну зустріч теж беру в [ ]'); list = [list]; }
+        if (!Array.isArray(list)) { issue('seasons.json, meetings.items: очікую список [ … ]'); list = []; }
+        let ids = {}, items = [];
+        list.forEach((m, i) => {
+            let what = `seasons.json, meetings №${i + 1}`;
+            if (!isObj(m)) { issue(`${what}: це не обʼєкт {…} — пропускаю`); return; }
+            Object.keys(m).forEach(k => { if (!MEET_ITEM_KEYS.includes(k)) issue(`${what}: невідоме поле «${k}» — описка? Відомі: ${MEET_ITEM_KEYS.join(', ')}`); });
+            let title = str(m.title);
+            if (title) what = `seasons.json, зустріч «${title}»`;
+            let enabled = m.enabled == null || flag(m.enabled, what), date = normDate(m.date, what + ', date');
+            if (enabled && !title) issue(`${what}: нема title — зустріч сховано`);
+            if (enabled && !date) issue(`${what}: нема date (РРРР-ММ-ДД) — зустріч сховано`);
+            let id = str(m.id).toLowerCase().replace(/[^\w\u0400-\u04ff-]+/g, '-').replace(/^-+|-+$/g, '') || (date || 'zustrich') + '-' + (i + 1);
+            if (ids[id]) { issue(`${what}: id «${id}» уже є в іншої зустрічі`); id += '-' + (i + 1); }
+            ids[id] = true;
+            let video = str(m.video);
+            if (/^[\w-]{11}$/.test(video)) video = 'https://www.youtube.com/watch?v=' + video;   // ID відео з YouTube
+            items.push({ id, enabled, date, title, time: normTime(m.time, what), city: str(m.city), place: str(m.place), address: str(m.address),
+                map: normUrl(m.map, what + ', map', 'посилання на мапу сховано'), url: normUrl(m.url, what + ', url', 'кнопку «Записатися» сховано'),
+                urlLabel: str(m.url_label) || 'Записатися', price: str(m.price), about: str(m.about),
+                video: normUrl(video, what + ', video', 'посилання на запис сховано'), teaser: m.teaser == null || flag(m.teaser, what + ', teaser') });
+        });
+        return [hidden, { items }];
     }
     // Чому пункт НЕ видно глядачам ('' — видно). Для ?check і для рішення, що малювати.
     function linkWhy(l) {
@@ -1224,11 +1316,13 @@
         let today = todayStr(), rank = { live: 0, soon: 1, done: 2 };
         let html = CHECK ? checkHtml(today) : '';
         if (FILMS) html += filmsHtml(today);
-        let tabs = !!(CAL && LEC);                       // два формати — дві вкладки
-        TAB = tabs ? (tabFromHash() || TAB) : (CAL ? 'cal' : 'lec');
-        if (tabs) html += tabsHtml();
-        if (CAL && TAB === 'cal') html += (tabs ? lecPeekHtml() : '') + homeHtml(today);   // над стіною визирають студії
+        let secs = tabSecs(), tabs = secs.length > 1;    // Дні, Студії, Зустрічі — що є; два й більше — вкладки
+        TAB = tabs ? (tabFromHash() || TAB) : (secs[0] || 'cal');
+        if (!secs.includes(TAB)) TAB = secs[0] || 'cal';
+        if (tabs) html += tabsHtml(secs);
+        if (CAL && TAB === 'cal') html += (LEC ? lecPeekHtml() : '') + homeHtml(today);   // над стіною визирають студії
         if (LEC && TAB === 'lec') html += lecturesHtml(today);
+        if (TAB === 'meet') html += meetingsHtml(today);
         let own = SEASONS.filter(s => !s.cal);           // сезони календаря вже показані шапкою над стіною
         if (!own.length && !FILMS && !LEC) {
             if ((CAL_HIDDEN || FILMS_HIDDEN) && !CAL) html += `<div class="msg-empty">Скоро тут буде нове.<br>А поки всі відео — на <a href="${CHANNEL_URL}" target="_blank" rel="noopener">YouTube ↗</a></div>`;
@@ -1241,7 +1335,7 @@
                     `<a class="nav-seg" href="#${s.id}">Сезон ${s.n}</a>`).join('') + '</nav>';
             list.forEach(({ s, st }) => { html += seasonHtml(s, st, today); });
         }
-        let sup = fundLinksHtml(today) + donateHtml();   // збори й «Підтримати» — у шапці поруч з Instagram (поза #app)
+        let sup = fundLinksHtml(today) + meetTeaserHtml(today) + donateHtml();   // збори, найближча зустріч, «Підтримати» — у шапці (поза #app)
         if (sup !== SUP_HTML) { SUP_HTML = sup; let el = document.getElementById('sup'); if (el) el.innerHTML = sup; }
         loadFunds(today);
         if (html === LAST_HTML) {                      // нічого не змінилось — не чіпаємо DOM (без миготіння);
@@ -1269,6 +1363,7 @@
                 el.scrollIntoView({ behavior: 'instant', block: 'start' });
             }
         }
+        if (/^#z-/.test(location.hash) && MEET_DONE !== location.hash && TAB === 'meet') { MEET_DONE = location.hash; setTimeout(meetFocus, 0); }
     }
 
     // ── Підтримка: тихі посилання в шапці ─────────────────────────────────────────
@@ -1525,19 +1620,119 @@
             }).join('') + '</div></section>';
     }
     // Вкладки, коли є обидва формати: Дні (стіна днів, щоденний влог: YouTube + Instagram) і Студії. Вибір — в адресі (#dni / #studii)
-    function tabsHtml() {
-        let t = (k, href, label) => `<a class="tab${TAB === k ? ' on' : ''}" href="${href}"${TAB === k ? ' aria-current="page"' : ''}>${label}</a>`;
-        return `<nav class="tabs" aria-label="Розділи">${t('cal', '#dni', 'Дні')}${t('lec', '#studii', 'Студії')}</nav>`;
+    const tabSecs = () => [CAL && 'cal', LEC && 'lec', meetShown() && 'meet'].filter(Boolean);
+    function tabsHtml(secs) {
+        let t = (k, href, label) => !secs.includes(k) ? '' : `<a class="tab${TAB === k ? ' on' : ''}" href="${href}"${TAB === k ? ' aria-current="page"' : ''}>${label}</a>`;
+        return `<nav class="tabs" aria-label="Розділи">${t('cal', '#dni', 'Дні')}${t('lec', '#studii', 'Студії')}${t('meet', '#zustrichi', 'Зустрічі')}</nav>`;
     }
-    // Вкладка з адреси: #studii, #lectures (старі посилання), #lt-тема — Студії; порожня адреса, #dni, #diary, #t=, #cal-… — Дні;
+    // Вкладка з адреси: #zustrichi, #z-зустріч — Зустрічі; #studii, #lectures (старі посилання), #lt-тема — Студії; порожня адреса, #dni, #diary, #t=, #cal-… — Дні;
     // #d=дата — там, де того дня є відео (є і там, і там — Дні). Інше (#f-збір…) — лишається поточна
     function tabFromHash() {
         let h = safeDecode(location.hash.slice(1)), d = dayFromHash();
         if (!h) return 'cal';                            // «назад» до адреси без # — щоденник
         if (/^(studii|lectures|lt-)/.test(h)) return 'lec';
+        if (/^(zustrichi|z-)/.test(h)) return 'meet';
         if (d) return LEC && !(EPS.cal || []).some(r => r.date === d) && (EPS.lec || []).some(r => r.date === d) ? 'lec' : 'cal';
         if (/^(dni|diary|t=|cal)/.test(h)) return 'cal';
         return '';
+    }
+
+    // ── 📍 Зустрічі (офлайн) ─────────────────────────────────────────────────────
+    // Вкладка «Зустрічі»: майбутні — квитками (дата, місце, «Записатися», «Додати в календар», адреса з мапою),
+    // минулі — рядками (із записом, коли є). На інших вкладках — лише тихе посилання в шапці на найближчу:
+    // «Зустріч · 14 листопада, Київ →». Без відліків і спливних вікон; минула сама йде в «Минулі», посилання зникає.
+    function meetWhy(m) {
+        if (!m.title) return 'нема title';
+        if (!m.date) return 'нема date';
+        if (!m.enabled) return 'вимкнено';
+        return MEET_HIDDEN ? 'сховано весь розділ (meetings.enabled)' : '';
+    }
+    const meetList = () => MEET ? MEET.items.filter(m => !meetWhy(m) || (CHECK && m.title && m.date)) : [];
+    const meetShown = () => meetList().length > 0;
+    const meetKey = m => m.date + (m.time ? m.time.start : '');
+    function meetSplit(today) {
+        let all = meetList().slice().sort((a, b) => meetKey(a) < meetKey(b) ? -1 : meetKey(a) > meetKey(b) ? 1 : 0);
+        return { next: all.filter(m => m.date >= today), past: all.filter(m => m.date < today).reverse() };
+    }
+    const meetMap = m => m.map || (m.place || m.address ? 'https://www.google.com/maps/search/?api=1&query=' +
+        encodeURIComponent([m.place, m.address, m.city].filter(Boolean).join(', ')) : '');
+    // «Додати в календар» — файл .ics (Google, Apple, Outlook): київський час, без часу — на весь день, без кінця — 2 години
+    const VTZ_KYIV = ['BEGIN:VTIMEZONE', 'TZID:Europe/Kyiv', 'BEGIN:STANDARD', 'DTSTART:19701025T040000', 'TZOFFSETFROM:+0300', 'TZOFFSETTO:+0200',
+        'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU', 'TZNAME:EET', 'END:STANDARD', 'BEGIN:DAYLIGHT', 'DTSTART:19700329T030000', 'TZOFFSETFROM:+0200',
+        'TZOFFSETTO:+0300', 'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU', 'TZNAME:EEST', 'END:DAYLIGHT', 'END:VTIMEZONE'];
+    const icsEsc = s => String(s).replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/([,;])/g, '\\$1');
+    function icsFold(line) {                            // рядок ICS — до 75 байтів UTF-8; довший переносимо (новий рядок із пробілу)
+        let out = '', n = 0;
+        for (let ch of line) {
+            let c = ch.codePointAt(0), b = c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4;
+            if (n + b > 74) { out += '\r\n '; n = 1; }
+            out += ch; n += b;
+        }
+        return out;
+    }
+    function meetIcs(m, today) {
+        let d = m.date.replace(/-/g, ''), next = fromDayNum(dayNum(m.date) + 1).replace(/-/g, ''), t = m.time, when;
+        if (t) {
+            let end = t.end || pad2((+t.start.slice(0, 2) + 2) % 24) + t.start.slice(2), hm = x => x.replace(':', '') + '00';
+            when = [`DTSTART;TZID=Europe/Kyiv:${d}T${hm(t.start)}`, `DTEND;TZID=Europe/Kyiv:${end > t.start ? d : next}T${hm(end)}`];
+        } else when = [`DTSTART;VALUE=DATE:${d}`, `DTEND;VALUE=DATE:${next}`];
+        let link = 'https://taras.kyiv.ua/#z-' + m.id, loc = [m.place, m.address, m.city].filter(Boolean).join(', ');
+        let lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//taras.kyiv.ua//Zustrichi//UK', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', ...(t ? VTZ_KYIV : []),
+            'BEGIN:VEVENT', `UID:${m.id}@taras.kyiv.ua`, `DTSTAMP:${today.replace(/-/g, '')}T000000Z`, ...when,
+            'SUMMARY:' + icsEsc(m.title + ' — Тарас Максим’як'), ...(loc ? ['LOCATION:' + icsEsc(loc)] : []),
+            'DESCRIPTION:' + icsEsc([m.about, m.price, m.url ? 'Реєстрація: ' + m.url : '', link].filter(Boolean).join('\n')),
+            'URL:' + link, 'END:VEVENT', 'END:VCALENDAR'];
+        return 'data:text/calendar;charset=utf-8,' + encodeURIComponent(lines.map(icsFold).join('\r\n') + '\r\n');
+    }
+    function meetCard(m, today) {
+        let [y, mo, d] = m.date.split('-').map(Number), wd = WD_FULL[new Date(dayNum(m.date) * DAY_MS).getUTCDay()], why = meetWhy(m);
+        let map = meetMap(m), place = m.address || m.place, where = [m.city, m.place].filter(Boolean).join(' · ');
+        let meta = [place ? (map ? `<a href="${esc(map)}" target="_blank" rel="noopener">${esc(place)} ↗</a>` : esc(place)) : (map ? `<a href="${esc(map)}" target="_blank" rel="noopener">Мапа ↗</a>` : ''),
+            esc(m.price)].filter(Boolean).join(' · ');
+        return `<article class="mt" id="z-${esc(m.id)}" aria-label="${esc(m.title)} — ${fmtDay(m.date, true)}">` +
+            `<div class="mt-date"><span class="mt-d">${d}</span><span class="mt-m">${MONTHS_GEN[mo - 1]}${y !== +today.slice(0, 4) ? ' ' + y : ''}</span>` +
+            `<span class="mt-w">${curly(wd)}</span>` + (m.time ? `<span class="mt-t">${m.time.start}${m.time.end ? '–' + m.time.end : ''}</span>` : '') +
+            (m.date === today ? '<span class="mt-today">Сьогодні</span>' : '') + '</div>' +
+            `<div class="mt-body">${where ? `<p class="mt-where">${esc(where)}</p>` : ''}<h3 class="mt-title">${esc(curly(m.title))}${offTag(why)}</h3>` +
+            (m.about ? `<p class="mt-about">${esc(m.about)}</p>` : '') + (meta ? `<p class="mt-meta">${meta}</p>` : '') +
+            '<div class="mt-acts">' + (m.url ? `<a class="mt-btn go" href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.urlLabel)} ↗</a>` : '') +
+            `<a class="mt-btn" href="${meetIcs(m, today)}" download="zustrich-${esc(m.id)}.ics">Додати в календар</a></div></div></article>`;
+    }
+    function meetingsHtml(today) {
+        let { next, past } = meetSplit(today);
+        let html = (MEET_HIDDEN ? '<p class="cal-hidden">Сховано: глядачі Зустрічей не бачать (seasons.json → meetings.enabled: false). Це попередній перегляд; повернути — "enabled": true.</p>' : '') +
+            '<section class="meets" id="zustrichi" aria-label="Зустрічі"><h2 class="sr-only">Зустрічі</h2>' +
+            (next.length ? '<div class="mt-list">' + next.map(m => meetCard(m, today)).join('') + '</div>'
+                : '<p class="cal-soon">Нових зустрічей поки не заплановано. Коли буде — зʼявиться тут і вгорі сторінки.</p>');
+        if (past.length) html += `<h3 class="fl-year mt-old-h">Минулі<span class="fl-yc">${past.length} ${plural(past.length, 'зустріч', 'зустрічі', 'зустрічей')}</span></h3>` +
+            '<ul class="mt-old">' + past.map(m => `<li id="z-${esc(m.id)}"><span class="mt-old-d">${fmtDay(m.date, true)}</span>` +
+                `<span class="mt-old-t">${esc([m.city, m.title].filter(Boolean).join(' — '))}${offTag(meetWhy(m))}</span>` +
+                (m.video ? `<a href="${esc(m.video)}" target="_blank" rel="noopener">Запис ↗</a>` : '') + '</li>').join('') + '</ul>';
+        return html + '</section>';
+    }
+    // Шапка: найближча зустріч одним тихим рядком (як збори) — веде на її квиток у «Зустрічах»
+    const PIN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+    function meetTeaserHtml(today) {
+        if (TAB === 'meet') return '';                  // уже на вкладці зустрічей
+        let m = meetSplit(today).next.find(x => x.teaser && !meetWhy(x));
+        if (!m) return '';
+        let when = m.date === today ? 'сьогодні' + (m.time ? ' о ' + m.time.start : '') : fmtDay(m.date, m.date.slice(0, 4) !== today.slice(0, 4));
+        let tip = [m.title, [m.place, m.city].filter(Boolean).join(', ')].filter(Boolean).join(' — ');
+        return `<a class="q-link meet-link" href="#z-${esc(m.id)}" title="${esc(tip)}">${PIN}<span>Зустріч · ${when}${m.city ? ', ' + esc(m.city) : ''} →</span></a>`;
+    }
+    function meetFocus() {                              // #z-… (з шапки чи з посилання): квиток — у поле зору, підсвітити
+        let el = document.getElementById(safeDecode(location.hash.slice(1)));
+        if (!el || !el.closest('#zustrichi')) return;
+        el.scrollIntoView({ block: 'start' });
+        el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+    }
+    function meetCheckRows(today) {
+        if (!MEET) return '';
+        let { next, past } = meetSplit(today), t = next.find(x => x.teaser && !meetWhy(x)), ok = l => l.filter(m => !meetWhy(m)).length;
+        let rows = `<li><b>Зустрічі</b>${MEET_HIDDEN ? ' — <b>сховано від глядачів</b> (meetings.enabled: false);' : ' —'} майбутніх: ${ok(next)}, минулих: ${ok(past)}; ` +
+            (t ? `у шапці — «${esc(t.title)}», ${esc(fmtDay(t.date, true))}` : 'у шапці — нічого') + (meetShown() ? '' : '; вкладки «Зустрічі» нема — додай зустріч у meetings.items') + '</li>';
+        MEET.items.filter(meetWhy).forEach(m => { rows += `<li><b>Зустріч</b> «${esc(m.title || '—')}»${m.date ? ' (' + esc(fmtDay(m.date, true)) + ')' : ''} — ${esc(meetWhy(m))}</li>`; });
+        return rows;
     }
 
     // Усі відомі відео (календар + сезони) без дублів — для каталогу тем
@@ -1732,7 +1927,7 @@
                       (h ? `, ще ${h} приховано (приватні / заплановані / видалені)` : '')
                     : 'нема плейлиста') + `</li>`;
         }).join('');
-        rows += supCheckRows(today);
+        rows += supCheckRows(today) + meetCheckRows(today);
         return `<div class="chk"><div class="chk-h">Перевірка сайту</div>` +
             `<p>Режим: ${esc(MODE)} · сезони: ${esc(SRC.seasons || '—')} · серії: ${esc(SRC.eps || '—')}</p>` +
             (rows ? `<ul>${rows}</ul>` : '') + `<div class="chk-h">Що виправити</div>` +
@@ -2237,12 +2432,13 @@
     });
     // Вибір теми живе в адресі (#t=…): «назад» у браузері повертає попередній вибір, посиланням можна поділитися
     window.addEventListener('hashchange', () => {
-        let nt = CAL && LEC ? tabFromHash() : '';     // інша вкладка (Дні / Студії)
+        let nt = tabSecs().length > 1 ? tabFromHash() : '';   // інша вкладка (Дні / Студії / Зустрічі)
         if (nt && nt !== TAB) {
             TAB = nt; closeModal(); render();
             let tb = document.querySelector('.tabs');
             if (tb && tb.getBoundingClientRect().top < 0) tb.scrollIntoView({ block: 'start' });
         }
+        if (/^#z-/.test(location.hash) && TAB === 'meet') { MEET_DONE = location.hash; meetFocus(); }   // з шапки: «Зустріч · … →»
         let d = dayFromHash();
         if (d && d !== DAY_DONE) { DAY_DONE = d; closeModal(); showDay(d, '', !OPEN_IN_APP); return; }
         if (location.hash.startsWith('#f-')) render();  // посилання на збір — підсвітити його в шапці

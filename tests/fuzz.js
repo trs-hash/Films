@@ -9,7 +9,11 @@
 const http = require('http'), fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch (e) { ({ chromium } = require('/opt/node22/lib/node_modules/playwright')); }
-const EXE = fs.existsSync('/opt/pw-browsers/chromium') ? { executablePath: '/opt/pw-browsers/chromium' } : {};
+// Чужі iframe (плеєр YouTube/Instagram) — у тому ж процесі, що й сторінка: інакше Playwright 1.6x зрідка падає сам
+// («Assertion error» у FrameManager.frameAttached), коли плеєр перемикається (← →) саме під час завантаження картки дня.
+// На сайт це не впливає — лише на те, як Chromium тримає iframe під час тестів.
+const EXE = Object.assign(fs.existsSync('/opt/pw-browsers/chromium') ? { executablePath: '/opt/pw-browsers/chromium' } : {},
+  { args: ['--disable-features=IsolateOrigins,site-per-process', '--disable-site-isolation-trials'] });
 const ROOT = path.resolve(__dirname, '..');
 const SEED = +(process.argv[2] || 1), N_SITE = +(process.argv[3] || 80), N_BOT = +(process.argv[4] || 300);
 
@@ -42,6 +46,13 @@ function config() {
     end: maybe(pick([day(), '2026-09-15', nasty()]), 0.4), instagram: maybe(pick([true, 'так', false, nasty()]), 0.6) };
   if (chance(0.6)) c.lectures = chance(0.1) ? nasty() : { playlist: pick(['UU1', 'UU1', nasty()]), start: maybe(pick([day(), '2026-09-10', nasty()]), 0.6),
     exclude: pick([['SH'], nasty()]), enabled: maybe(pick([true, false, 'ні', nasty()]), 0.2) };
+  const meet = () => chance(0.1) ? nasty() : { id: maybe(pick(['kyiv', 'kyiv', nasty()]), 0.6), date: maybe(pick([day(), '2026-11-14', '14.11.2026', '2026-02-30', nasty()]), 0.9),
+    time: maybe(pick(['19:00', '19.00–21:00', '25:99', '23:30', nasty()]), 0.6), title: maybe(pick(['Зустріч', nasty()]), 0.9), city: maybe(pick(['Київ', nasty()])),
+    place: maybe(nasty()), address: maybe(nasty()), map: maybe(pick(['https://maps.app.goo.gl/x', 'javascript:alert(1)', nasty()])),
+    url: maybe(pick(['https://forms.gle/x', 'javascript:alert(1)', 'forms.gle/y', nasty()])), url_label: maybe(nasty()), price: maybe(nasty()), about: maybe(nasty()),
+    video: maybe(pick(['alXg_sVZAQM', 'https://youtu.be/x', nasty()])), enabled: maybe(pick([true, false, 'так', nasty()]), 0.3), teaser: maybe(pick([false, nasty()]), 0.2) };
+  if (chance(0.5)) c.meetings = chance(0.1) ? nasty() : chance(0.2) ? Array.from({ length: int(0, 3) }, meet)
+    : { enabled: maybe(pick([true, false, 'ні', nasty()]), 0.3), items: chance(0.1) ? nasty() : Array.from({ length: int(0, 5) }, meet) };
   if (chance(0.5)) c.topics = chance(0.2) ? nasty() : [{ tag: pick(['подорожі', nasty()]), title: maybe(nasty()), about: maybe(nasty()), aliases: maybe(pick([['мандри'], nasty()])) }];
   if (chance(0.3)) c.ignore_tags = pick([['shorts'], nasty()]);
   if (chance(0.3)) c.seasons = chance(0.2) ? nasty() : [{ n: pick([1, '2', nasty()]), format: pick(['weekly', 'daily', nasty()]), title: nasty(), about: maybe(nasty()),
@@ -69,6 +80,7 @@ const server = http.createServer((req, res) => {
   res.end(fs.readFileSync(f));
 }).listen(8767);
 
+const TR = process.env.FUZZ_TRACE ? (...a) => console.log('   ', ...a) : () => {};   // FUZZ_TRACE=1 — що саме робить кожен випадок
 async function siteRun(browser, i) {
   const cfg = config(), items = Array.from({ length: int(0, 40) }, (_, k) => item(k));
   const mobile = chance(0.3), vw = mobile ? pick([320, 375]) : pick([768, 1280]);
@@ -93,6 +105,7 @@ async function siteRun(browser, i) {
   });
   await ctx.route(/i\.ytimg\.com/, r => r.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="9"/>' }));
   await ctx.route(/youtube\.com\/(embed|watch)/, r => r.fulfill({ contentType: 'text/html', body: '' }));
+  await ctx.route(/instagram\.com\//, r => r.fulfill({ contentType: 'text/html', body: '' }));   // плеєр Instagram — без мережі (як у qa.js)
   await ctx.route(/seasons\.json/, r => r.fulfill({ contentType: 'application/json', body: typeof cfg === 'string' ? cfg : JSON.stringify(cfg) }));
   await ctx.route(/fundraisers\.json/, r => chance(0.3) ? r.fulfill({ status: 404 }) : r.fulfill({ contentType: 'application/json',
     body: pick([JSON.stringify({ jars: { AbC123xyz: { raised: pick([41000, -5, 'x', 1e12]), goal: pick([60000, 0, nasty()]) } } }), '{"jars":', JSON.stringify(nasty())]) }));
@@ -104,10 +117,10 @@ async function siteRun(browser, i) {
     about: maybe(nasty()), videos: Array.from({ length: int(0, 4) }, () => pick(['v' + int(0, 20), nasty(), 7])) })), videos: pick([{ v1: { topic: 't0', dur: pick([2400, -5, nasty()]) } }, nasty(), []]) }), '{', JSON.stringify(nasty()), '']) }));
   await ctx.route(/state\.json/, r => r.fulfill({ contentType: 'application/json', body: pick(['{"mode":"youtube"}', '{"mode":"doomsday"}', '{', '']) }));
   await ctx.route(/archive\.json/, r => r.fulfill({ contentType: 'application/json', body: pick(['{"base":"","days":{}}', JSON.stringify({ days: { [day()]: [{ t: nasty(), y: 'a1', d: nasty(), dur: pick([754, -1, nasty()]), ph: pick(['posters/a1-hd.jpg', nasty(), 7]) }], [String(nasty())]: nasty() } }), '{']) }));
-  const hash = pick(['', '', '#lectures', '#studii', '#dni', '#lt-' + encodeURIComponent(String(nasty())), '#diary', '#t=' + encodeURIComponent(String(nasty())), '#t=%E0%A4%A', '#d=' + day(), '#f-dron', '#%', '#cal-2026-09-21', '#d=' + String(nasty())]);
+  const hash = pick(['', '', '#lectures', '#studii', '#dni', '#zustrichi', '#z-kyiv', '#z-' + encodeURIComponent(String(nasty())), '#lt-' + encodeURIComponent(String(nasty())), '#diary', '#t=' + encodeURIComponent(String(nasty())), '#t=%E0%A4%A', '#d=' + day(), '#f-dron', '#%', '#cal-2026-09-21', '#d=' + String(nasty())]);
   const url = 'http://localhost:8767/' + pick(['', '', '?check']) + hash;
   try {
-    await page.goto(url); await page.waitForTimeout(500);
+    TR('goto', url, vw, mobile ? 'телефон' : ''); await page.goto(url); await page.waitForTimeout(500);
     const chk = await page.evaluate(() => ({
       injected: document.querySelectorAll('[onerror],[onload]').length,
       jsLinks: [...document.querySelectorAll('a[href]')].filter(a => /^\s*javascript:/i.test(a.getAttribute('href'))).length,
@@ -119,12 +132,13 @@ async function siteRun(browser, i) {
     if (chk.jsLinks) problems.push(`javascript:-посилань: ${chk.jsLinks}`);
     if (!chk.app) problems.push('порожня сторінка');
     if (chk.hscroll) problems.push('горизонтальний скрол: ' + chk.wide.join(', '));
-    if (await page.locator('.tabs .tab').count() && chance(0.4)) { await page.locator('.tabs .tab').nth(int(0, 1)).click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(150); }   // вкладки
+    if (await page.locator('.tabs .tab').count() && chance(0.4)) { TR('вкладка'); await page.locator('.tabs .tab').nth(int(0, 1)).click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(150); }   // вкладки
+    if (await page.locator('#sup .meet-link').count() && chance(0.3)) { TR('зустріч у шапці'); await page.locator('#sup .meet-link').click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(150); }   // зустріч у шапці
     const v = page.locator('#cal .v-lnk, .ep, #films .poster[data-k], #lectures .poster[data-k]').first();
     if (!mobile && await v.count()) {
-      await v.click({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(150);
-      for (let k = int(0, 4); k > 0; k--) await page.keyboard.press(pick(['ArrowLeft', 'ArrowRight']));   // гортати дні
-      if (chance(0.3)) await page.locator('.note-tags .card').click({ timeout: 1500 }).catch(() => {});  // картка дня
+      TR('плеєр'); await v.click({ timeout: 2000 }).catch(() => {}); await page.waitForTimeout(150);
+      for (let k = int(0, 4); k > 0; k--) { const key = pick(['ArrowLeft', 'ArrowRight']); TR(key); await page.keyboard.press(key); }   // гортати дні
+      if (chance(0.3)) { TR('картка'); await page.locator('.note-tags .card').click({ timeout: 1500 }).catch(() => {}); }  // картка дня
       await page.waitForTimeout(chance(0.3) ? 600 : 50);
       await page.keyboard.press('Escape');
     }
@@ -138,7 +152,9 @@ async function siteRun(browser, i) {
     if (await page.locator('#since .act').count() && chance(0.5)) {      // «дивитися підряд»
       await page.locator('#since .act').click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(150); await page.keyboard.press('Escape');
     }
-    if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1)) problems.push('горизонтальний скрол після дій');
+    const after = await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 ? null : [...document.querySelectorAll('body *')]
+      .filter(e => e.getBoundingClientRect().right > innerWidth + 1 && !e.closest('.topics,.modal,.lp-row')).slice(0, 2).map(e => e.tagName + '.' + e.className));
+    if (after) problems.push('горизонтальний скрол після дій: ' + after.join(', ') + ' (вкладка: ' + await page.evaluate(() => (document.querySelector('.tab.on') || {}).textContent || '—') + ')');
   } catch (e) { problems.push('EXC: ' + e.message.split('\n')[0]); }
   await ctx.close();
   return problems.length ? { i, url, vw, problems, cfg: JSON.stringify(cfg).slice(0, 400) } : null;

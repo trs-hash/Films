@@ -6,7 +6,11 @@
 const http = require('http'), fs = require('fs'), path = require('path');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch (e) { ({ chromium } = require('/opt/node22/lib/node_modules/playwright')); }
-const EXE = fs.existsSync('/opt/pw-browsers/chromium') ? { executablePath: '/opt/pw-browsers/chromium' } : {};
+// Чужі iframe (плеєр YouTube/Instagram) — у тому ж процесі, що й сторінка: інакше Playwright 1.6x зрідка падає сам
+// («Assertion error» у FrameManager.frameAttached), коли плеєр перемикається (← →) саме під час завантаження картки дня.
+// На сайт це не впливає — лише на те, як Chromium тримає iframe під час тестів.
+const EXE = Object.assign(fs.existsSync('/opt/pw-browsers/chromium') ? { executablePath: '/opt/pw-browsers/chromium' } : {},
+  { args: ['--disable-features=IsolateOrigins,site-per-process', '--disable-site-isolation-trials'] });
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(__dirname, 'qa-shots');
@@ -115,6 +119,15 @@ const F_DURS = { m1: 754, m2: 3905, m3: 59 };
 // Щоденник (YouTube до 25.10 + Instagram) і лекції (YouTube з 26.10) — як у справжньому seasons.json, але UU1
 const DUAL = (o = {}) => ({ calendar: Object.assign({ playlist: 'UU1', exclude: ['SH'], end: '2026-10-25', instagram: true }, o.cal || {}),
   lectures: Object.assign({ playlist: 'UU1', exclude: ['SH'], start: '2026-10-26' }, o.lec || {}) });
+// Зустрічі (офлайн): найближча — у шапці, вкладка «Зустрічі»; минула, вимкнена, крива й зі «сміттям» — для перевірок
+const M1 = () => ({ id: 'kyiv-1', date: '2026-11-14', time: '19:00–21:00', title: 'Про звички й волю', city: 'Київ', place: 'Книгарня «Є»', address: 'вул. Лисенка, 3',
+  url: 'https://forms.gle/abc', price: 'Вхід вільний', about: 'Розмова наживо, питання з залу.' });
+const M_OLD = () => ({ id: 'old', date: '2026-10-10', title: 'Перша зустріч', city: 'Київ', video: 'alXg_sVZAQM' });
+const MEETS = (items, o = {}) => Object.assign(DUAL(), { meetings: Object.assign({ enabled: true, items }, o) });
+const MEET_ALL = () => [M1(), { id: 'lviv', date: '2026-12-02', title: 'Стоїки, кава і ми', city: 'Львів', place: 'Кавʼярня на Ринку' }, M_OLD(),
+  { enabled: false, date: '2026-11-10', title: 'Чернетка', city: 'Одеса' }, { title: 'Без дати', city: 'Дніпро', url: 'javascript:alert(1)' },
+  { date: '2026-11-20', time: '25:99', title: '<img src=x onerror=alert(1)>', city: 'Харків"><b>' }];
+const icsOf = async (page, sel) => decodeURIComponent((await page.getAttribute(sel, 'href')).replace(/^data:text\/calendar;charset=utf-8,/, ''));
 const DUAL_API = { UU1: [vid('v20', 'Влог 20', '2026-10-20T12:00:00Z'), vid('v24', 'Влог 24', '2026-10-24T12:00:00Z'),
   vidT('lec0000001', 'Чому ми відкладаємо', '2026-10-27T12:00:00Z'), vidT('lec0000002', 'Як працює звичка', '2026-10-29T12:00:00Z'),
   vidT('lec0000003', 'Стоїки про тривогу', '2026-10-31T12:00:00Z'), vidT('lec0000004', 'Дофамін і нудьга', '2026-11-03T12:00:00Z'),
@@ -1185,6 +1198,95 @@ const CASES = [
       const { r: r2, ctx: c2 } = await scenario(r.browser, { now: '2026-11-05T12:00:00+02:00', seasons: DUAL({ lec: { enabled: false } }), api: DUAL_API, lect: LJ });
       const b = await r2.page.locator('.lpeek').count() === 0 && await r2.page.locator('.tabs').count() === 0 && await r2.page.locator('#cal').count() === 1 && r2.errs.length === 0; await c2.close();
       return a && b && r.errs.length === 0;
+    }],
+  ['MT01 зустрічі: третя вкладка; у шапці — тиха «Зустріч · 14 листопада, Київ →»; клік — квиток підсвічено; квитки за датою; вимкнена й крива — ні; минулі — рядком із записом', {
+      now: '2026-11-05T12:00:00+02:00', seasons: MEETS(MEET_ALL()), api: DUAL_API, lect: LJ, shot: 'MT01-teaser' },
+    async r => {
+      const tabs = await r.page.$$eval('.tabs .tab', a => a.map(x => x.textContent + (x.classList.contains('on') ? '*' : '')));
+      const t = r.page.locator('#sup .meet-link'), tText = await t.innerText(), tHref = await t.getAttribute('href');
+      await t.click(); await r.page.waitForTimeout(150);
+      const lit = await r.page.locator('#z-kyiv-1.flash').count() === 1, tab = (await r.page.innerText('.tabs .tab.on')).toLowerCase();
+      const ids = await r.page.$$eval('#zustrichi .mt', a => a.map(x => x.id));
+      const card = await r.page.$eval('#z-kyiv-1', c => ({ d: c.querySelector('.mt-d').textContent, m: c.querySelector('.mt-m').textContent, w: c.querySelector('.mt-w').textContent,
+        t: c.querySelector('.mt-t').textContent, go: c.querySelector('.mt-btn.go').getAttribute('href'), map: c.querySelector('.mt-meta a').getAttribute('href'), where: c.querySelector('.mt-where').textContent }));
+      const old = await r.page.$$eval('#zustrichi .mt-old li', a => a.map(x => x.textContent + '|' + (x.querySelector('a') || {}).href));
+      const xss = await r.page.locator('#zustrichi img, #zustrichi b').count() === 0 && (await r.page.innerText('#zustrichi')).includes('<img src=x');
+      return tabs.join() === 'Дні*,Студії,Зустрічі' && tText.includes('Зустріч · 14 листопада, Київ →') && tHref === '#z-kyiv-1' && lit && tab === 'зустрічі'
+        && await r.page.locator('#sup .meet-link').count() === 0 && ids.join() === 'z-kyiv-1,z-2026-11-20-6,z-lviv' && !has(r, 'Чернетка') && !has(r, 'Без дати')
+        && card.d === '14' && card.m === 'листопада' && card.w === 'субота' && card.t === '19:00–21:00' && card.go === 'https://forms.gle/abc' && card.where === 'Київ · Книгарня «Є»'
+        && card.map === 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('Книгарня «Є», вул. Лисенка, 3, Київ')
+        && old.length === 1 && old[0].includes('Київ — Перша зустріч') && old[0].includes('Запис ↗|https://www.youtube.com/watch?v=alXg_sVZAQM') && xss && r.errs.length === 0;
+    }],
+  ['MT02 «Додати в календар» (.ics): київський час і часова зона; без часу — на весь день; без кінця — 2 години (через північ — наступний день); коми й ; екрановано; рядки ≤ 75 байтів', {
+      path: '#zustrichi', now: '2026-11-05T12:00:00+02:00', api: DUAL_API, lect: LJ, seasons: MEETS([M1(),
+        { id: 'allday', date: '2026-11-20', title: 'Цілий день; без часу', city: 'Київ', about: 'Про волю, звички, страх і сміливість — '.repeat(6) },
+        { id: 'late', date: '2026-11-21', time: '23:30', title: 'Нічна', city: 'Київ' }]) },
+    async r => {
+      const a = await icsOf(r.page, '#z-kyiv-1 .mt-btn[download]'), b = await icsOf(r.page, '#z-allday .mt-btn[download]'), c = await icsOf(r.page, '#z-late .mt-btn[download]');
+      const lines = [a, b, c].join('\r\n').split('\r\n'), long = lines.filter(l => Buffer.byteLength(l) > 75);
+      const unfold = x => x.replace(/\r\n /g, '');
+      return a.includes('BEGIN:VTIMEZONE') && a.includes('DTSTART;TZID=Europe/Kyiv:20261114T190000') && a.includes('DTEND;TZID=Europe/Kyiv:20261114T210000')
+        && unfold(a).includes('LOCATION:Книгарня «Є»\\, вул. Лисенка\\, 3\\, Київ') && unfold(a).includes('URL:https://taras.kyiv.ua/#z-kyiv-1')
+        && b.includes('DTSTART;VALUE=DATE:20261120') && b.includes('DTEND;VALUE=DATE:20261121') && !b.includes('VTIMEZONE') && unfold(b).includes('SUMMARY:Цілий день\\; без часу')
+        && c.includes('DTSTART;TZID=Europe/Kyiv:20261121T233000') && c.includes('DTEND;TZID=Europe/Kyiv:20261122T013000')
+        && long.length === 0 && b.includes('\r\n ') && await r.page.getAttribute('#z-kyiv-1 .mt-btn[download]', 'download') === 'zustrich-kyiv-1.ics';
+    }],
+  ['MT03 день зустрічі: у шапці «сьогодні о 19:00», на квитку «Сьогодні»; наступного дня — у «Минулих», у шапці порожньо, «Нових зустрічей поки не заплановано»', {
+      now: '2026-11-14T10:00:00+02:00', seasons: MEETS([M1(), M_OLD()]), api: DUAL_API, lect: LJ },
+    async r => {
+      const a = (await r.page.innerText('#sup .meet-link')).includes('Зустріч · сьогодні о 19:00, Київ →');
+      await r.page.click('#sup .meet-link'); await r.page.waitForTimeout(150);
+      const b = (await r.page.innerText('#z-kyiv-1 .mt-today')).toLowerCase() === 'сьогодні';
+      const { r: r2, ctx: c2 } = await scenario(r.browser, { path: '#zustrichi', now: '2026-11-15T10:00:00+02:00', seasons: MEETS([M1(), M_OLD()]), api: DUAL_API, lect: LJ });
+      const c = await r2.page.locator('#sup .meet-link').count() === 0 && await r2.page.locator('#zustrichi .mt').count() === 0 && has(r2, 'Нових зустрічей поки не заплановано')
+        && await r2.page.locator('#zustrichi .mt-old li').count() === 2 && await r2.page.locator('.tabs .tab').count() === 3; await c2.close();
+      return a && b && c;
+    }],
+  ['MT04 телефон 320 px: три вкладки в один ряд, зустріч у шапці — під іменем, квиток не ширший за екран, без горизонтального скролу', {
+      ua: UA_ANDROID, mobile: true, viewport: { width: 320, height: 700 }, now: '2026-11-05T12:00:00+02:00', seasons: MEETS(MEET_ALL()), api: DUAL_API, lect: LJ, shot: 'MT04-phone' },
+    async r => {
+      const tops = await r.page.$$eval('.tabs .tab', a => a.map(x => Math.round(x.getBoundingClientRect().top)));
+      const name = await r.page.locator('.intro .name').boundingBox(), t = await r.page.locator('#sup .meet-link').boundingBox();
+      const a = tops.length === 3 && new Set(tops).size === 1 && t.y >= name.y + name.height - 1 && await noHScroll(r);
+      await r.page.click('#sup .meet-link'); await r.page.waitForTimeout(200);
+      const card = await r.page.locator('#z-kyiv-1').boundingBox();
+      return a && card.x >= 0 && card.x + card.width <= 320 && await noHScroll(r) && r.errs.length === 0;
+    }],
+  ['MT05 зустрічей нема — ні вкладки, ні рядка в шапці; лише вимкнені — так само; meetings.enabled: false — так само, а в ?check — попередній перегляд із «сховано»', {
+      now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: LJ },
+    async r => {
+      const none = async rr => await rr.page.locator('#sup .meet-link').count() === 0 && (await rr.page.$$eval('.tabs .tab', a => a.map(x => x.textContent))).join() === 'Дні,Студії';
+      let ok = await none(r);
+      for (const seasons of [MEETS([{ enabled: false, date: '2026-11-14', title: 'Чернетка' }]), MEETS([M1()], { enabled: false }), MEETS([])]) {
+        const { r: r2, ctx } = await scenario(r.browser, { now: '2026-11-05T12:00:00+02:00', seasons, api: DUAL_API, lect: LJ });
+        ok = ok && await none(r2) && r2.errs.length === 0; await ctx.close();
+      }
+      const { r: r3, ctx: c3 } = await scenario(r.browser, { path: '?check', now: '2026-11-05T12:00:00+02:00', seasons: MEETS([M1()], { enabled: false }), api: DUAL_API, lect: LJ });
+      await r3.page.click('.tabs .tab:has-text("Зустрічі")'); await r3.page.waitForTimeout(150);
+      const pv = has(r3, 'Зустрічі — сховано від глядачів') && await r3.page.locator('#z-kyiv-1').count() === 1 && await r3.page.locator('.cal-hidden').count() === 1; await c3.close();
+      return ok && pv;
+    }],
+  ['MT06 ?check: рядок «Зустрічі» (майбутні, минулі, що в шапці) і пояснення до кожної кривої: нема дати, javascript: в url, час 25:99, вимкнена', {
+      path: '?check', now: '2026-11-05T12:00:00+02:00', seasons: MEETS(MEET_ALL()), api: DUAL_API, lect: LJ },
+    async r => has(r, 'Зустрічі — майбутніх: 3, минулих: 1; у шапці — «Про звички й волю», 14 листопада 2026') && has(r, 'зустріч «Без дати»: нема date')
+      && has(r, '«javascript:alert(1)» не схоже на веб-адресу — кнопку «Записатися» сховано') && has(r, 'time «25:99»') && has(r, 'Зустріч «Чернетка» (10 листопада 2026) — вимкнено')
+      && r.errs.length === 0],
+  ['MT07 довгі слова без пробілів (місто, місце, адреса, ціна, опис, напис кнопки, назва): квиток, минулі й шапка не ширші за екран — 768 і 320 px, і в ?check', {
+      now: '2026-11-05T12:00:00+02:00', viewport: { width: 768, height: 800 }, api: DUAL_API, lect: LJ,
+      seasons: MEETS([Object.assign(M1(), { city: 'Ж'.repeat(300), place: 'ж'.repeat(300), address: 'ж'.repeat(300), price: 'ж'.repeat(300), about: 'ж'.repeat(3000),
+        url_label: 'ж'.repeat(300), title: '🌓'.repeat(30) + 'ж'.repeat(300) }), Object.assign(M_OLD(), { city: 'ж'.repeat(300), title: 'ж'.repeat(300) })]) },
+    async r => {
+      const wide = () => r.page.evaluate(() => [...document.querySelectorAll('body *')].filter(e => e.getBoundingClientRect().right > innerWidth + 1 && !e.closest('.modal, .lp-row, .lt .fl-grid, .topics'))   // стрічки вбік — навмисно за краєм
+        .slice(0, 3).map(e => e.tagName + '.' + e.className));
+      let bad = [...await wide()];
+      await r.page.click('#sup .meet-link'); await r.page.waitForTimeout(200); bad.push(...await wide());
+      for (const [w, q] of [[320, ''], [768, '?check'], [320, '?check']]) {
+        await r.page.setViewportSize({ width: w, height: 800 });
+        if (q) { await r.page.goto('http://localhost:8766/' + q + '#zustrichi'); await r.page.waitForTimeout(800); }
+        await r.page.waitForTimeout(150); bad.push(...(await wide()).map(x => w + q + ':' + x));
+      }
+      if (bad.length) console.log('    ширші за екран:', bad.slice(0, 6).join(' | '));
+      return bad.length === 0 && await noHScroll(r) && r.errs.length === 0;
     }],
   ['LT01 теми лекцій (tools/lectures): правила тем, весь конвеєр із підставними YouTube та Ollama, наявний Whisper (команда, служба) — python unittest', {},
     async () => { const p = require('child_process').spawnSync('python3', ['-I', '-m', 'unittest', 'discover', '-s', path.join(ROOT, 'tools/lectures'), '-p', 'test_*.py'], { encoding: 'utf8' });
