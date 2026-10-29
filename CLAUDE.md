@@ -69,6 +69,14 @@
   `.ics` з `VTIMEZONE` Europe/Kyiv, `meetIcs`); минулі — рядки з «Запис ↗». **На головній — лише тихий рядок у шапці**
   (`meetTeaserHtml`, як збори): «📍 Зустріч · 14 листопада, Київ →» на найближчу; без банерів, спливних вікон і відліків
   (принцип власника — ненавʼязливо). Тести MT01–MT07.
+  - **Реєстрація й оплата (з 29.10.2026):** `fee` (грн; нема — безкоштовна), `capacity`, `register: false`, `cancelled`;
+    форма в квитку (`meetActs`, `meetForm`, `meetSend`) → **сервер Гавриїла** `meetings.api` (`/state`, `/register` — JSON
+    як text/plain, `/reg/ТОКЕН`); статус у браузері (`mreg`); `meetings.payments`: `onsite` (зараз, ФОП нема) / `online`
+    (рахунок monobank, `pay_url` — лише домени monobank, `okPay`). Персональні дані — лише на сервері бота, не в репо.
+    Тести MR01–MR08 (підставний сервер `gavriil()` у qa.js).
+  - **Керування з Telegram:** Гавриїл → workflow `meeting.yml` → `tools/meet.mjs` (`/zustrich` поля «ключ: значення»,
+    `/zustrichi`, `/skasuvaty`, `/vidnovyty`, `/vydalyty`, `/oplata`, `/zustrichi_nalashtuvannia`); тести ZM01–ZM07, fuzz «бот».
+    Що робить сам бот (API реєстрацій, SQLite, monobank, `/zapysy`) — `tools/gavriil/PROMPT-zustrichi.md` (для Claude на сервері бота).
 - Ідея на потім: «анонс дня через Гавриїла» (Telegram-бот власника) — коли зʼявиться Telegram-канал.
 
 ## Резерв: фільми з афішами (`films`)

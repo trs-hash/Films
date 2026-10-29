@@ -50,9 +50,13 @@ function config() {
     time: maybe(pick(['19:00', '19.00–21:00', '25:99', '23:30', nasty()]), 0.6), title: maybe(pick(['Зустріч', nasty()]), 0.9), city: maybe(pick(['Київ', nasty()])),
     place: maybe(nasty()), address: maybe(nasty()), map: maybe(pick(['https://maps.app.goo.gl/x', 'javascript:alert(1)', nasty()])),
     url: maybe(pick(['https://forms.gle/x', 'javascript:alert(1)', 'forms.gle/y', nasty()])), url_label: maybe(nasty()), price: maybe(nasty()), about: maybe(nasty()),
-    video: maybe(pick(['alXg_sVZAQM', 'https://youtu.be/x', nasty()])), enabled: maybe(pick([true, false, 'так', nasty()]), 0.3), teaser: maybe(pick([false, nasty()]), 0.2) };
+    video: maybe(pick(['alXg_sVZAQM', 'https://youtu.be/x', nasty()])), enabled: maybe(pick([true, false, 'так', nasty()]), 0.3), teaser: maybe(pick([false, nasty()]), 0.2),
+    fee: maybe(pick([300, 0, '300 грн', 'безкоштовно', -5, nasty()]), 0.5), capacity: maybe(pick([40, 0, '12', 'багато', nasty()]), 0.4),
+    register: maybe(pick([false, true, 'ні', nasty()]), 0.2), cancelled: maybe(pick([true, false, nasty()]), 0.15) };
   if (chance(0.5)) c.meetings = chance(0.1) ? nasty() : chance(0.2) ? Array.from({ length: int(0, 3) }, meet)
-    : { enabled: maybe(pick([true, false, 'ні', nasty()]), 0.3), items: chance(0.1) ? nasty() : Array.from({ length: int(0, 5) }, meet) };
+    : { enabled: maybe(pick([true, false, 'ні', nasty()]), 0.3), items: chance(0.1) ? nasty() : Array.from({ length: int(0, 5) }, meet),
+        api: maybe(pick(['https://api.test/z', 'http://evil.example', 'javascript:alert(1)', nasty()]), 0.4), telegram: maybe(pick(['GavriilBot', '@GavriilBot', nasty()]), 0.3),
+        payments: maybe(pick(['online', 'onsite', 'crypto', nasty()]), 0.3) };
   if (chance(0.5)) c.topics = chance(0.2) ? nasty() : [{ tag: pick(['подорожі', nasty()]), title: maybe(nasty()), about: maybe(nasty()), aliases: maybe(pick([['мандри'], nasty()])) }];
   if (chance(0.3)) c.ignore_tags = pick([['shorts'], nasty()]);
   if (chance(0.3)) c.seasons = chance(0.2) ? nasty() : [{ n: pick([1, '2', nasty()]), format: pick(['weekly', 'daily', nasty()]), title: nasty(), about: maybe(nasty()),
@@ -106,6 +110,12 @@ async function siteRun(browser, i) {
   await ctx.route(/i\.ytimg\.com/, r => r.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="9"/>' }));
   await ctx.route(/youtube\.com\/(embed|watch)/, r => r.fulfill({ contentType: 'text/html', body: '' }));
   await ctx.route(/instagram\.com\//, r => r.fulfill({ contentType: 'text/html', body: '' }));   // плеєр Instagram — без мережі (як у qa.js)
+  // сервер Гавриїла (реєстрація на зустрічі): будь-що — від правильних відповідей до сміття й обриву
+  await ctx.route(/api\.test\//, r => chance(0.1) ? r.abort() : r.fulfill({ status: pick([200, 200, 200, 409, 422, 429, 500]), headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+    body: pick([JSON.stringify({ items: { kyiv: { left: pick([0, 3, -1, 'x', nasty()]), open: pick([true, false, nasty()]) } } }),
+      JSON.stringify({ ok: true, token: pick(['t1', nasty(), 5]), status: pick(['confirmed', 'booked', 'payment', 'paid', 'failed', nasty()]), pay_url: pick(['https://pay.mbnk.biz/x', 'javascript:alert(1)', 'https://evil.example', nasty()]), note: nasty() }),
+      JSON.stringify({ ok: false, error: pick(['full', 'closed', nasty()]), fields: pick([['phone'], [nasty()], nasty()]) }), '{', JSON.stringify(nasty()), '']) }));
+  await ctx.route(/pay\.mbnk\.biz|evil\.example/, r => r.fulfill({ contentType: 'text/html', body: 'pay' }));
   await ctx.route(/seasons\.json/, r => r.fulfill({ contentType: 'application/json', body: typeof cfg === 'string' ? cfg : JSON.stringify(cfg) }));
   await ctx.route(/fundraisers\.json/, r => chance(0.3) ? r.fulfill({ status: 404 }) : r.fulfill({ contentType: 'application/json',
     body: pick([JSON.stringify({ jars: { AbC123xyz: { raised: pick([41000, -5, 'x', 1e12]), goal: pick([60000, 0, nasty()]) } } }), '{"jars":', JSON.stringify(nasty())]) }));
@@ -133,6 +143,16 @@ async function siteRun(browser, i) {
     if (!chk.app) problems.push('порожня сторінка');
     if (chk.hscroll) problems.push('горизонтальний скрол: ' + chk.wide.join(', '));
     if (await page.locator('.tabs .tab').count() && chance(0.4)) { TR('вкладка'); await page.locator('.tabs .tab').nth(int(0, 1)).click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(150); }   // вкладки
+    const reg = page.locator('.mt-acts button.mt-btn.go').first();   // форма реєстрації: відкрити, заповнити сміттям, надіслати
+    if (await reg.count() && chance(0.5)) {
+      TR('реєстрація'); await reg.click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(100);
+      const f = page.locator('.mt-form').first();
+      if (await f.count()) {
+        for (const k of ['name', 'phone', 'telegram', 'comment']) if (chance(0.8)) await f.locator(`[name=${k}]`).fill(String(pick(['Олена', '+380671234567', '@olena', nasty(), '']))).catch(() => {});
+        await f.locator('button[type=submit]').click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(300);
+        if (!page.url().startsWith('http://localhost:8767/')) { if (!/^https:\/\/pay\.mbnk\.biz\//.test(page.url())) problems.push('перехід не на monobank: ' + page.url()); await page.goBack().catch(() => {}); }
+      }
+    }
     if (await page.locator('#sup .meet-link').count() && chance(0.3)) { TR('зустріч у шапці'); await page.locator('#sup .meet-link').click({ timeout: 1500 }).catch(() => {}); await page.waitForTimeout(150); }   // зустріч у шапці
     const v = page.locator('#cal .v-lnk, .ep, #films .poster[data-k], #lectures .poster[data-k]').first();
     if (!mobile && await v.count()) {
@@ -196,10 +216,53 @@ function botRuns(n) {
   return bad;
 }
 
+// ── Бот: зустрічі (tools/meet.mjs) ──
+function meetRuns(n) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fuzz-meet-'));
+  fs.mkdirSync(path.join(dir, 'tools'));
+  fs.copyFileSync(path.join(ROOT, 'tools', 'meet.mjs'), path.join(dir, 'tools', 'meet.mjs'));
+  fs.copyFileSync(path.join(ROOT, 'seasons.json'), path.join(dir, 'seasons.json'));
+  const PARTS = ['/zustrich', '/zustrich@GavriilBot', '/zustrichi', '/skasuvaty', '/vidnovyty', '/vydalyty', '/oplata', '/zustrichi_nalashtuvannia', '/start', '',
+    'дата: 14.11 19:00', 'дата: 14 листопада о 18:30', 'дата: 2026-02-30', 'дата: 01.01.2020', 'дата: вчора', 'час: 25:99', 'час: 19:00–21:00', 'назва: Про звички', 'назва: -',
+    'місто: Київ', 'місто: Львів', 'місце: Книгарня «Є»', 'ціна: 300', 'ціна: безкоштовно', 'ціна: -5', 'ціна: дорого', 'місць: 40', 'місць: нуль', 'реєстрація: ні',
+    'реєстрація: https://forms.gle/x', 'реєстрація: javascript:alert(1)', 'мапа: http://x', 'запис: alXg_sVZAQM', 'у шапці: ні', 'id: kyiv-1411', 'id: ../../etc', 'online', 'onsite',
+    'api: https://api.test/z', 'api: javascript:x', 'telegram: @GavriilBot', 'telegram: <b>', 'kyiv-1411', '14.11', '|', '\n', '\n', ' ', ...NASTY.filter(x => typeof x === 'string').map(x => x.slice(0, 300))];
+  const bad = [];
+  for (let i = 0; i < n; i++) {
+    const text = Array.from({ length: int(1, 7) }, () => pick(PARTS)).join(pick(['\n', '\n', ' ', ' | ']));
+    const extra = chance(0.2) ? { MEET_ACTION: pick(['add', 'list', 'cancel', 'remove', 'payments', 'config', 'знищити', '']),
+      MEET_DATA: pick(['', '{', JSON.stringify({ date: pick(['2026-11-20', '31.12', nasty()]), title: pick(['Асистент', nasty()]), fee: pick([250, -1, 'x', nasty()]), capacity: pick([30, 0, nasty()]) }), JSON.stringify(nasty())]) } : {};
+    const msgF = path.join(dir, 'msg.txt'); fs.rmSync(msgF, { force: true });
+    const p = cp.spawnSync('node', [path.join(dir, 'tools/meet.mjs')], { encoding: 'utf8', env: Object.assign({}, process.env,
+      { MEET_TODAY: '2026-11-05', MEET_TEXT: text, MEET_ACTION: '', MEET_DATA: '', MEET_MESSAGE: msgF, GITHUB_OUTPUT: '' }, extra) });
+    const msg = fs.existsSync(msgF) ? fs.readFileSync(msgF, 'utf8') : '';
+    let cfg = null, why = [];
+    try { cfg = JSON.parse(fs.readFileSync(path.join(dir, 'seasons.json'), 'utf8')); } catch (e) { why.push('seasons.json зіпсовано'); }
+    if (![0, 1].includes(p.status)) why.push('код виходу ' + p.status);
+    if (/\n\s+at /.test(p.stderr)) why.push('стек помилки: ' + p.stderr.split('\n').slice(0, 3).join(' | '));
+    if (!/^[✅❌]/.test(msg)) why.push('нема відповіді ✅/❌');
+    const mt = (cfg && cfg.meetings) || {};
+    if (mt.api && !/^https:\/\/\S+$/.test(mt.api)) why.push('api ' + JSON.stringify(mt.api));
+    if (mt.payments && !['online', 'onsite'].includes(mt.payments)) why.push('payments ' + JSON.stringify(mt.payments));
+    if (mt.telegram && !/^[A-Za-z][A-Za-z0-9_]{3,31}$/.test(mt.telegram)) why.push('telegram ' + JSON.stringify(mt.telegram));
+    (Array.isArray(mt.items) ? mt.items : []).forEach(m => {
+      if (!/^[a-z0-9-]+$/.test(String(m.id))) why.push('якір ' + JSON.stringify(m.id));
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(m.date))) why.push('date ' + JSON.stringify(m.date));
+      if (m.time && !/^\d{2}:\d{2}(–\d{2}:\d{2})?$/.test(m.time)) why.push('time ' + JSON.stringify(m.time));
+      if ('fee' in m && !(typeof m.fee === 'number' && m.fee > 0)) why.push('fee ' + JSON.stringify(m.fee));
+      if ('capacity' in m && !(Number.isInteger(m.capacity) && m.capacity > 0)) why.push('capacity ' + JSON.stringify(m.capacity));
+      ['url', 'map', 'video'].forEach(k => { if (m[k] && !/^https:\/\/\S+$/.test(m[k])) why.push(k + ' ' + JSON.stringify(m[k])); });   // порожнє — «нема», як у прикладі
+      if (!m.title) why.push('без назви');
+    });
+    if (why.length) bad.push({ i, text: text.slice(0, 200), extra, why, msg: msg.slice(0, 200) });
+  }
+  return bad;
+}
+
 (async () => {
-  console.log(`seed ${SEED}: сайт ×${N_SITE}, бот ×${N_BOT}`);
-  const botBad = botRuns(N_BOT);
-  console.log(`бот: ${N_BOT - botBad.length}/${N_BOT} чисто`);
+  console.log(`seed ${SEED}: сайт ×${N_SITE}, бот ×${N_BOT} (збори й зустрічі)`);
+  const botBad = botRuns(N_BOT).concat(meetRuns(N_BOT).map(b => Object.assign({ meet: true }, b)));
+  console.log(`бот: ${2 * N_BOT - botBad.length}/${2 * N_BOT} чисто`);
   botBad.slice(0, 8).forEach(b => console.log('  ✗ бот', JSON.stringify(b)));
   const browser = await chromium.launch(EXE);
   const siteBad = [];

@@ -327,9 +327,37 @@
         .mt-meta a:hover{color:var(--red);text-decoration-color:currentColor}
         .mt-acts{display:flex;flex-wrap:wrap;gap:10px}
         .mt-btn{display:inline-flex;align-items:center;box-sizing:border-box;max-width:100%;min-height:40px;padding:8px 16px;border:1px solid var(--div);border-radius:20px;font-size:13px;font-weight:600;line-height:1.35;color:var(--txt);text-decoration:none;overflow-wrap:anywhere;transition:color .2s,border-color .2s,background .2s}
-        .mt-btn:hover{border-color:var(--red);color:var(--red)}
         .mt-btn.go{background:var(--red);border-color:var(--red);color:#fff}
-        .mt-btn.go:hover{background:var(--txt);border-color:var(--txt);color:var(--bg)}
+        @media (hover:hover) and (pointer:fine){
+            .mt-btn:hover{border-color:var(--red);color:var(--red)}
+            .mt-btn.go:hover{background:var(--txt);border-color:var(--txt);color:var(--bg)}
+        }
+        button.mt-btn{font:inherit;font-size:13px;font-weight:600;cursor:pointer;background:transparent}
+        button.mt-btn.go{background:var(--red)}
+        .mt-btn.off,.mt-btn:disabled{opacity:.55;cursor:default;pointer-events:none}
+        .mt.off .mt-title,.mt.off .mt-d{opacity:.55}
+        .mt-cancel{margin:0;font-weight:700;color:var(--red)}
+        .mt-regst{margin:0 0 12px;font-size:15px;font-weight:600;line-height:1.5}
+        .mt-regst:focus{outline:none}
+        .mt-note{margin:10px 0 0;font-size:12px;line-height:1.5;color:var(--mut)}
+        /* Форма реєстрації — в тому ж квитку, під кнопками */
+        .mt-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px;max-width:620px;margin:18px 0 0;padding:18px 0 0;border-top:1px dashed var(--div)}
+        .mt-form label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:13px;font-weight:600}
+        .mt-form label em{font-style:normal;font-weight:400;color:var(--mut)}
+        .mt-form input,.mt-form select,.mt-form textarea{box-sizing:border-box;width:100%;min-height:44px;padding:9px 12px;border:1px solid var(--div);border-radius:8px;background:var(--bg);color:var(--txt);font:inherit;font-size:16px;font-weight:400}
+        .mt-form textarea{min-height:66px;resize:vertical}
+        .mt-form input:focus-visible,.mt-form select:focus-visible,.mt-form textarea:focus-visible{outline:2px solid var(--red);outline-offset:1px}
+        .mt-form [aria-invalid="true"]{border-color:var(--red)}
+        .mt-form .wide,.mt-sum,.mt-send,.mt-msg,.mt-form .mt-note{grid-column:1/-1}
+        .mt-form .mt-note{margin:0}
+        .mt-hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+        .mt-sum{margin:0;font-size:14px}
+        .mt-send{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+        .mt-tg{font-size:13px;font-weight:600;color:var(--mut);text-decoration:none}
+        .mt-tg:hover{color:var(--red)}
+        .mt-msg{margin:0;font-size:14px;font-weight:600}
+        .mt-msg:empty{display:none}
+        .mt-msg.err{color:var(--red)}
         .mt-old-h{font-size:30px}
         .mt-old{list-style:none;margin:0;padding:0;border-top:1px solid var(--div)}
         .mt-old li{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 16px;padding:12px 0;border-bottom:1px solid var(--div);font-size:15px;line-height:1.45;scroll-margin-top:20px}
@@ -444,6 +472,7 @@
             .mt-body{padding:16px 16px 18px}
             .mt-title{font-size:23px}
             .mt-old-d{min-width:0;width:100%}
+            .mt-form{grid-template-columns:minmax(0,1fr)}
             .lp-row{grid-auto-columns:80%;margin:0 -15px;padding:0 15px 8px;scroll-padding:0 15px}
             .lp-t{font-size:15px}
             .tab{font-size:19px}
@@ -548,6 +577,8 @@
     let LEC_HIDDEN = false;
     let MEET = null;             // зустрічі (офлайн): {items:[…]} із seasons.json → meetings
     let MEET_HIDDEN = false, MEET_DONE = '';
+    let MEET_STATE = {}, MEET_SYNC = 0, MEET_POLL = 0, MEET_MSG = {};   // місця й статуси від сервера Гавриїла; повідомлення форм
+    const MEET_OPEN = new Set();                       // відкриті форми реєстрації
     let LECT = { topics: [], of: {}, dur: {} };   // lectures.json — теми лекцій, які формує локальна ШІ-модель на сервері
     let IG = [];                 // щоденник з Instagram (instagram.json, оновлює GitHub Action) — записи, як у стіни днів
     let TAB = 'cal';             // вкладка головної: 'cal' — Дні (адреса #dni; стара #diary теж), 'lec' — Студії (#studii; стара #lectures теж)
@@ -909,8 +940,11 @@
     }
     // ── Зустрічі (офлайн): seasons.json → "meetings": {"enabled": true, "items": [ {date, time, title, city, place, …} ]} ──
     // Список одразу ([…]) теж розуміємо. Кожна зустріч: date і title — обовʼязково; решта — коли є.
-    const MEET_KEYS = ['enabled', 'items'];
-    const MEET_ITEM_KEYS = ['enabled', 'id', 'date', 'time', 'title', 'city', 'place', 'address', 'map', 'url', 'url_label', 'price', 'about', 'video', 'teaser'];
+    // api — сервер Гавриїла (реєстрація й оплата: tools/gavriil/PROMPT-zustrichi.md); telegram — бот для запису в Telegram;
+    // payments — online (monobank, коли буде ФОП) чи onsite (оплата на місці, типово)
+    const MEET_KEYS = ['enabled', 'api', 'telegram', 'payments', 'items'];
+    const MEET_ITEM_KEYS = ['enabled', 'id', 'date', 'time', 'title', 'city', 'place', 'address', 'map', 'url', 'url_label', 'price', 'fee', 'capacity',
+        'register', 'cancelled', 'about', 'video', 'teaser'];
     // «19:00», «19.00», «19:00–21:00» → {start, end}; інше — без часу (і пояснення в ?check)
     function normTime(v, what) {
         let s = str(v).replace(/\s+/g, '');
@@ -931,6 +965,12 @@
         let list = raw.items == null ? [] : raw.items;
         if (isObj(list)) { issue('seasons.json, meetings.items: очікую список [ … ] — одну зустріч теж беру в [ ]'); list = [list]; }
         if (!Array.isArray(list)) { issue('seasons.json, meetings.items: очікую список [ … ]'); list = []; }
+        let api = normUrl(raw.api, 'seasons.json, meetings.api', 'форми реєстрації нема').replace(/\/+$/, '');
+        if (api && !/^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$))/i.test(api)) { issue('seasons.json, meetings.api: потрібна адреса https:// — форми реєстрації нема'); api = ''; }
+        let tg = str(raw.telegram).replace(/^(@|https?:\/\/t\.me\/)/i, '');
+        if (tg && !/^[A-Za-z][A-Za-z0-9_]{3,31}$/.test(tg)) { issue(`seasons.json, meetings.telegram: «${str(raw.telegram)}» — не схоже на імʼя бота (латиниця, без @)`); tg = ''; }
+        let pay = str(raw.payments).toLowerCase() || 'onsite';
+        if (!['online', 'onsite'].includes(pay)) { issue(`seasons.json, meetings.payments: «${str(raw.payments)}» — можна online (monobank) або onsite (на місці)`); pay = 'onsite'; }
         let ids = {}, items = [];
         list.forEach((m, i) => {
             let what = `seasons.json, meetings №${i + 1}`;
@@ -944,14 +984,18 @@
             let id = str(m.id).toLowerCase().replace(/[^\w\u0400-\u04ff-]+/g, '-').replace(/^-+|-+$/g, '') || (date || 'zustrich') + '-' + (i + 1);
             if (ids[id]) { issue(`${what}: id «${id}» уже є в іншої зустрічі`); id += '-' + (i + 1); }
             ids[id] = true;
+            let fee = m.fee == null || m.fee === '' || /^(0|безкоштовно|безплатно|вільний|free)$/i.test(str(m.fee)) ? 0 : money(m.fee, what + ', fee');
+            let cap = m.capacity == null || m.capacity === '' ? 0 : Math.floor(+str(m.capacity));
+            if (!(cap >= 0)) { issue(`${what}: capacity «${str(m.capacity)}» — пиши кількість місць числом`); cap = 0; }
             let video = str(m.video);
             if (/^[\w-]{11}$/.test(video)) video = 'https://www.youtube.com/watch?v=' + video;   // ID відео з YouTube
             items.push({ id, enabled, date, title, time: normTime(m.time, what), city: str(m.city), place: str(m.place), address: str(m.address),
                 map: normUrl(m.map, what + ', map', 'посилання на мапу сховано'), url: normUrl(m.url, what + ', url', 'кнопку «Записатися» сховано'),
-                urlLabel: str(m.url_label) || 'Записатися', price: str(m.price), about: str(m.about),
+                urlLabel: str(m.url_label) || 'Записатися', price: str(m.price), fee, capacity: cap, about: str(m.about),
+                register: m.register == null || flag(m.register, what + ', register'), cancelled: m.cancelled != null && flag(m.cancelled, what + ', cancelled'),
                 video: normUrl(video, what + ', video', 'посилання на запис сховано'), teaser: m.teaser == null || flag(m.teaser, what + ', teaser') });
         });
-        return [hidden, { items }];
+        return [hidden, { items, api, telegram: tg, payments: pay }];
     }
     // Чому пункт НЕ видно глядачам ('' — видно). Для ?check і для рішення, що малювати.
     function linkWhy(l) {
@@ -1345,8 +1389,13 @@
         LAST_HTML = html;
         let app = document.getElementById('app');
         let opened = [...app.querySelectorAll('details[open]')].map(d => d.id);
+        let forms = [...app.querySelectorAll('.mt-form')].map(f => ({ id: f.id, vals: [...f.elements].filter(e => e.name).map(e => [e.name, e.value]),
+            focus: f.contains(document.activeElement) ? document.activeElement.name : '' }));   // форма реєстрації: не губити введене
         app.innerHTML = html;
         opened.forEach(id => { let d = document.getElementById(id); if (d) { fillLazy(d); d.open = true; } });
+        forms.forEach(s => { let f = document.getElementById(s.id); if (!f) return;
+            s.vals.forEach(([k, v]) => { if (f.elements[k]) f.elements[k].value = v; }); meetSum(f);
+            if (s.focus && f.elements[s.focus]) f.elements[s.focus].focus({ preventScroll: true }); });
         // Посилання на день (#d=2026-09-30, сюди ж ведуть сторінки /d/…/): показати день; на компʼютері — ще й відкрити відео
         let dh = dayFromHash();
         if (dh && dh !== DAY_DONE && !LOADING && dayEl(dh)) {
@@ -1364,6 +1413,7 @@
             }
         }
         if (/^#z-/.test(location.hash) && MEET_DONE !== location.hash && TAB === 'meet') { MEET_DONE = location.hash; setTimeout(meetFocus, 0); }
+        if (TAB === 'meet') meetSync();
     }
 
     // ── Підтримка: тихі посилання в шапці ─────────────────────────────────────────
@@ -1687,16 +1737,147 @@
     function meetCard(m, today) {
         let [y, mo, d] = m.date.split('-').map(Number), wd = WD_FULL[new Date(dayNum(m.date) * DAY_MS).getUTCDay()], why = meetWhy(m);
         let map = meetMap(m), place = m.address || m.place, where = [m.city, m.place].filter(Boolean).join(' · ');
+        let st = MEET_STATE[m.id] || {}, seats = m.cancelled ? '' : st.left === 0 ? 'Місць нема' : st.left > 0 ? `Вільних місць: ${st.left}${m.capacity ? ' із ' + m.capacity : ''}` : m.capacity ? `${m.capacity} ${plural(m.capacity, 'місце', 'місця', 'місць')}` : '';
         let meta = [place ? (map ? `<a href="${esc(map)}" target="_blank" rel="noopener">${esc(place)} ↗</a>` : esc(place)) : (map ? `<a href="${esc(map)}" target="_blank" rel="noopener">Мапа ↗</a>` : ''),
-            esc(m.price)].filter(Boolean).join(' · ');
-        return `<article class="mt" id="z-${esc(m.id)}" aria-label="${esc(m.title)} — ${fmtDay(m.date, true)}">` +
+            esc(m.price || (m.fee ? fmtMoney(m.fee) : 'Безкоштовно')), seats].filter(Boolean).join(' · ');
+        return `<article class="mt${m.cancelled ? ' off' : ''}" id="z-${esc(m.id)}" aria-label="${esc(m.title)} — ${fmtDay(m.date, true)}${m.cancelled ? ', скасовано' : ''}">` +
             `<div class="mt-date"><span class="mt-d">${d}</span><span class="mt-m">${MONTHS_GEN[mo - 1]}${y !== +today.slice(0, 4) ? ' ' + y : ''}</span>` +
             `<span class="mt-w">${curly(wd)}</span>` + (m.time ? `<span class="mt-t">${m.time.start}${m.time.end ? '–' + m.time.end : ''}</span>` : '') +
-            (m.date === today ? '<span class="mt-today">Сьогодні</span>' : '') + '</div>' +
+            (m.cancelled ? '<span class="mt-today">Скасовано</span>' : m.date === today ? '<span class="mt-today">Сьогодні</span>' : '') + '</div>' +
             `<div class="mt-body">${where ? `<p class="mt-where">${esc(where)}</p>` : ''}<h3 class="mt-title">${esc(curly(m.title))}${offTag(why)}</h3>` +
-            (m.about ? `<p class="mt-about">${esc(m.about)}</p>` : '') + (meta ? `<p class="mt-meta">${meta}</p>` : '') +
-            '<div class="mt-acts">' + (m.url ? `<a class="mt-btn go" href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.urlLabel)} ↗</a>` : '') +
-            `<a class="mt-btn" href="${meetIcs(m, today)}" download="zustrich-${esc(m.id)}.ics">Додати в календар</a></div></div></article>`;
+            (m.about ? `<p class="mt-about">${esc(m.about)}</p>` : '') + (meta ? `<p class="mt-meta">${meta}</p>` : '') + meetActs(m, today) + '</div></article>';
+    }
+    // ── Реєстрація: форма на сайті → сервер Гавриїла (meetings.api); платна — далі monobank (або «оплата на місці»).
+    // Що записались, памʼятає браузер (mreg: токен і статус), сервер підтверджує статус, коли відкрито «Зустрічі».
+    const REG_ST = ['confirmed', 'booked', 'payment', 'paid', 'failed', 'cancelled'];
+    const okPay = u => /^https:\/\/(pay\.mbnk\.biz|pay\.monobank\.ua|send\.monobank\.ua)\/[^\s"<>]*$/.test(str(u)) ? str(u) : '';   // лише monobank
+    function meetRegs() {
+        let o = lsJSON('mreg', {}), out = {};
+        if (isObj(o)) Object.keys(o).forEach(k => { let r = o[k];
+            if (isObj(r) && typeof r.token === 'string' && r.token && REG_ST.includes(r.status))
+                out[k] = { token: r.token.slice(0, 100), status: r.status, count: Math.max(1, Math.min(10, parseInt(r.count) || 1)), pay: okPay(r.pay), note: str(r.note).slice(0, 300) }; });
+        return out;
+    }
+    function meetRegSave(id, r) { let all = meetRegs(); if (r) all[id] = r; else delete all[id]; lsSet('mreg', JSON.stringify(all)); }
+    const meetTg = id => MEET.telegram ? 'https://t.me/' + MEET.telegram + (/^[A-Za-z0-9_-]{1,60}$/.test(id) ? '?start=z_' + id : '') : '';
+    function meetActs(m, today) {
+        if (m.cancelled) return '<p class="mt-cancel">Зустріч скасовано.</p>';
+        let ics = `<a class="mt-btn" href="${meetIcs(m, today)}" download="zustrich-${esc(m.id)}.ics">Додати в календар</a>`, st = MEET_STATE[m.id] || {};
+        if (!m.register) return `<div class="mt-acts">${ics}</div><p class="mt-note">Без реєстрації — просто приходьте.</p>`;
+        if (m.url) return `<div class="mt-acts"><a class="mt-btn go" href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.urlLabel)} ↗</a>${ics}</div>`;
+        let tg = meetTg(m.id), tgLink = tg ? `<a class="mt-btn" href="${esc(tg)}" target="_blank" rel="noopener">Записатися в Telegram ↗</a>` : '';
+        if (!MEET.api) return `<div class="mt-acts">${tgLink.replace('class="mt-btn"', 'class="mt-btn go"')}${ics}</div>`;
+        let r = meetRegs()[m.id], sum = n => m.fee ? fmtMoney(m.fee * n) : '';
+        if (r && !['failed', 'cancelled'].includes(r.status)) {
+            let n = r.count > 1 ? ` · ${r.count} ${plural(r.count, 'місце', 'місця', 'місць')}` : '';
+            let line = { confirmed: `✓ Ви записані${n}. До зустрічі!`, booked: `✓ Місце заброньовано${n}. Оплата — на місці${m.fee ? ': ' + sum(r.count) : ''}.`,
+                payment: `Чекаємо оплату${m.fee ? ' ' + sum(r.count) : ''}${n}. Щойно monobank підтвердить — тут зʼявиться «Оплачено».`, paid: `✓ Оплачено${n}. До зустрічі!` }[r.status];
+            let pay = r.status === 'payment' && r.pay ? `<a class="mt-btn go" href="${esc(r.pay)}">Оплатити ${sum(r.count)} ↗</a>` : '';
+            return `<p class="mt-regst" role="status">${esc(line)}</p>` + (r.note ? `<p class="mt-note">${esc(r.note)}</p>` : '') + `<div class="mt-acts">${pay}${ics}</div>`;
+        }
+        let full = st.left === 0, shut = st.open === false, open = MEET_OPEN.has(m.id) && !full && !shut;
+        let label = full ? 'Місць нема' : shut ? 'Реєстрацію закрито' : !m.fee ? 'Записатися' : MEET.payments === 'online' ? `Купити квиток · ${fmtMoney(m.fee)}` : 'Забронювати місце';
+        let btn = full || shut ? `<span class="mt-btn go off">${label}</span>` :
+            `<button type="button" class="mt-btn${open ? '' : ' go'}" data-z="${esc(m.id)}" aria-expanded="${open}" aria-controls="zf-${esc(m.id)}" onclick="meetOpen(this.dataset.z)">${open ? 'Згорнути' : label}</button>`;
+        let was = r ? `<p class="mt-note">${r.status === 'failed' ? 'Минула оплата не пройшла — можна спробувати ще раз.' : 'Минулу реєстрацію скасовано.'}</p>` : '';
+        return was + `<div class="mt-acts">${btn}${ics}</div>` + (open ? meetForm(m, st) : '');
+    }
+    function meetForm(m, st) {
+        let max = Math.max(1, Math.min(5, st.left > 0 ? st.left : 5)), msg = MEET_MSG[m.id] || {}, id = esc(m.id);
+        let go = !m.fee ? 'Записатися' : MEET.payments === 'online' ? 'Перейти до оплати' : 'Забронювати місце', tg = meetTg(m.id);
+        return `<form class="mt-form" id="zf-${id}" data-z="${id}" data-fee="${m.fee}" novalidate onsubmit="meetSend(event, this.dataset.z)">` +
+            '<label><span>Імʼя</span><input name="name" autocomplete="name" maxlength="80" required></label>' +
+            '<label><span>Телефон</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="+380" required></label>' +
+            '<label><span>Telegram <em>— необовʼязково</em></span><input name="telegram" maxlength="33" placeholder="@нік" autocapitalize="off" spellcheck="false"></label>' +
+            `<label><span>Скільки вас</span><select name="count" onchange="meetSum(this.form)">${Array.from({ length: max }, (_, i) => `<option>${i + 1}</option>`).join('')}</select></label>` +
+            '<label class="wide"><span>Питання чи коментар <em>— необовʼязково</em></span><textarea name="comment" maxlength="500" rows="2"></textarea></label>' +
+            '<label class="mt-hp">Не заповнюйте<input name="website" tabindex="-1" autocomplete="off"></label>' +
+            `<p class="mt-sum">${meetSumText(m.fee, 1)}</p>` +
+            `<div class="mt-send"><button type="submit" class="mt-btn go">${go}</button>${tg ? `<a class="mt-tg" href="${esc(tg)}" target="_blank" rel="noopener">або через Telegram ↗</a>` : ''}</div>` +
+            `<p class="mt-msg${msg.err ? ' err' : ''}" role="status" aria-live="polite">${esc(msg.text || '')}</p>` +
+            '<p class="mt-note">Імʼя й телефон бачить лише Тарас — щоб звʼязатися щодо цієї зустрічі.</p></form>';
+    }
+    function meetSumText(fee, n) {
+        if (!fee) return 'Безкоштовно.';
+        return (MEET.payments === 'online' ? 'До оплати карткою (monobank): ' : 'Оплата на місці: ') + fmtMoney(fee * n) + (n > 1 ? ` (${n} × ${fmtMoney(fee)})` : '') + '.';
+    }
+    window.meetSum = f => { let p = f && f.querySelector('.mt-sum'); if (p) p.textContent = meetSumText(+f.dataset.fee || 0, parseInt(f.elements.count.value) || 1); };
+    window.meetOpen = function(id) {
+        if (MEET_OPEN.has(id)) MEET_OPEN.delete(id); else MEET_OPEN.add(id);
+        render();
+        let f = document.getElementById('zf-' + id);
+        if (f) f.elements.name.focus({ preventScroll: false });
+    };
+    function meetSay(f, id, text, err) {
+        MEET_MSG[id] = { text, err };
+        let p = f && f.querySelector('.mt-msg');
+        if (p) { p.textContent = text; p.classList.toggle('err', !!err); }
+    }
+    window.meetSend = async function(e, id) {
+        e.preventDefault();
+        let f = e.target, m = MEET && MEET.items.find(x => x.id === id);
+        if (!m || !MEET.api || f.dataset.busy) return;
+        let v = k => f.elements[k] ? String(f.elements[k].value).trim() : '';
+        let name = v('name'), phone = v('phone').replace(/[^\d+]/g, ''), tg = v('telegram').replace(/^@/, ''), count = Math.max(1, Math.min(10, parseInt(v('count')) || 1)), bad = [];
+        if (name.length < 2) bad.push('name');
+        if (!/^\+?\d{9,15}$/.test(phone)) bad.push('phone');
+        if (tg && !/^[A-Za-z0-9_]{4,32}$/.test(tg)) bad.push('telegram');
+        f.querySelectorAll('[aria-invalid]').forEach(x => x.removeAttribute('aria-invalid'));
+        if (bad.length) {
+            bad.forEach(k => f.elements[k].setAttribute('aria-invalid', 'true'));
+            meetSay(f, id, bad[0] === 'name' ? 'Напишіть, як вас звати.' : bad[0] === 'phone' ? 'Перевірте телефон: +380 і далі цифри.' : 'Telegram — нік латиницею, напр. @taras_m.', true);
+            f.elements[bad[0]].focus();
+            return;
+        }
+        f.dataset.busy = '1';
+        let btn = f.querySelector('button[type=submit]'); btn.disabled = true;
+        meetSay(f, id, 'Надсилаю…', false);
+        let res = null, data = {};
+        try {
+            res = await fetch(MEET.api + '/register', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' },   // без preflight: тіло — JSON
+                body: JSON.stringify({ meeting: id, name: name.slice(0, 80), phone, telegram: tg, count, comment: v('comment').slice(0, 500), website: v('website') }) });
+            data = await res.json().catch(() => ({}));
+        } catch (err) { res = null; }
+        delete f.dataset.busy; btn.disabled = false;
+        if (!isObj(data)) data = {};
+        if (res && res.ok && data.ok && typeof data.token === 'string' && data.token) {
+            let st = REG_ST.includes(data.status) ? data.status : 'confirmed', pay = okPay(data.pay_url);
+            meetRegSave(id, { token: data.token.slice(0, 100), status: st, count, pay, note: str(data.note).slice(0, 300) });
+            MEET_OPEN.delete(id); delete MEET_MSG[id]; MEET_SYNC = 0;
+            if (st === 'payment' && pay) { location.href = pay; return; }          // на сторінку оплати monobank; повернення — сюди ж
+            render();
+            let s = document.querySelector('#z-' + CSS.escape(id) + ' .mt-regst'); if (s) { s.tabIndex = -1; s.focus(); }
+            return;
+        }
+        let err = str(data.error), code = res ? res.status : 0;
+        if (code === 422 && Array.isArray(data.fields)) data.fields.forEach(k => { if (f.elements[k] && typeof k === 'string') f.elements[k].setAttribute('aria-invalid', 'true'); });
+        if (code === 409) { MEET_SYNC = 0; setTimeout(meetSync, 0); }
+        meetSay(f, id, (!res ? 'Не вдалось надіслати — перевірте інтернет і спробуйте ще раз.' :
+            code === 409 ? (err === 'full' ? 'На жаль, місць уже нема.' : err === 'closed' ? 'Реєстрацію вже закрито.' : 'Реєстрація на цю зустріч недоступна.') :
+            code === 422 ? 'Перевірте дані у формі.' : code === 429 ? 'Забагато спроб — спробуйте за хвилину.' : 'Щось пішло не так на сервері. Спробуйте трохи пізніше.') +
+            (MEET.telegram && code !== 409 ? ' Або запишіться через Telegram.' : ''), true);
+    };
+    // Місця ({api}/state) і статуси моїх реєстрацій ({api}/reg/ТОКЕН) — коли відкрито «Зустрічі»; поки чекаємо оплату — частіше
+    function meetSync() {
+        if (!MEET || !MEET.api || TAB !== 'meet' || Date.now() - MEET_SYNC < 30000) return;
+        MEET_SYNC = Date.now();
+        let regs = meetRegs(), get = u => fetch(u, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+        let jobs = [get(MEET.api + '/state').then(d => {
+            if (!d || !isObj(d.items)) return;
+            let out = {};
+            Object.keys(d.items).forEach(k => { let x = d.items[k]; if (!isObj(x)) return;
+                out[k] = { left: Number.isInteger(x.left) && x.left >= 0 ? x.left : null, open: x.open !== false }; });
+            MEET_STATE = out;
+        })];
+        Object.keys(regs).forEach(id => { let r = regs[id];
+            if (['confirmed', 'booked', 'payment'].includes(r.status)) jobs.push(get(MEET.api + '/reg/' + encodeURIComponent(r.token)).then(d => {
+                if (isObj(d) && REG_ST.includes(d.status)) { r.status = d.status; if (okPay(d.pay_url)) r.pay = okPay(d.pay_url); }
+            })); });
+        Promise.all(jobs).then(() => {
+            Object.keys(regs).forEach(id => meetRegSave(id, regs[id]));
+            render();
+            if (Object.values(regs).some(r => r.status === 'payment') && MEET_POLL++ < 12) setTimeout(() => { MEET_SYNC = 0; meetSync(); }, 5000);
+        });
     }
     function meetingsHtml(today) {
         let { next, past } = meetSplit(today);
@@ -1706,7 +1887,7 @@
                 : '<p class="cal-soon">Нових зустрічей поки не заплановано. Коли буде — зʼявиться тут і вгорі сторінки.</p>');
         if (past.length) html += `<h3 class="fl-year mt-old-h">Минулі<span class="fl-yc">${past.length} ${plural(past.length, 'зустріч', 'зустрічі', 'зустрічей')}</span></h3>` +
             '<ul class="mt-old">' + past.map(m => `<li id="z-${esc(m.id)}"><span class="mt-old-d">${fmtDay(m.date, true)}</span>` +
-                `<span class="mt-old-t">${esc([m.city, m.title].filter(Boolean).join(' — '))}${offTag(meetWhy(m))}</span>` +
+                `<span class="mt-old-t">${esc([m.city, m.title].filter(Boolean).join(' — '))}${m.cancelled ? ' (скасовано)' : ''}${offTag(meetWhy(m))}</span>` +
                 (m.video ? `<a href="${esc(m.video)}" target="_blank" rel="noopener">Запис ↗</a>` : '') + '</li>').join('') + '</ul>';
         return html + '</section>';
     }
@@ -1714,7 +1895,7 @@
     const PIN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
     function meetTeaserHtml(today) {
         if (TAB === 'meet') return '';                  // уже на вкладці зустрічей
-        let m = meetSplit(today).next.find(x => x.teaser && !meetWhy(x));
+        let m = meetSplit(today).next.find(x => x.teaser && !x.cancelled && !meetWhy(x));
         if (!m) return '';
         let when = m.date === today ? 'сьогодні' + (m.time ? ' о ' + m.time.start : '') : fmtDay(m.date, m.date.slice(0, 4) !== today.slice(0, 4));
         let tip = [m.title, [m.place, m.city].filter(Boolean).join(', ')].filter(Boolean).join(' — ');
@@ -1730,7 +1911,9 @@
         if (!MEET) return '';
         let { next, past } = meetSplit(today), t = next.find(x => x.teaser && !meetWhy(x)), ok = l => l.filter(m => !meetWhy(m)).length;
         let rows = `<li><b>Зустрічі</b>${MEET_HIDDEN ? ' — <b>сховано від глядачів</b> (meetings.enabled: false);' : ' —'} майбутніх: ${ok(next)}, минулих: ${ok(past)}; ` +
-            (t ? `у шапці — «${esc(t.title)}», ${esc(fmtDay(t.date, true))}` : 'у шапці — нічого') + (meetShown() ? '' : '; вкладки «Зустрічі» нема — додай зустріч у meetings.items') + '</li>';
+            (t ? `у шапці — «${esc(t.title)}», ${esc(fmtDay(t.date, true))}` : 'у шапці — нічого') + (meetShown() ? '' : '; вкладки «Зустрічі» нема — додай зустріч у meetings.items') +
+            `; реєстрація — ${MEET.api ? 'форма на сайті → ' + esc(MEET.api) : MEET.telegram ? 'через Telegram @' + esc(MEET.telegram) : 'нема (meetings.api не задано)'}` +
+            `; платні — ${MEET.payments === 'online' ? 'оплата карткою (monobank)' : 'оплата на місці'}</li>`;
         MEET.items.filter(meetWhy).forEach(m => { rows += `<li><b>Зустріч</b> «${esc(m.title || '—')}»${m.date ? ' (' + esc(fmtDay(m.date, true)) + ')' : ''} — ${esc(meetWhy(m))}</li>`; });
         return rows;
     }

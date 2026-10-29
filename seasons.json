@@ -27,6 +27,9 @@
   },
   "meetings": {
     "enabled": true,
+    "api": "",
+    "telegram": "",
+    "payments": "onsite",
     "items": [
       {
         "enabled": false,
@@ -37,8 +40,8 @@
         "city": "Київ",
         "place": "Назва місця",
         "address": "вулиця, будинок",
-        "url": "",
-        "price": "Вхід вільний",
+        "fee": 300,
+        "capacity": 40,
         "about": "Одне-два речення: про що зустріч і для кого."
       }
     ]

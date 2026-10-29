@@ -1,0 +1,98 @@
+# Зустріч із бота: Гавриїл (або форма Actions → «Зустріч із бота» → Run workflow) додає, змінює, скасовує чи показує
+# офлайн-зустрічі на сайті. Бот робить один запит до GitHub API (workflow_dispatch) з текстом команди —
+# див. tools/gavriil/PROMPT-zustrichi.md. tools/meet.mjs змінює seasons.json → meetings, задача комітить і просить
+# GitHub Pages оновити сайт, а потім (якщо є секрет TG_BOT_TOKEN і chat_id) відписує в Telegram, що вийшло.
+# Реєстрації й оплати сюди не потрапляють — вони живуть лише на сервері бота (персональні дані).
+name: Зустріч із бота
+
+on:
+  workflow_dispatch:
+    inputs:
+      text:
+        description: 'Текст команди, як у боті: /zustrich (поля рядками «дата: 14.11 19:00», «назва: …»), /zustrichi, /skasuvaty …'
+        required: false
+        type: string
+      action:
+        description: 'add, list, cancel, restore, remove, payments, config (порожньо — з команди в тексті)'
+        required: false
+        type: string
+      data:
+        description: 'Поля JSON-обʼєктом (для бота-асистента): {"date": "2026-11-14", "time": "19:00", "title": "…", "fee": 300, …}'
+        required: false
+        type: string
+      chat_id:
+        description: 'Telegram chat_id, куди відписати (заповнює бот)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  meeting:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Усе, що прийшло від бота, — лише через env: ніколи не підставляємо ${{ inputs.* }} прямо в команди
+    env:
+      MEET_TEXT: ${{ inputs.text }}
+      MEET_ACTION: ${{ inputs.action }}
+      MEET_DATA: ${{ inputs.data }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Змінити зустрічі
+        id: meet
+        run: MEET_MESSAGE="$RUNNER_TEMP/meet-message.txt" node tools/meet.mjs
+
+      # Хтось устиг закомітити раніше (архів, збір, інша команда) — беремо свіжу гілку й застосовуємо команду ще раз
+      - name: Закомітити й опублікувати
+        id: commit
+        if: steps.meet.outputs.changed == '1'
+        env:
+          COMMIT_MSG: ${{ steps.meet.outputs.commit }}
+        run: |
+          git config user.name "zustrich-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for i in 1 2 3; do
+            git add seasons.json
+            git diff --cached --quiet && { echo "Без змін."; exit 0; }
+            git commit -q -m "$COMMIT_MSG"
+            if git push -q origin "HEAD:${GITHUB_REF_NAME}"; then echo "pushed=1" >> "$GITHUB_OUTPUT"; exit 0; fi
+            sleep $((i * 5))
+            git fetch -q origin "${GITHUB_REF_NAME}"
+            git reset -q --hard "origin/${GITHUB_REF_NAME}"
+            MEET_MESSAGE="$RUNNER_TEMP/meet-message.txt" GITHUB_OUTPUT=/dev/null node tools/meet.mjs
+          done
+          echo "❌ Зустріч не опубліковано: GitHub тричі відхилив зміни. Спробуй ще раз за хвилину." > "$RUNNER_TEMP/meet-message.txt"
+          exit 1
+
+      # Комміти від GITHUB_TOKEN можуть не запускати збірку Pages — просимо її явно
+      - name: Оновити сайт (GitHub Pages)
+        if: steps.commit.outputs.pushed == '1'
+        continue-on-error: true
+        run: |
+          curl -sS -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pages/builds" > /dev/null
+
+      - name: Відповісти в Telegram
+        if: always()
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          CHAT_ID: ${{ inputs.chat_id }}
+          RESULT: ${{ job.status }}
+        run: |
+          f="$RUNNER_TEMP/meet-message.txt"
+          [ -s "$f" ] && msg=$(cat "$f") || msg=""
+          if [ "$RESULT" != "success" ] && ! printf '%s' "$msg" | grep -q '^❌'; then
+            msg="❌ Зустріч не опубліковано: щось пішло не так. Подробиці — GitHub → Actions → «Зустріч із бота»."
+          fi
+          [ -n "$msg" ] && echo "$msg" >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "$TG_BOT_TOKEN" ] || [ -z "$CHAT_ID" ]; then exit 0; fi
+          curl -sS --max-time 15 "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${CHAT_ID}" --data-urlencode "text=${msg}" \
+            --data-urlencode "disable_web_page_preview=true" > /dev/null || true

@@ -106,6 +106,24 @@ function zbirRepo(seasons) {
   };
   return { dir, run, cfgText };
 }
+// Зустріч із бота: tools/meet.mjs у тимчасовій копії репозиторію («сьогодні» — 5.11.2026)
+function meetRepo(seasons) {
+  const os = require('os'), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'meet-'));
+  fs.mkdirSync(path.join(dir, 'tools'));
+  fs.copyFileSync(path.join(ROOT, 'tools', 'meet.mjs'), path.join(dir, 'tools', 'meet.mjs'));
+  fs.writeFileSync(path.join(dir, 'seasons.json'), typeof seasons === 'string' ? seasons : JSON.stringify(seasons, null, 2));
+  const cfgText = () => fs.readFileSync(path.join(dir, 'seasons.json'), 'utf8');
+  const run = (text, extra = {}) => {
+    const msgF = path.join(dir, 'msg.txt'), outF = path.join(dir, 'gh.txt');
+    [msgF, outF].forEach(f => fs.rmSync(f, { force: true }));
+    const p = require('child_process').spawnSync('node', [path.join(dir, 'tools/meet.mjs')], { encoding: 'utf8', env: Object.assign({}, process.env,
+      { MEET_TODAY: '2026-11-05', MEET_TEXT: text, MEET_ACTION: '', MEET_DATA: '', MEET_MESSAGE: msgF, GITHUB_OUTPUT: outF }, extra) });
+    const read = f => fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : '';
+    let cfg = null; try { cfg = JSON.parse(cfgText()); } catch (e) {}
+    return { code: p.status, msg: read(msgF), gh: read(outF), text: cfgText(), cfg, items: cfg && cfg.meetings ? cfg.meetings.items : [] };
+  };
+  return { dir, run, cfgText };
+}
 const REAL_CFG = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'seasons.json'), 'utf8'));
 // Справжній seasons.json, але календар показано (у репо він зараз схований про запас — calendar.enabled: false)
 const REAL_ON = () => { const c = REAL_CFG(); c.calendar.enabled = true; return c; };
@@ -127,6 +145,35 @@ const MEETS = (items, o = {}) => Object.assign(DUAL(), { meetings: Object.assign
 const MEET_ALL = () => [M1(), { id: 'lviv', date: '2026-12-02', title: 'Стоїки, кава і ми', city: 'Львів', place: 'Кавʼярня на Ринку' }, M_OLD(),
   { enabled: false, date: '2026-11-10', title: 'Чернетка', city: 'Одеса' }, { title: 'Без дати', city: 'Дніпро', url: 'javascript:alert(1)' },
   { date: '2026-11-20', time: '25:99', title: '<img src=x onerror=alert(1)>', city: 'Харків"><b>' }];
+// Підставний сервер Гавриїла (реєстрація на зустрічі): /state, /register, /reg/ТОКЕН — як у tools/gavriil/PROMPT-zustrichi.md
+const MAPI = 'https://api.test/zustrichi';
+const MF = (o = {}) => Object.assign({ id: 'kyiv-free', date: '2026-11-14', time: '19:00', title: 'Про звички й волю', city: 'Київ', place: 'Книгарня «Є»', capacity: 40 }, o);
+const MREG = (items, o = {}) => MEETS(items, Object.assign({ api: MAPI, telegram: 'GavriilBot' }, o));
+function gavriil(o = {}) {
+  const log = [], H = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
+  const pick = (v, ...a) => typeof v === 'function' ? v(...a) : v;
+  const handler = async route => {
+    const q = route.request(), p = new URL(q.url()).pathname.replace(/^\/zustrichi/, '');
+    if (q.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: Object.assign({ 'Access-Control-Allow-Headers': 'Content-Type' }, H) });
+    if (p === '/state') { if (o.stateDelay) await new Promise(r => setTimeout(r, o.stateDelay)); return route.fulfill({ headers: H, body: JSON.stringify({ items: pick(o.state, log) || {} }) }); }
+    if (p === '/register') {
+      if (o.down) return route.abort();
+      log.push({ ct: q.headers()['content-type'], body: JSON.parse(q.postData() || '{}') });
+      const r = pick(o.register, log[log.length - 1].body) || { body: { ok: true, token: 'tok-' + log.length, status: 'confirmed' } };
+      return route.fulfill({ status: r.status || 200, headers: H, body: JSON.stringify(r.body) });
+    }
+    const m = p.match(/^\/reg\/(.+)$/);
+    if (m) { const r = pick(o.reg, decodeURIComponent(m[1])); return route.fulfill({ status: r ? 200 : 404, headers: H, body: JSON.stringify(r || {}) }); }
+    return route.fulfill({ status: 404, headers: H, body: '{}' });
+  };
+  return { log, routes: [[/api\.test\/zustrichi/, handler], [/pay\.mbnk\.biz/, r => r.fulfill({ contentType: 'text/html', body: '<title>monobank</title>оплата' })]] };
+}
+const fillReg = async (page, id, v = {}) => {
+  const f = `#zf-${id}`;
+  for (const [k, val] of Object.entries(Object.assign({ name: 'Олена', phone: '+38 (067) 123-45-67' }, v)))
+    if (k === 'count') await page.selectOption(`${f} [name=count]`, String(val)); else await page.fill(`${f} [name=${k}]`, val);
+};
+let MR01_G, MR02_G, MR04_G;   // журнали підставного Гавриїла для MR-тестів
 const icsOf = async (page, sel) => decodeURIComponent((await page.getAttribute(sel, 'href')).replace(/^data:text\/calendar;charset=utf-8,/, ''));
 const DUAL_API = { UU1: [vid('v20', 'Влог 20', '2026-10-20T12:00:00Z'), vid('v24', 'Влог 24', '2026-10-24T12:00:00Z'),
   vidT('lec0000001', 'Чому ми відкладаємо', '2026-10-27T12:00:00Z'), vidT('lec0000002', 'Як працює звичка', '2026-10-29T12:00:00Z'),
@@ -198,6 +245,7 @@ async function scenario(browser, o) {
   page.on('pageerror', e => errs.push(e.message));
   page.on('console', m => { if (m.type() === 'warning') warns.push(m.text()); });
   if (o.initScript) await page.addInitScript(o.initScript);
+  for (const [pat, h] of o.routes || []) await ctx.route(pat, h);         // свої підставні сервери (напр. Гавриїл для зустрічей)
   await page.addInitScript(() => { window.openApp = u => { window.__opened = u; }; });   // перехоплюємо відкриття застосунку
   await ctx.route(/googleapis\.com/, async r => {
     // Тривалість фільмів (videos.list): o.durs = {id: секунди}; окремий облік запитів — durCalls (id через кому)
@@ -1287,6 +1335,186 @@ const CASES = [
       }
       if (bad.length) console.log('    ширші за екран:', bad.slice(0, 6).join(' | '));
       return bad.length === 0 && await noHScroll(r) && r.errs.length === 0;
+    }],
+  ['MR01 безкоштовна зустріч: «Записатися» → форма (фокус на імені); порожня — підказка; надіслано JSON без preflight; «✓ Ви записані · 2 місця»; після перезавантаження — те саме; місця з сервера', {
+      path: '#zustrichi', now: '2026-11-05T12:00:00+02:00', seasons: MREG([MF()]), api: DUAL_API, lect: LJ,
+      routes: (G => (MR01_G = G).routes)(gavriil({ state: { 'kyiv-free': { left: 12, open: true } }, reg: t => t === 'tok-1' ? { status: 'confirmed', meeting: 'kyiv-free', count: 2 } : null })) },
+    async r => {
+      const G = MR01_G, meta = await r.page.innerText('#z-kyiv-free .mt-meta');
+      const b = r.page.locator('#z-kyiv-free .mt-acts button.mt-btn.go'), label = await b.innerText();
+      await b.click(); await r.page.waitForTimeout(100);
+      const focus = await r.page.evaluate(() => document.activeElement.name), exp = await r.page.getAttribute('#z-kyiv-free .mt-acts button', 'aria-expanded');
+      await r.page.click('#zf-kyiv-free button[type=submit]'); await r.page.waitForTimeout(100);
+      const empty = (await r.page.innerText('#zf-kyiv-free .mt-msg')).includes('Напишіть, як вас звати') && await r.page.getAttribute('#zf-kyiv-free [name=name]', 'aria-invalid') === 'true' && G.log.length === 0;
+      await fillReg(r.page, 'kyiv-free', { telegram: '@olena_k', count: 2, comment: 'Буду з подругою' });
+      const sum = await r.page.innerText('#zf-kyiv-free .mt-sum');
+      await r.page.click('#zf-kyiv-free button[type=submit]'); await r.page.waitForTimeout(300);
+      const sent = G.log[0] || {}, st = await r.page.innerText('#z-kyiv-free .mt-regst');
+      await r.page.reload(); await r.page.waitForTimeout(900);
+      const again = (await r.page.innerText('#z-kyiv-free .mt-regst')).includes('Ви записані · 2 місця');
+      return meta.includes('Безкоштовно') && meta.includes('Вільних місць: 12 із 40') && label === 'Записатися' && focus === 'name' && exp === 'true' && empty && sum === 'Безкоштовно.'
+        && /^text\/plain/.test(sent.ct) && JSON.stringify(sent.body) === JSON.stringify({ meeting: 'kyiv-free', name: 'Олена', phone: '+380671234567', telegram: 'olena_k', count: 2, comment: 'Буду з подругою', website: '' })
+        && st.includes('✓ Ви записані · 2 місця. До зустрічі!') && again && await r.page.locator('#zf-kyiv-free').count() === 0 && r.errs.length === 0;
+    }],
+  ['MR02 платна, оплата карткою: «Купити квиток · 300 ₴», сума за кількість; сервер дав посилання monobank — переходимо на оплату; повернення — «✓ Оплачено»; чуже посилання на оплату — ні', {
+      path: '#zustrichi', now: '2026-11-05T12:00:00+02:00', seasons: MREG([MF({ id: 'paid', fee: 300 }), MF({ id: 'evil', date: '2026-11-20', fee: 300 })], { payments: 'online' }), api: DUAL_API, lect: LJ,
+      routes: (G => (MR02_G = G).routes)(gavriil({ register: b => ({ body: { ok: true, token: 'tok-' + b.meeting, status: 'payment', pay_url: b.meeting === 'paid' ? 'https://pay.mbnk.biz/inv123' : 'https://evil.example/pay' } }),
+        reg: t => ({ status: t === 'tok-paid' ? 'paid' : 'payment', count: 3 }) })) },
+    async r => {
+      const label = await r.page.innerText('#z-paid .mt-acts button.mt-btn.go');
+      await r.page.click('#z-paid .mt-acts button.mt-btn.go'); await fillReg(r.page, 'paid', { count: 3 });
+      const sum = await r.page.innerText('#zf-paid .mt-sum'), go = await r.page.innerText('#zf-paid button[type=submit]');
+      await Promise.all([r.page.waitForURL(/pay\.mbnk\.biz\/inv123/), r.page.click('#zf-paid button[type=submit]')]);
+      await r.page.goto('http://localhost:8766/#z-paid'); await r.page.waitForTimeout(900);
+      const paid = (await r.page.innerText('#z-paid .mt-regst')).includes('✓ Оплачено · 3 місця');
+      await r.page.click('#z-evil .mt-acts button.mt-btn.go'); await fillReg(r.page, 'evil'); await r.page.click('#zf-evil button[type=submit]'); await r.page.waitForTimeout(400);
+      const evil = r.page.url().startsWith('http://localhost:8766/') && await r.page.locator('#z-evil a[href*="evil.example"]').count() === 0
+        && (await r.page.innerText('#z-evil .mt-regst')).includes('Чекаємо оплату');
+      return label === 'Купити квиток · 300 ₴' && sum === 'До оплати карткою (monobank): 900 ₴ (3 × 300 ₴).' && go === 'Перейти до оплати' && paid && evil && r.errs.length === 0;
+    }],
+  ['MR03 платна, поки без ФОП (оплата на місці): «Забронювати місце», «Оплата на місці: 300 ₴»; «✓ Місце заброньовано»; примітка сервера — як текст, не HTML', {
+      path: '#zustrichi', now: '2026-11-05T12:00:00+02:00', seasons: MREG([MF({ fee: 300 })]), api: DUAL_API, lect: LJ,
+      routes: gavriil({ register: { body: { ok: true, token: 'b1', status: 'booked', note: '<b>Готівкою або карткою</b> на вході' } } }).routes },
+    async r => {
+      const label = await r.page.innerText('#z-kyiv-free .mt-acts button.mt-btn.go');
+      await r.page.click('#z-kyiv-free .mt-acts button.mt-btn.go'); await fillReg(r.page, 'kyiv-free');
+      const sum = await r.page.innerText('#zf-kyiv-free .mt-sum');
+      await r.page.click('#zf-kyiv-free button[type=submit]'); await r.page.waitForTimeout(300);
+      const st = await r.page.innerText('#z-kyiv-free .mt-regst'), note = await r.page.innerText('#z-kyiv-free .mt-note');
+      return label === 'Забронювати місце' && sum === 'Оплата на місці: 300 ₴.' && st.includes('✓ Місце заброньовано. Оплата — на місці: 300 ₴.')
+        && note.includes('<b>Готівкою') && await r.page.locator('#z-kyiv-free b').count() === 0 && r.errs.length === 0;
+    }],
+  ['MR04 помилки: нема місць (409) — «місць уже нема», кнопка стає «Місць нема»; 422 — поле підсвічено; 429; сервер недоступний — «перевірте інтернет» і Telegram; кривий телефон — не надсилаємо', {
+      path: '#zustrichi', now: '2026-11-05T12:00:00+02:00', seasons: MREG([MF(), MF({ id: 'b', date: '2026-11-21' }), MF({ id: 'c', date: '2026-11-22' })]), api: DUAL_API, lect: LJ,
+      routes: (G => (MR04_G = G).routes)(gavriil({ state: log => log.length ? { 'kyiv-free': { left: 0, open: true } } : {},
+        register: b => b.meeting === 'kyiv-free' ? { status: 409, body: { ok: false, error: 'full' } } : b.meeting === 'b' ? { status: 422, body: { ok: false, error: 'invalid', fields: ['telegram'] } } : { status: 429, body: { ok: false } } })) },
+    async r => {
+      const send = async id => { await r.page.click(`#z-${id} .mt-acts button.mt-btn.go`); await fillReg(r.page, id); await r.page.click(`#zf-${id} button[type=submit]`); await r.page.waitForTimeout(400); };
+      await r.page.click('#z-c .mt-acts button.mt-btn.go'); await fillReg(r.page, 'c', { phone: '12345' }); await r.page.click('#zf-c button[type=submit]'); await r.page.waitForTimeout(100);
+      const phone = (await r.page.innerText('#zf-c .mt-msg')).includes('Перевірте телефон') && MR04_G.log.length === 0;
+      const fold = await r.page.innerText('#z-c .mt-acts button[aria-controls]');   // відкрита форма: верхня кнопка — «Згорнути», не друга «Записатися»
+      await r.page.click('#z-c .mt-acts button[aria-controls]'); await r.page.waitForTimeout(100);
+      const folded = await r.page.locator('#zf-c').count() === 0;
+      await send('kyiv-free');
+      const full = (await r.page.innerText('#z-kyiv-free')).includes('Місць нема') && await r.page.locator('#z-kyiv-free .mt-btn.go.off').count() === 1;
+      await send('b');
+      const inv = (await r.page.innerText('#zf-b .mt-msg')).includes('Перевірте дані') && await r.page.getAttribute('#zf-b [name=telegram]', 'aria-invalid') === 'true';
+      await send('c');
+      const many = (await r.page.innerText('#zf-c .mt-msg')).includes('Забагато спроб');
+      const { r: r2, ctx } = await scenario(r.browser, { path: '#zustrichi', now: '2026-11-05T12:00:00+02:00', seasons: MREG([MF()]), api: DUAL_API, lect: LJ, routes: gavriil({ down: true }).routes });
+      await r2.page.click('#z-kyiv-free .mt-acts button.mt-btn.go'); await fillReg(r2.page, 'kyiv-free'); await r2.page.click('#zf-kyiv-free button[type=submit]'); await r2.page.waitForTimeout(400);
+      const down = (await r2.page.innerText('#zf-kyiv-free .mt-msg')).includes('перевірте інтернет') && (await r2.page.innerText('#zf-kyiv-free .mt-msg')).includes('через Telegram')
+        && await r2.page.getAttribute('#zf-kyiv-free .mt-tg', 'href') === 'https://t.me/GavriilBot?start=z_kyiv-free'; await ctx.close();
+      return fold === 'Згорнути' && folded && phone && full && inv && many && down && r.errs.length === 0;
+    }],
+  ['MR05 введене у формі не губиться, коли сторінка перемальовується (відповідь сервера про місця прийшла пізніше)', {
+      path: '#zustrichi', now: '2026-11-05T12:00:00+02:00', seasons: MREG([MF()]), api: DUAL_API, lect: LJ,
+      routes: gavriil({ stateDelay: 700, state: { 'kyiv-free': { left: 7, open: true } } }).routes },
+    async r => {
+      await r.page.click('#z-kyiv-free .mt-acts button.mt-btn.go'); await r.page.fill('#zf-kyiv-free [name=name]', 'Петро'); await r.page.focus('#zf-kyiv-free [name=phone]');
+      await r.page.keyboard.type('+38067');
+      await r.page.waitForTimeout(900);
+      const meta = await r.page.innerText('#z-kyiv-free .mt-meta'), name = await r.page.inputValue('#zf-kyiv-free [name=name]');
+      await r.page.keyboard.type('1234567');
+      return meta.includes('Вільних місць: 7') && name === 'Петро' && await r.page.inputValue('#zf-kyiv-free [name=phone]') === '+380671234567' && r.errs.length === 0;
+    }],
+  ['MR06 скасована — «Скасовано», без кнопок і календаря, у шапці — наступна; без реєстрації — «просто приходьте»; лише Telegram — «Записатися в Telegram ↗»', {
+      now: '2026-11-05T12:00:00+02:00', api: DUAL_API, lect: LJ,
+      seasons: MEETS([MF({ id: 'gone', cancelled: true }), MF({ id: 'open', date: '2026-11-20', register: false }), MF({ id: 'tg', date: '2026-11-25' })], { telegram: '@GavriilBot' }) },
+    async r => {
+      const teaser = await r.page.getAttribute('#sup .meet-link', 'href');
+      await r.page.click('#sup .meet-link'); await r.page.waitForTimeout(150);
+      const gone = await r.page.$eval('#z-gone', c => ({ t: c.innerText, btn: c.querySelectorAll('.mt-btn').length }));
+      const open = await r.page.$eval('#z-open', c => ({ t: c.innerText, btn: [...c.querySelectorAll('.mt-btn')].map(b => b.textContent) }));
+      const tg = await r.page.getAttribute('#z-tg .mt-btn.go', 'href');
+      return teaser === '#z-open' && gone.t.includes('СКАСОВАНО') && gone.t.includes('Зустріч скасовано.') && gone.btn === 0
+        && open.t.includes('Без реєстрації — просто приходьте.') && open.btn.join() === 'Додати в календар' && tg === 'https://t.me/GavriilBot?start=z_tg' && r.errs.length === 0;
+    }],
+  ['MR07 телефон 360: форма в одну колонку, поля 16 px (iOS не збільшує), не ширша за екран; запис дотиком', {
+      path: '#zustrichi', ua: UA_ANDROID, mobile: true, viewport: { width: 360, height: 760 }, now: '2026-11-05T12:00:00+02:00', seasons: MREG([MF({ fee: 300 })]), api: DUAL_API, lect: LJ,
+      routes: gavriil({ register: { body: { ok: true, token: 'p1', status: 'booked' } } }).routes, shot: 'MR07-phone-form' },
+    async r => {
+      await r.page.tap('#z-kyiv-free .mt-acts button.mt-btn.go'); await r.page.waitForTimeout(150);
+      const lay = await r.page.$eval('#zf-kyiv-free', f => ({ cols: getComputedStyle(f).gridTemplateColumns.split(' ').length, fs: getComputedStyle(f.querySelector('input')).fontSize,
+        right: Math.max(...[...f.querySelectorAll('input,select,textarea,button')].map(e => e.getBoundingClientRect().right)) }));
+      const ok = lay.cols === 1 && lay.fs === '16px' && lay.right <= 360 && await noHScroll(r);
+      await fillReg(r.page, 'kyiv-free'); await r.page.tap('#zf-kyiv-free button[type=submit]'); await r.page.waitForTimeout(300);
+      return ok && (await r.page.innerText('#z-kyiv-free .mt-regst')).includes('Місце заброньовано') && r.errs.length === 0;
+    }],
+  ['MR08 ?check: куди йде реєстрація і як платять; кривий api (http), імʼя бота й ціна — пояснення', {
+      path: '?check', now: '2026-11-05T12:00:00+02:00', api: DUAL_API, lect: LJ,
+      seasons: MEETS([MF({ fee: 'дорого', capacity: 'багато' })], { api: 'http://evil.example/z', telegram: 'Gav riil', payments: 'crypto' }) },
+    async r => has(r, 'meetings.api: потрібна адреса https://') && has(r, 'meetings.telegram: «Gav riil»') && has(r, 'meetings.payments: «crypto»')
+      && has(r, 'не розумію суму «дорого»') && has(r, 'capacity «багато»') && has(r, 'реєстрація — нема (meetings.api не задано); платні — оплата на місці') && r.errs.length === 0],
+  ['ZM01 /zustrich (поля «ключ: значення»): нова зустріч — дата й час разом, ціна, місця; якір kyiv-1411; приклад прибрано; коміт і відповідь із посиланням', {},
+    async () => {
+      const z = meetRepo(REAL_CFG()), a = z.run('/zustrich@GavriilBot\nдата: 14.11 19:00–21:00\nназва: Про звички й волю\nмісто: Київ\nмісце: Книгарня «Є»\nадреса: вул. Лисенка, 3\nціна: 300 грн\nмісць: 40\nопис: Розмова наживо.');
+      const m = a.items.find(x => x.id === 'kyiv-1411') || {};
+      return a.code === 0 && /^✅ Зустріч додано/.test(a.msg) && a.msg.includes('https://taras.kyiv.ua/#z-kyiv-1411') && a.msg.includes('300 ₴, 40 місць')
+        && m.date === '2026-11-14' && m.time === '19:00–21:00' && m.fee === 300 && m.capacity === 40 && m.place === 'Книгарня «Є»' && m.about === 'Розмова наживо.'
+        && !a.items.some(x => x.id === 'pryklad') && /changed=1/.test(a.gh) && a.gh.includes('commit=зустріч: додано «Про звички й волю»') && a.cfg.calendar && a.cfg.support;
+    }],
+  ['ZM02 зміни: за датою й містом і за id; «безкоштовно», новий час, «-» прибирає поле; реєстрація «ні» / своя форма; запис — ID YouTube; «у шапці: ні»', {},
+    async () => {
+      const z = meetRepo(REAL_CFG());
+      z.run('/zustrich\nдата: 14.11 19:00\nназва: Про звички\nмісто: Київ\nціна: 300\nадреса: вул. Лисенка, 3');
+      const a = z.run('/zustrich\nдата: 14 листопада о 18:30\nмісто: київ\nціна: безкоштовно\nадреса: -\nреєстрація: ні\nу шапці: ні');
+      const m1 = Object.assign({}, a.items.find(x => x.id === 'kyiv-1411'));
+      const b = z.run('/zustrich\nid: kyiv-1411\nреєстрація: https://forms.gle/abc\nзапис: alXg_sVZAQM\nмапа: https://maps.app.goo.gl/x');
+      const m2 = b.items.find(x => x.id === 'kyiv-1411');
+      return /^✅ Зустріч оновлено/.test(a.msg) && a.items.length === 1 && m1.time === '18:30' && !('fee' in m1) && !('address' in m1) && m1.register === false && m1.teaser === false && m1.title === 'Про звички'
+        && m2.url === 'https://forms.gle/abc' && !('register' in m2) && m2.video === 'https://www.youtube.com/watch?v=alXg_sVZAQM' && m2.map === 'https://maps.app.goo.gl/x';
+    }],
+  ['ZM03 помилки — ❌ і файл не змінено: нема дати, минула дата, кривий час, ціна, місця, javascript: у посиланні, невідома дія; битий seasons.json не чіпаємо', {},
+    async () => {
+      const z = meetRepo(REAL_CFG()), before = z.cfgText();
+      const runs = [z.run('/zustrich\nназва: Без дати'), z.run('/zustrich\nдата: 2026-11-01\nназва: Минула'), z.run('/zustrich\nдата: 14.11 25:99\nназва: X'),
+        z.run('/zustrich\nдата: 14.11\nназва: X\nціна: дорого'), z.run('/zustrich\nдата: 14.11\nназва: X\nмісць: багато'),
+        z.run('/zustrich\nдата: 14.11\nназва: X\nреєстрація: javascript:alert(1)'), z.run('', { MEET_ACTION: 'знищити все' }), z.run('/zustrich\nдата: 14.11')];
+      const broken = meetRepo('{"meetings": {"items": [}'), c = broken.run('/zustrich\nдата: 14.11\nназва: X');
+      return runs.every(r => r.code === 1 && /^❌/.test(r.msg) && /changed=0/.test(r.gh)) && z.cfgText() === before
+        && runs[1].msg.includes('уже минуло') && runs[3].msg.includes('ціну «дорого»') && runs[6].msg.includes('Не знаю дії') && runs[7].msg.includes('Нема назви')
+        && c.code === 1 && c.msg.includes('зіпсований') && broken.cfgText() === '{"meetings": {"items": [}';
+    }],
+  ['ZM04 /zustrichi — список і як платять; /skasuvaty (кілька — перепитує; за датою), /vidnovyty, /vydalyty', {},
+    async () => {
+      const z = meetRepo(REAL_CFG());
+      z.run('/zustrich\nдата: 14.11 19:00\nназва: Про звички\nмісто: Київ\nціна: 300'); z.run('/zustrich\nдата: 6.12\nназва: Стоїки\nмісто: Львів');
+      const list = z.run('/zustrichi'), two = z.run('/skasuvaty'), c = z.run('/skasuvaty 14.11');
+      const cancelled = z.run('/zustrichi'), r = z.run('/vidnovyty kyiv-1411'), d = z.run('/vydalyty Стоїки'), none = z.run('/skasuvaty Одеса');
+      return list.msg.includes('Зустрічі на сайті (2)') && list.msg.includes('платні — оплата на місці') && two.code === 1 && two.msg.includes('уточни')
+        && c.code === 0 && c.items.find(x => x.id === 'kyiv-1411').cancelled === true && cancelled.msg.includes('СКАСОВАНО')
+        && r.code === 0 && !('cancelled' in r.items.find(x => x.id === 'kyiv-1411')) && d.code === 0 && !d.items.some(x => x.title === 'Стоїки')
+        && none.code === 1 && none.msg.includes('Не знайшов');
+    }],
+  ['ZM05 /oplata online|onsite; налаштування (api, telegram) з перевіркою; поля JSON від бота-асистента (MEET_DATA); кривий JSON — ❌', {},
+    async () => {
+      const z = meetRepo(REAL_CFG());
+      const a = z.run('/oplata online'), b = z.run('/oplata криптою'), c = z.run('/zustrichi_nalashtuvannia\napi: https://api.taras.kyiv.ua/zustrichi/\ntelegram: @GavriilBot');
+      const d = z.run('/zustrichi_nalashtuvannia\napi: http://evil.example'), e = z.run('', { MEET_ACTION: 'add', MEET_DATA: JSON.stringify({ date: '2026-11-20', time: '18:00', title: 'Через асистента', city: 'Одеса', fee: 250, capacity: 30 }) });
+      const f = z.run('', { MEET_ACTION: 'add', MEET_DATA: '{"date": ' });
+      const m = e.items.find(x => x.title === 'Через асистента') || {};
+      return a.code === 0 && a.msg.includes('без api онлайн-оплати') && b.code === 1 && c.code === 0 && c.cfg.meetings.api === 'https://api.taras.kyiv.ua/zustrichi' && c.cfg.meetings.telegram === 'GavriilBot'
+        && c.cfg.meetings.payments === 'online' && d.code === 1 && d.cfg.meetings.api === 'https://api.taras.kyiv.ua/zustrichi'
+        && e.code === 0 && m.id === 'odesa-2011' && m.fee === 250 && m.capacity === 30 && m.time === '18:00' && e.msg.includes('Оплата — карткою через monobank') && f.code === 1 && /^❌/.test(f.msg);
+    }],
+  ['ZM06 те, що записав бот, сайт показує: квиток, ціна, місця, у шапці — рядок; ?check без помилок', { path: '?check', now: '2026-11-05T12:00:00+02:00', api: REAL_API, lect: LJ,
+      seasons: () => meetRepo(REAL_CFG()).run('/zustrich\nдата: 14.11 19:00–21:00\nназва: Про звички й волю\nмісто: Київ\nмісце: Книгарня «Є»\nціна: 300\nмісць: 40').text },
+    async r => {
+      const t = await r.page.getAttribute('#sup .meet-link', 'href');
+      await r.page.click('.tabs .tab:has-text("Зустрічі")'); await r.page.waitForTimeout(150);
+      const meta = await r.page.innerText('#z-kyiv-1411 .mt-meta');
+      return t === '#z-kyiv-1411' && meta.includes('300 ₴') && meta.includes('40 місць') && has(r, 'Помилок не знайдено') && !has(r, 'Приклад: назва зустрічі');
+    }],
+  ['ZM07 workflow «Зустріч із бота»: усе від бота — лише через env, 4 поля; шматки для бота компілюються', {},
+    async () => {
+      const y = fs.readFileSync(path.join(ROOT, '.github/workflows/meeting.yml'), 'utf8');
+      const runs = [...y.matchAll(/^(\s*)run: \|\n((?:\1\s+.*\n|\s*\n)*)|^\s*run: (.*)$/gm)].map(m => m[2] || m[3] || '');
+      const inputs = (y.match(/^ {6}\w+:\n {8}description:/gm) || []).length;
+      const cp = require('child_process');
+      cp.execFileSync('python3', ['-c', 'import ast, sys; ast.parse(open(sys.argv[1], encoding="utf-8").read())', path.join(ROOT, 'tools/gavriil/films_zustrichi.py')]);
+      cp.execFileSync('node', ['--check', path.join(ROOT, 'tools/gavriil/films-zustrichi.mjs')]);
+      return runs.length >= 4 && runs.every(t => !/\$\{\{\s*(inputs|github\.event|steps)\./.test(t)) && inputs === 4 && /MEET_TEXT: \$\{\{ inputs\.text \}\}/.test(y) && /MEET_DATA: \$\{\{ inputs\.data \}\}/.test(y);
     }],
   ['LT01 теми лекцій (tools/lectures): правила тем, весь конвеєр із підставними YouTube та Ollama, наявний Whisper (команда, служба) — python unittest', {},
     async () => { const p = require('child_process').spawnSync('python3', ['-I', '-m', 'unittest', 'discover', '-s', path.join(ROOT, 'tools/lectures'), '-p', 'test_*.py'], { encoding: 'utf8' });
