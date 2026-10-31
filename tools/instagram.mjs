@@ -3,9 +3,10 @@
 // (.github/workflows/archive.yml) раз на годину, якщо в репозиторії є секрет IG_TOKEN. Без токена — нічого не робить.
 //
 // Джерело — Instagram API (Instagram Login): GET graph.instagram.com/me/media — усі дописи професійного акаунта.
-// Беремо відео (media_type VIDEO). Довгі горизонтальні відео мають адресу допису /p/КОД/ (не /reel/).
-// Рілси — НІКОЛИ (рішення власника: на сайті лише довгі горизонтальні відео — окремий формат, конкурент YouTube):
-// відкидаємо media_product_type REELS і адреси /reel/, а також усе вертикальне (кадр вужчий за висоту).
+// Беремо відео (media_type VIDEO): довгі горизонтальні (/p/КОД/) і Рілси (/reel/КОД/, media_product_type REELS,
+// вертикальні) — Рілси з позначкою reel: true. Чи показувати Рілси, вирішує сайт: seasons.json → calendar.reels
+// (власник, 31.10.2026: «додай Рілси — невідомо, коли будуть довгі відео в Instagram»).
+// Ширину й висоту кадру записуємо (w, h) — вертикальний кадр на плитці стіни кадрується вище.
 // Кадр Instagram живе на їхньому CDN лише кілька днів — тому кладемо свою копію (posters/ig/ID.jpg).
 // Дата дня — за київським часом. Пише файл лише тоді, коли щось змінилось. Відео, що зникло з Instagram, —
 // лишається (на те архів), поки його не прибрати з instagram.json руками.
@@ -31,7 +32,7 @@ const API = 'https://graph.instagram.com';
 if (!TOKEN && !fixture) { console.log('Instagram: нема IG_TOKEN — пропускаю (див. README → «Щоденник з Instagram»).'); process.exit(0); }
 
 const kyivDay = iso => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Kyiv', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
-const okUrl = u => typeof u === 'string' && /^https:\/\/www\.instagram\.com\/(?:p|tv)\/[\w-]+\/?/.test(u);   // /reel/ — ні
+const okUrl = u => typeof u === 'string' && /^https:\/\/www\.instagram\.com\/(?:p|tv|reels?)\/[\w-]+\/?/.test(u);
 // ширина й висота з маркера SOF у JPEG (щоб відрізнити горизонтальне відео від вертикального)
 function jpegSize(buf) {
     for (let i = 2; i + 9 < buf.length;) {
@@ -84,34 +85,28 @@ async function poster(m) {
 let changed = [];
 const old = (() => { try { let d = JSON.parse(read(FILE, '')); return d && Array.isArray(d.items) ? d : null; } catch (e) { return null; } })();
 const byId = new Map((old ? old.items : []).filter(it => it && it.id).map(it => [String(it.id), it]));
-const skipped = new Set(old && Array.isArray(old.skipped) ? old.skipped.map(String) : []);   // вертикальні — вже переміряні, не тягнемо щогодини
 
 let media;
 try { media = await allMedia(); }
 catch (e) { console.error('Instagram: ' + e.message); process.exit(1); }
 
 for (const m of media) {
-    if (!m || m.media_type !== 'VIDEO' || m.media_product_type === 'REELS' || !okUrl(m.permalink) || !m.timestamp || isNaN(new Date(m.timestamp))) continue;
-    let id = String(m.id).replace(/[^\w-]/g, ''); if (!id || skipped.has(id)) continue;
+    if (!m || m.media_type !== 'VIDEO' || !okUrl(m.permalink) || !m.timestamp || isNaN(new Date(m.timestamp))) continue;
+    let id = String(m.id).replace(/[^\w-]/g, ''); if (!id) continue;
     let p = await poster(Object.assign({}, m, { id }));
     let size = p.buf ? jpegSize(p.buf) : null;
-    if (size && size.w < size.h) {                                  // вертикальне — не щоденник; кадр не тримаємо
-        if (p.rel) { fs.rmSync(path.join(OUT, p.rel), { force: true }); changed = changed.filter(x => x !== p.rel); }
-        skipped.add(id);
-        continue;
-    }
     let it = { id, url: m.permalink.replace(/[?#].*$/, ''), date: kyivDay(m.timestamp), ts: m.timestamp, caption: String(m.caption || '').slice(0, 2200) };
+    if (m.media_product_type === 'REELS' || /\/reels?\//.test(it.url) || (size && size.w < size.h)) it.reel = true;
     if (p.rel) it.poster = p.rel;
     if (size) { it.w = size.w; it.h = size.h; }
     byId.set(id, Object.assign({}, byId.get(id) || {}, it));
 }
 const items = [...byId.values()].sort((a, b) => a.ts < b.ts ? -1 : 1);
-const skip = [...skipped].sort();
-if (!old || JSON.stringify(old.items) !== JSON.stringify(items) || JSON.stringify(old.skipped || []) !== JSON.stringify(skip)) {
-    fs.writeFileSync(FILE, JSON.stringify({ updated: new Date().toISOString(), items, skipped: skip }, null, 2) + '\n');
+if (!old || JSON.stringify(old.items) !== JSON.stringify(items) || old.skipped) {
+    fs.writeFileSync(FILE, JSON.stringify({ updated: new Date().toISOString(), items }, null, 2) + '\n');
     changed.push('instagram.json');
 }
-console.log(`Instagram: відео у щоденнику ${items.length}; змінено файлів: ${changed.length}`);
+console.log(`Instagram: відео ${items.length} (з них Рілсів ${items.filter(it => it.reel).length}); змінено файлів: ${changed.length}`);
 
 // ── Продовжити токен (60 днів від сьогодні). Новий рядок — у GITHUB_OUTPUT для кроку, що оновлює секрет ──
 if (!fixture && TOKEN) {

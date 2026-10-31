@@ -170,6 +170,7 @@
         .v-lnk{position:relative;flex:1;height:100%;display:block;overflow:hidden;text-decoration:none}
         .v-cont.mult .v-lnk:not(:last-child){border-right:2px solid var(--bg)}
         .v-thumb{width:100%;height:100%;object-fit:cover;display:block}
+        .v-thumb.tall{object-position:50% 28%}   /* Рілс (вертикальний кадр) на плитці — ближче до обличчя, а не до живота */
         .v-lnk::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.4) 0%,transparent 40%,rgba(0,0,0,.9) 100%);pointer-events:none}
         .v-title{position:absolute;bottom:10px;left:10px;right:10px;color:#fff;font-size:11px;font-weight:500;text-shadow:0 1px 2px #000;z-index:10;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         /* Уривок записки на плитці — лише на desktop (наведення); стіна в спокої чиста */
@@ -792,7 +793,7 @@
     const TOP_KEYS = ['films', 'calendar', 'lectures', 'meetings', 'topics', 'ignore_tags', 'seasons', 'support'];
     const CAL_KEYS = ['enabled', 'start', 'playlist', 'exclude'];   // ті самі поля — і в films, і в lectures
     // Лише в calendar: end — YouTube-відео щоденника до цієї дати (далі на YouTube — лекції); instagram — додати щоденник з Instagram
-    const CAL_EXTRA = ['end', 'instagram'];
+    const CAL_EXTRA = ['end', 'instagram', 'reels'];
     const TOPIC_KEYS = ['tag', 'title', 'about', 'aliases'];
     const bareTag = v => str(v).replace(/^#/, '').toLowerCase();
     // Найімовірніша ручна помилка в календарі — вставити канал замість плейлиста.
@@ -828,6 +829,7 @@
             if (o.start && o.end && o.end < o.start) { issue(`seasons.json, ${part}: end (${o.end}) раніше за start (${o.start}) — end ігнорую`); o.end = ''; }
         }
         if (extra.includes('instagram')) o.instagram = c.instagram != null && flag(c.instagram, `seasons.json, ${part}.instagram`);
+        if (extra.includes('reels')) o.reels = c.reels != null && flag(c.reels, `seasons.json, ${part}.reels`);
         if (!o.playlist && !o.instagram) issue(`seasons.json, ${part}: нема playlist — ${what} не знає, звідки брати відео (усі завантаження каналу — ID на UU…)`);
         return [hidden, o];
     }
@@ -1202,7 +1204,7 @@
     // ── Щоденник з Instagram: instagram.json (його пише GitHub Action, tools/instagram.mjs) ──
     // {updated, items:[{id, url, date, ts, caption, poster}]}. Довгі горизонтальні відео мають адресу допису /p/КОД/.
     // Кадр — свій файл posters/ig/ID.jpg (адреси кадрів Instagram живуть лише кілька днів). Кривий запис — пропускаємо.
-    const IG_URL = /^https:\/\/www\.instagram\.com\/(?:p|tv)\/[\w-]+\/?$/;   // рілси (/reel/) на сайті не показуємо — лише довгі відео
+    const IG_URL = /^https:\/\/www\.instagram\.com\/(?:p|tv|reels?)\/[\w-]+\/?$/;   // довгі відео (/p/) і Рілси (/reel/ — лише з calendar.reels)
     const IG_POSTER = /^posters\/ig\/[\w-]+\.jpg$/;
     function normIG(data) {
         let items = data && Array.isArray(data.items) ? data.items : [], out = [], seen = new Set();
@@ -1215,8 +1217,9 @@
             let caption = typeof it.caption === 'string' ? it.caption.slice(0, 2200) : '', pd = parseDesc(caption);
             let first = showTitle(caption.split('\n')[0].trim()).slice(0, 90);
             let poster = typeof it.poster === 'string' && (IG_POSTER.test(it.poster) || okImg(it.poster)) ? it.poster : '';
+            let tall = +it.h > +it.w && +it.w > 0, reel = it.reel === true || /\/reels?\//.test(url) || tall;   // Рілс: позначка, адреса чи вертикальний кадр
             out.push({ key: 'ig' + id, ig: url.replace(/\/?$/, '/'), title: first, y: '', v: '', tags: tagsOf(caption), thumb: poster, srcset: '',
-                imp: pd.important, date, ts: str(it.ts) || date + 'T12:00' });
+                imp: pd.important, date, ts: str(it.ts) || date + 'T12:00', reel, tall });
             metaById['ig' + id] = Object.assign(metaById['ig' + id] || {}, { title: first, time: pd.time, body: pd.body.split('\n').slice(1).join('\n').trim(), important: pd.important });
         });
         return out;
@@ -1226,7 +1229,7 @@
     function mergeIG() {
         if (!CAL) return;
         let yt = (EPS.cal || []).filter(r => !r.ig);
-        EPS.cal = CAL.instagram ? yt.concat(IG.filter(r => !CAL.start || r.date >= CAL.start)) : yt;
+        EPS.cal = CAL.instagram ? yt.concat(IG.filter(r => (!CAL.start || r.date >= CAL.start) && (CAL.reels || !r.reel))) : yt;   // Рілси — лише з calendar.reels
     }
     // ── Теми лекцій: lectures.json (пише сервер із локальною ШІ-моделлю, tools/lectures/) ──
     // {topics:[{id, title, about, videos:[YouTube id]}], videos:{id:{topic, dur}}}. Нема файлу — лекції без тем («Усі лекції»).
@@ -2026,7 +2029,7 @@
                     let body = (metaById[rec.key] || {}).body || '';
                     let hit = TOPIC && recTopics(rec).includes(TOPIC) ? ' hit' : '';
                     return `<a href="${ytHref(rec)}" class="v-lnk${watched.includes(rec.key) ? ' watched' : ''}${hit}" data-k="${esc(rec.key)}" onclick="openVid(event, ${idx}, this)">` +
-                        imgTag(rec, 'v-thumb', sizes) + (body ? `<div class="v-excerpt">${esc(body.slice(0, 160))}</div>` : '') +
+                        imgTag(rec, 'v-thumb' + (rec.tall ? ' tall' : ''), sizes) + (body ? `<div class="v-excerpt">${esc(body.slice(0, 160))}</div>` : '') +
                         `<div class="v-title">${esc(showTitle(rec.title))}</div></a>`;
                 }).join('');
                 // Телефон: дотик по кадру — одразу застосунок YouTube; «⋯» — аркуш дня (записка, картка, гортання)
@@ -2079,9 +2082,12 @@
                 (n ? `, тривалість відома для ${durs}` : '') + (FILMS.exclude.length ? `; без відео з ${esc(FILMS.exclude.join(', '))}` : '') +
                 (FILMS.start ? `; старіші за ${fmtDay(FILMS.start, true)} не беремо` : '') + (FILMS_NOTE ? ` — ${esc(FILMS_NOTE)}` : '') + '</li>';
         }
-        if (CAL && CAL.instagram)
-            rows += `<li><b>Дні</b> з Instagram — ${IG.length ? IG.length + ' ' + plural(IG.length, 'відео', 'відео', 'відео') + ', останнє ' + esc(fmtDay(IG.reduce((m, r) => r.date > m ? r.date : m, ''), true)) : 'поки нема (instagram.json ще не створено — потрібен токен Instagram, див. README)'}` +
-                (CAL.end ? `; YouTube-влоги — до ${esc(fmtDay(CAL.end, true))}` : '') + '</li>';
+        if (CAL && CAL.instagram) {
+            let reels = IG.filter(r => r.reel).length;
+            rows += `<li><b>Дні</b> з Instagram — ${IG.length ? IG.length + ' відео' + (reels ? ` (Рілсів ${reels} — ${CAL.reels ? 'показуємо' : 'сховано: calendar.reels'})` : '') +
+                ', останнє ' + esc(fmtDay(IG.reduce((m, r) => r.date > m ? r.date : m, ''), true)) : 'поки нема (instagram.json ще не створено — потрібен токен Instagram, див. README)'}` +
+                (CAL.start ? `; стіна — з ${esc(fmtDay(CAL.start, true))}` : '') + (CAL.end ? `; YouTube-влоги — до ${esc(fmtDay(CAL.end, true))}` : '') + '</li>';
+        }
         if (LEC) {
             let { all, shelves } = lecShelves(), none = (shelves.find(x => x.id === 'new') || { recs: [] }).recs.length;
             rows += `<li><b>Студії</b> (seasons.json → lectures)${LEC_HIDDEN ? ' — <b>сховано від глядачів</b>;' : ' —'} YouTube${LEC.start ? ' з ' + esc(fmtDay(LEC.start, true)) : ''}: ${all.length} відео; ` +
@@ -2096,7 +2102,7 @@
             let n = (EPS.cal || []).length, h = HIDDEN[CAL.playlist] || 0;
             let first = (EPS.cal || []).reduce((m, r) => !m || r.date < m ? r.date : m, '');
             rows += `<li><b>Календар</b>${CAL_HIDDEN ? ' — <b>сховано від глядачів</b> (calendar.enabled: false), нижче попередній перегляд;' : ' —'} відлік від першого відео${first ? ' (' + fmtDay(first, true) + ')' : ' (його ще нема)'}` +
-                (CAL.start ? `, старіші за ${fmtDay(CAL.start, true)} не беремо` : '') + `; джерело ${esc(CAL.playlist || '—')}: ` +
+                (CAL.start ? `, старіші за ${fmtDay(CAL.start, true)} не беремо` : '') + `; джерело ${CAL.playlist ? esc(CAL.playlist) : CAL.instagram ? 'лише Instagram' : '—'}: ` +
                 `на сайті ${n} відео` + (h ? `, ще ${h} приховано (приватні / заплановані)` : '') +
                 (CAL.exclude.length ? `; без відео з ${esc(CAL.exclude.join(', '))}` : '') + (CAL_NOTE ? ` — ${esc(CAL_NOTE)}` : '') +
                 (CAL.start && today < CAL.start ? ` — ще не почався: до ${esc(fmtDay(CAL.start, true))} головна показує «Скоро тут зʼявиться перша стрічка»` : '') + '</li>';

@@ -43,7 +43,7 @@ function config() {
     start: maybe(pick([day(), '01.09.2026', nasty()]), 0.3), enabled: maybe(pick([true, false, 'ні', 'так', nasty()]), 0.3) };
   if (chance(0.9)) c.calendar = chance(0.1) ? nasty() : { start: pick([day(), '2026-08-01', nasty()]), playlist: pick(['UU1', 'UU1', 'UCabcdefghijklmnopqrstuv', nasty()]),
     exclude: pick([['SH'], 'SH', nasty()]), enabled: maybe(pick([true, false, 'ні', 'так', nasty()]), 0.3),
-    end: maybe(pick([day(), '2026-09-15', nasty()]), 0.4), instagram: maybe(pick([true, 'так', false, nasty()]), 0.6) };
+    end: maybe(pick([day(), '2026-09-15', nasty()]), 0.4), instagram: maybe(pick([true, 'так', false, nasty()]), 0.6), reels: maybe(pick([true, false, 'так', nasty()]), 0.5) };
   if (chance(0.6)) c.lectures = chance(0.1) ? nasty() : { playlist: pick(['UU1', 'UU1', nasty()]), start: maybe(pick([day(), '2026-09-10', nasty()]), 0.6),
     exclude: pick([['SH'], nasty()]), enabled: maybe(pick([true, false, 'ні', nasty()]), 0.2) };
   const meet = () => chance(0.1) ? nasty() : { id: maybe(pick(['kyiv', 'kyiv', nasty()]), 0.6), date: maybe(pick([day(), '2026-11-14', '14.11.2026', '2026-02-30', nasty()]), 0.9),
@@ -121,7 +121,7 @@ async function siteRun(browser, i) {
     body: pick([JSON.stringify({ jars: { AbC123xyz: { raised: pick([41000, -5, 'x', 1e12]), goal: pick([60000, 0, nasty()]) } } }), '{"jars":', JSON.stringify(nasty())]) }));
   const igItem = k => ({ id: pick(['17' + k, nasty(), k]), url: pick([`https://www.instagram.com/p/C${k}x/`, `https://www.instagram.com/reel/R${k}/`, nasty()]),
     date: pick([day(), '2026-02-30', nasty(), undefined]), ts: pick([new Date(Date.UTC(2026, 8, int(1, 29), 18)).toISOString(), nasty()]), caption: pick(['Ранок\nопис #київ', nasty(), 5, undefined]),
-    poster: pick([`posters/ig/17${k}.jpg`, nasty(), 'https://x.example/a.jpg']) });
+    poster: pick([`posters/ig/17${k}.jpg`, nasty(), 'https://x.example/a.jpg']), reel: maybe(pick([true, false, nasty()]), 0.4), w: maybe(pick([1080, 1920, -1, nasty()]), 0.5), h: maybe(pick([1920, 1080, 0, nasty()]), 0.5) });
   await ctx.route(/instagram\.json/, r => r.fulfill({ contentType: 'application/json', body: pick([JSON.stringify({ items: Array.from({ length: int(0, 12) }, (_, k) => igItem(k)) }), '{"items":', JSON.stringify(nasty()), '{"items": 5}']) }));
   await ctx.route(/lectures\.json/, r => r.fulfill({ contentType: 'application/json', body: pick([JSON.stringify({ topics: Array.from({ length: int(0, 4) }, (_, k) => ({ id: pick(['t' + k, nasty()]), title: pick(['Тема ' + k, nasty(), '']),
     about: maybe(nasty()), videos: Array.from({ length: int(0, 4) }, () => pick(['v' + int(0, 20), nasty(), 7])) })), videos: pick([{ v1: { topic: 't0', dur: pick([2400, -5, nasty()]) } }, nasty(), []]) }), '{', JSON.stringify(nasty()), '']) }));

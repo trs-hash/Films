@@ -126,7 +126,8 @@ function meetRepo(seasons) {
 }
 const REAL_CFG = () => JSON.parse(fs.readFileSync(path.join(ROOT, 'seasons.json'), 'utf8'));
 // Справжній seasons.json, але календар показано (у репо він зараз схований про запас — calendar.enabled: false)
-const REAL_ON = () => { const c = REAL_CFG(); c.calendar.enabled = true; return c; };
+// Справжній seasons.json, але стіна днів — із YouTube каналу, без дати старту (як до 2.11.2026) — для тестів самої стіни
+const REAL_ON = () => { const c = REAL_CFG(); c.calendar = { enabled: true, start: '', playlist: 'UURSKTGA5a2hLrai_MXNaoUQ', exclude: ['PLS50DDpfd-9w'] }; return c; };
 // Лише календар, як до фільмотеки (films.enabled: false) — для тестів стіни днів на справжньому конфігу
 const REAL_CAL = () => { const c = REAL_ON(); delete c.films; return c; };   // і схована фільмотека архівувалася б (на будь-який формат)
 // Фільмотека: n — відео (найновіші першими, як віддає список завантажень), SH — Shorts
@@ -621,7 +622,7 @@ const CASES = [
     }],
 
   // --- 📱 PWA
-  ['P09 PWA: маніфест з іконками, сервіс-воркер, офлайн — стіна з кешу', { sw: true, now: '2026-10-05T12:00:00+03:00', api: { 'UURSKTGA5a2hLrai_MXNaoUQ': TAGGED.map((v, i) => Object.assign({}, v, { contentDetails: { videoId: 'g' + (i + 1), videoPublishedAt: `2026-10-0${i + 1}T10:00:00Z` } })), 'PLS50DDpfd-9w': [] }, realFiles: true, serve: { '/seasons.json': JSON.stringify(Object.assign(REAL_ON(), { calendar: Object.assign(REAL_ON().calendar, { start: '2026-10-01' }) })) }, wait: 1000 },
+  ['P09 PWA: маніфест з іконками, сервіс-воркер, офлайн — стіна з кешу', { sw: true, now: '2026-10-05T12:00:00+03:00', seasons: REAL_ON(), api: { 'UURSKTGA5a2hLrai_MXNaoUQ': TAGGED.map((v, i) => Object.assign({}, v, { contentDetails: { videoId: 'g' + (i + 1), videoPublishedAt: `2026-10-0${i + 1}T10:00:00Z` } })), 'PLS50DDpfd-9w': [] }, realFiles: true, serve: { '/seasons.json': JSON.stringify(Object.assign(REAL_ON(), { calendar: Object.assign(REAL_ON().calendar, { start: '2026-10-01' }) })) }, wait: 1000 },
     async r => {
       const man = await r.page.evaluate(async () => { const l = document.querySelector('link[rel=manifest]'); const m = await (await fetch(l.href)).json();
         const icons = await Promise.all(m.icons.map(async i => (await fetch(i.src)).status)); return { name: m.short_name, display: m.display, icons, maskable: m.icons.some(i => i.purpose === 'maskable') }; });
@@ -833,7 +834,7 @@ const CASES = [
       const z = zbirRepo(REAL_CFG()), r = z.run('/zbir https://send.monobank.ua/jar/AbC123xyz'), sp = r.cfg.support, f = sp.fundraisers;
       return r.code === 0 && f.length === 1 && f[0].id === 'dron-dlia-bryhady' && f[0].title === 'Дрон для бригади' && f[0].about === 'Мавік для побратимів.'
         && f[0].goal === 50000 && f[0].raised === 18500.5 && f[0].enabled === true && sp.enabled === true && sp.donate.enabled === false
-        && r.cfg.calendar.playlist === 'UURSKTGA5a2hLrai_MXNaoUQ' && r.msg.startsWith('✅ Збір «Дрон для бригади» додано')
+        && JSON.stringify(r.cfg.calendar) === JSON.stringify(REAL_CFG().calendar) && JSON.stringify(r.cfg.meetings) === JSON.stringify(REAL_CFG().meetings) && r.msg.startsWith('✅ Збір «Дрон для бригади» додано')
         && r.msg.includes('https://taras.kyiv.ua/#f-dron-dlia-bryhady') && r.msg.includes('18 500 ₴ з 50 000 ₴ (37%)')
         && /changed=1/.test(r.gh) && r.gh.includes('commit=збір: додано «Дрон для бригади»');
     }],
@@ -1075,9 +1076,10 @@ const CASES = [
       && await r.page.locator('section.season, .s-plate, .cal-s, #films, .cal-hidden, .poster').count() === 0 && !has(r, 'Сезон') && !has(r, 'Старт')
       && r.apiCalls.includes('UURSKTGA5a2hLrai_MXNaoUQ') && r.durCalls.length === 0 && !has(r, 'Скоро тут буде нове') && r.errs.length === 0
       && await r.page.$$eval('#app *', a => a.every(e => !/Стіна днів/.test(e.textContent) || e.closest('.sr-only') || e.querySelector('.sr-only')))],   // «Стіна днів» — лише для читачів екрана
-  ['E02 ?check на справжньому seasons.json: фільми — у попередньому перегляді з позначкою «сховано», календар — без дати старту, помилок нема', { path: '?check', api: REAL_API },
+  ['E02 ?check на справжньому seasons.json: фільми — у попередньому перегляді з позначкою «сховано»; Дні — з 2 листопада, лише Instagram, Рілси показуємо; помилок нема', { path: '?check', api: REAL_API },
     async r => await r.page.locator('.cal-hidden').count() === 1 && has(r, 'глядачі фільмів не бачать') && await r.page.locator('#films').count() === 1
-      && await r.page.locator('#cal').count() === 1 && has(r, 'відлік від першого відео') && !has(r, 'старіші за') && has(r, 'Помилок не знайдено')],
+      && await r.page.locator('#cal').count() === 1 && has(r, 'старіші за 2 листопада 2026 не беремо; джерело лише Instagram') && has(r, 'ще не почався: до 2 листопада 2026')
+      && has(r, 'Помилок не знайдено')],
   ['E08 сезони календаря: між сезонами — шапка наступного (не завершеного); щотижневий сезон зі своїм плейлистом — окремим блоком під стіною; без хибних «нема плейлиста»', { path: '?check',
       seasons: Object.assign(CAL({ start: '2026-09-01' }), { seasons: [S1({ n: 1, format: 'daily', playlist: '', start: '2026-09-01', end: '2026-09-20' }),
         S1({ n: 2, format: 'daily', playlist: '', start: '2026-10-16', end: '2027-10-15' }), S1({ n: 3, title: 'Окрема тема', playlist: 'PL1', start: '2026-09-20', end: '2026-12-20' })] }),
@@ -1127,7 +1129,7 @@ const CASES = [
       return play === 'https://www.instagram.com/p/DeIG2abc/' && label.includes('Дивитися в Instagram') && !frame
         && await r.page.locator('[data-k="ig17900000001"].watched').count() === 1;
     }],
-  ['IG04 інструмент tools/instagram.mjs: лише довгі горизонтальні відео; рілси й вертикальні — ні (їхні кадри не тримаємо); київська дата; без токена — нічого', {},
+  ['IG04 інструмент tools/instagram.mjs: довгі відео й Рілси (reel: true — за типом, адресою /reel/ чи вертикальним кадром), розміри кадру; фото — ні; київська дата; без токена — нічого', {},
     async () => {
       const os = require('os'), cp = require('child_process'), dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ig-')), out = path.join(dir, 'out');
       fs.mkdirSync(out);
@@ -1138,13 +1140,14 @@ const CASES = [
         { id: '3', media_type: 'VIDEO', permalink: 'https://www.instagram.com/reel/Reel3/', timestamp: '2026-10-27T11:00:00+0000' },
         { id: '4', media_type: 'VIDEO', permalink: 'https://www.instagram.com/p/Vert4/', timestamp: '2026-10-27T12:00:00+0000' },
         { id: '5', media_type: 'IMAGE', permalink: 'https://www.instagram.com/p/Img5/', timestamp: '2026-10-27T13:00:00+0000' }],
-        posters: { 1: jpg(1920, 1080), 2: jpg(1920, 1080), 3: jpg(1920, 1080), 4: jpg(1080, 1920) } }));
+        posters: { 1: jpg(1920, 1080), 2: jpg(1080, 1920), 3: jpg(1080, 1920), 4: jpg(1080, 1920) } }));
       const run = env => cp.execFileSync('node', [path.join(ROOT, 'tools/instagram.mjs')], { env: Object.assign({}, process.env, { IG_TOKEN: '' }, env) }).toString();
-      run({ IG_OUT: out, IG_FIXTURE: path.join(dir, 'fx.json') }); const second = run({ IG_OUT: out, IG_FIXTURE: path.join(dir, 'fx.json') });
-      const d = JSON.parse(fs.readFileSync(path.join(out, 'instagram.json'), 'utf8')), posters = fs.readdirSync(path.join(out, 'posters/ig'));
-      const skip = run({ IG_OUT: path.join(dir, 'none') });
-      return d.items.length === 1 && d.items[0].url === 'https://www.instagram.com/p/Long1/' && d.items[0].date === '2026-10-27' && d.items[0].w === 1920
-        && posters.join() === '1.jpg' && /змінено файлів: 0/.test(second) && /нема IG_TOKEN/.test(skip) && !fs.existsSync(path.join(dir, 'none', 'instagram.json'));
+      const first = run({ IG_OUT: out, IG_FIXTURE: path.join(dir, 'fx.json') }), second = run({ IG_OUT: out, IG_FIXTURE: path.join(dir, 'fx.json') });
+      const d = JSON.parse(fs.readFileSync(path.join(out, 'instagram.json'), 'utf8')), posters = fs.readdirSync(path.join(out, 'posters/ig')).sort();
+      const skip = run({ IG_OUT: path.join(dir, 'none') }), by = Object.fromEntries(d.items.map(x => [x.id, x]));
+      return d.items.map(x => x.id).join() === '1,2,3,4' && !by[1].reel && by[1].date === '2026-10-27' && by[1].w === 1920 && by[2].reel && by[3].reel && by[4].reel && by[4].h === 1920
+        && by[3].url === 'https://www.instagram.com/reel/Reel3/' && posters.join() === '1.jpg,2.jpg,3.jpg,4.jpg' && !('skipped' in d) && /Рілсів 3/.test(first)
+        && /змінено файлів: 0/.test(second) && /нема IG_TOKEN/.test(skip) && !fs.existsSync(path.join(dir, 'none', 'instagram.json'));
     }],
   ['IG05 генератор архіву: дні з Instagram — сторінки днів із прев’ю й «Дивитися в Instagram», у sitemap', {},
     async () => {
@@ -1155,7 +1158,31 @@ const CASES = [
       fs.writeFileSync(path.join(dir, 'seasons.json'), JSON.stringify(DUAL()));
       cp.execFileSync('node', [path.join(ROOT, 'tools/archive.mjs')], { env: Object.assign({}, process.env, { ARCHIVE_OUT: out, ARCHIVE_FIXTURE: path.join(dir, 'fx.json'), ARCHIVE_NO_POSTERS: '1', ARCHIVE_SEASONS: path.join(dir, 'seasons.json') }) });
       const page = fs.readFileSync(path.join(out, 'd/2026-10-26/index.html'), 'utf8'), sm = fs.readFileSync(path.join(out, 'sitemap.xml'), 'utf8');
-      return page.includes('Дивитися в Instagram') && page.includes('https://www.instagram.com/p/DeIG1abc/') && page.includes('Ранок у Києві') && sm.includes('/d/2026-10-28/');
+      const reelPage = fs.existsSync(path.join(out, 'd/2026-10-30/index.html'));
+      fs.writeFileSync(path.join(dir, 'seasons.json'), JSON.stringify(DUAL({ cal: { reels: true, start: '2026-10-28', playlist: '', end: '' } })));
+      fs.mkdirSync(path.join(dir, 'out2')); fs.writeFileSync(path.join(dir, 'out2/instagram.json'), JSON.stringify(IGJ));
+      cp.execFileSync('node', [path.join(ROOT, 'tools/archive.mjs')], { env: Object.assign({}, process.env, { ARCHIVE_OUT: path.join(dir, 'out2'), ARCHIVE_FIXTURE: path.join(dir, 'fx.json'), ARCHIVE_NO_POSTERS: '1', ARCHIVE_SEASONS: path.join(dir, 'seasons.json') }) });
+      const sm2 = fs.existsSync(path.join(dir, 'out2/sitemap.xml')) ? fs.readFileSync(path.join(dir, 'out2/sitemap.xml'), 'utf8') : '';
+      return page.includes('Дивитися в Instagram') && page.includes('https://www.instagram.com/p/DeIG1abc/') && page.includes('Ранок у Києві') && sm.includes('/d/2026-10-28/')
+        && !reelPage && !sm.includes('/d/2026-10-30/') && sm2.includes('/d/2026-10-30/') && sm2.includes('/d/2026-10-28/') && !sm2.includes('/d/2026-10-26/');
+    }],
+  ['IG06 Рілси в Днях (calendar.reels): на стіні з дати start, кілька за день — ділять плитку, вертикальний кадр — вище; компʼютер — вбудований плеєр /reel/…/embed/; телефон — у застосунок; reels вимкнено — лише довгі', {
+      now: '2026-11-05T12:00:00+02:00', api: DUAL_API, lect: LJ, seasons: DUAL({ cal: { playlist: '', end: '', start: '2026-11-02', reels: true } }),
+      ig: { items: [IGI(1, '2026-11-01', 'Ще до старту', { url: 'https://www.instagram.com/reel/R0/' }), IGI(2, '2026-11-02', 'Ранок', { url: 'https://www.instagram.com/reel/R1/', reel: true, w: 1080, h: 1920 }),
+        IGI(3, '2026-11-02', 'Вечір', { url: 'https://www.instagram.com/reel/R2/', reel: true }), IGI(4, '2026-11-03', 'Довге', { w: 1920, h: 1080 })] } },
+    async r => {
+      const keys = await r.page.$$eval('#cal .v-lnk', a => a.map(x => x.dataset.k)), mult = await r.page.locator('#cal-2026-11-02 .v-cont.mult .v-lnk').count();
+      const tall = await r.page.$eval('[data-k="ig17900000002"] img', i => i.className + '|' + getComputedStyle(i).objectPosition).catch(() => '');
+      await r.page.click('[data-k="ig17900000003"]'); await r.page.waitForTimeout(200);
+      const src = await r.page.getAttribute('#ytIframe', 'src');
+      const { r: r2, ctx } = await scenario(r.browser, { ua: UA_ANDROID, mobile: true, viewport: { width: 390, height: 800 }, now: '2026-11-05T12:00:00+02:00', api: DUAL_API, lect: LJ,
+        seasons: DUAL({ cal: { playlist: '', end: '', start: '2026-11-02', reels: true } }), ig: { items: [IGI(3, '2026-11-02', 'Вечір', { url: 'https://www.instagram.com/reel/R2/', reel: true })] } });
+      const href = await r2.page.getAttribute('[data-k="ig17900000003"]', 'href'); await ctx.close();
+      const { r: r3, ctx: c3 } = await scenario(r.browser, { now: '2026-11-05T12:00:00+02:00', api: DUAL_API, lect: LJ, seasons: DUAL({ cal: { playlist: '', end: '', start: '2026-11-02' } }),
+        ig: { items: [IGI(2, '2026-11-02', 'Ранок', { url: 'https://www.instagram.com/reel/R1/', reel: true }), IGI(4, '2026-11-03', 'Довге', { w: 1920, h: 1080 }), IGI(5, '2026-11-04', 'Вертикальне', { w: 1080, h: 1920 })] } });
+      const off = (await r3.page.$$eval('#cal .v-lnk', a => a.map(x => x.dataset.k))).join(); await c3.close();
+      return keys.join() === 'ig17900000002,ig17900000003,ig17900000004' && mult === 2 && /tall/.test(tall) && /50% 28%/.test(tall)
+        && src === 'https://www.instagram.com/reel/R2/embed/' && href === 'https://www.instagram.com/reel/R2/' && off === 'ig17900000004' && r.errs.length === 0;
     }],
   ['LC01 студії за темами (стара адреса #lectures працює): полиці від теми з найсвіжішою, згори «Нові студії» (ще без теми); № від першої; тривалість від сервера; криві теми — ні', {
       path: '#lectures', now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, ig: IGJ, lect: LJ, shot: 'LC01-lectures' },
@@ -1212,7 +1239,7 @@ const CASES = [
       return shelf.n === 3 && shelf.sw > shelf.cw && new Set(shelf.tops).size === 1 && tabs[0] === tabs[1] && await noHScroll(r);
     }],
   ['LC06 ?check: рядки «Дні з Instagram» і «Студії» (скільки, теми, без теми); помилок нема', { path: '?check', now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: LJ, ig: IGJ },
-    async r => has(r, 'Дні з Instagram — 4 відео') && has(r, 'YouTube-влоги — до 25 жовтня 2026') && has(r, 'Студії (seasons.json → lectures) — YouTube з 26 жовтня 2026: 5 відео')
+    async r => has(r, 'Дні з Instagram — 5 відео (Рілсів 1 — сховано: calendar.reels)') && has(r, 'YouTube-влоги — до 25 жовтня 2026') && has(r, 'Студії (seasons.json → lectures) — YouTube з 26 жовтня 2026: 5 відео')
       && has(r, 'тем 2 (Звички й воля, Стоїцизм)') && has(r, 'без теми: 1') && has(r, 'Помилок не знайдено')],
   ['LP01 над стіною влогу визирають 3 найновіші лекції (з темою, датою, хвилинами); дотик — плеєр гортає тему; «Усі лекції · 5 →» — вкладка лекцій', {
       now: '2026-11-05T12:00:00+02:00', seasons: DUAL(), api: DUAL_API, lect: LJ, ig: IGJ, shot: 'LP01-peek' },
@@ -1561,18 +1588,23 @@ const CASES = [
       const b = !r2.apiUrls.some(u => /playlistId=UC/.test(u)) && r2.apiUrls.filter(u => /UURSKTGA5a2hLrai_MXNaoUQ/.test(u)).length === 1 && await r2.page.locator('#cal .v-lnk').count() === 4;
       await c2.close(); return a && b;
     }],
-  ['E07 справжній seasons.json: щоденний влог — YouTube-влоги до 25.10 (далі — Instagram), лекції — YouTube з 26.10; дві вкладки; Shorts — ні', {
-      now: '2026-11-05T12:00:00+02:00', shot: 'E07-real-live',
+  ['E07 справжній seasons.json: Дні — з 2 листопада, лише Instagram (з Рілсами; старі YouTube-влоги — ні), Студії — YouTube з 26.10; до 2.11 — спокійне «Скоро»; Shorts — ні', {
+      now: '2026-11-05T12:00:00+02:00', shot: 'E07-real-live', lect: 404,
+      ig: { items: [IGI(1, '2026-10-30', 'Ще до старту', { url: 'https://www.instagram.com/reel/Old1/', reel: true }), IGI(2, '2026-11-02', 'Перший день', { url: 'https://www.instagram.com/reel/Day1/', reel: true, w: 1080, h: 1920 }),
+        IGI(3, '2026-11-04', 'Довге', { w: 1920, h: 1080 })] },
       api: { UURSKTGA5a2hLrai_MXNaoUQ: [vid('alXg_sVZAQM', 'Нам все вдасться', '2026-10-20T12:00:00Z'), vid('leeX8C1WJag', 'Повернення', '2026-10-24T12:00:00Z'),
         vid('3Dn4Ilcs-1g', 'Я любив тут жити', '2026-10-25T12:00:00Z'), vid('lecAAAAAAA1', 'Перша лекція', '2026-10-27T12:00:00Z'), vid('lecAAAAAAA2', 'Друга лекція', '2026-10-30T12:00:00Z'),
         vid('sh', 'Шортс', '2026-10-28T10:00:00Z')].reverse(), 'PLS50DDpfd-9w': [vid('sh', 'Шортс', '2026-10-28T10:00:00Z')] } },
     async r => {
       const tabs = await r.page.$$eval('.tabs .tab', a => a.map(x => x.textContent + (x.classList.contains('on') ? '*' : '')));
-      const first = await r.page.$eval('#cal .cell', c => c.id), cells = await r.page.locator('#cal .v-lnk').count(), today = await r.page.locator('#cal-2026-11-05.today').count();
+      const first = await r.page.$eval('#cal .cell', c => c.id), keys = await r.page.$$eval('#cal .v-lnk', a => a.map(x => x.dataset.k)), today = await r.page.locator('#cal-2026-11-05.today').count();
+      const tall = await r.page.locator('[data-k="ig17900000002"] img.v-thumb.tall').count();
       await r.page.click('.tabs .tab:has-text("Студії")'); await r.page.waitForTimeout(200);
-      const lec = await r.page.$$eval('#lectures .poster', a => a.map(x => x.dataset.k)), shelf = await r.page.innerText('#lectures .lt-h');
-      return tabs.join() === 'Дні*,Студії' && first === 'cal-2026-10-20' && cells === 3 && today === 1 && lec.join() === 'lecAAAAAAA2,lecAAAAAAA1'
-        && shelf.toLowerCase().startsWith('усі студії') && !has(r, 'Шортс') && await r.page.locator('#cal').count() === 0 && r.errs.length === 0;
+      const lec = await r.page.$$eval('#lectures .poster', a => a.map(x => x.dataset.k));
+      const { r: r2, ctx } = await scenario(r.browser, { now: '2026-10-31T12:00:00+02:00', lect: 404, ig: { items: [] }, api: { UURSKTGA5a2hLrai_MXNaoUQ: [vid('lecAAAAAAA1', 'Перша лекція', '2026-10-27T12:00:00Z')], 'PLS50DDpfd-9w': [] } });
+      const soon = has(r2, 'Скоро тут зʼявиться перша стрічка') && await r2.page.locator('#cal .cell').count() === 0 && await r2.page.locator('.lpeek .lp').count() === 1 && r2.errs.length === 0; await ctx.close();
+      return tabs.join() === 'Дні*,Студії' && first === 'cal-2026-11-02' && keys.join() === 'ig17900000002,ig17900000003' && today === 1 && tall === 1
+        && lec.join() === 'lecAAAAAAA2,lecAAAAAAA1' && !has(r, 'Шортс') && !has(r, 'Нам все вдасться') && soon && r.errs.length === 0;
     }],
   ['E03 сховано, але є сезон — показано сезон, без заглушки; посилання #d= і «мій день» тихо нічого не роблять', { path: '#d=2026-09-21',
       seasons: Object.assign(CAL({ start: '2026-09-20', enabled: false }), { seasons: [S1()] }), api: { UU1: TAGGED, SH: [], PL1: TWO } },

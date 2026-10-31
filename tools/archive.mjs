@@ -249,11 +249,14 @@ if (JSON.stringify(sortedDays) !== JSON.stringify(archive.days || {}))
 
 // Сторінки днів і sitemap (з усього архіву, не лише з того, що зараз на YouTube) + дні щоденника з Instagram
 // (instagram.json пише tools/instagram.mjs; кадр — свій posters/ig/ID.jpg)
-const igOn = calOn && !/^(false|ні|no|0|off|)$/i.test(String((cfg && cfg.calendar && cfg.calendar.instagram) ?? '').trim());
+const flagOn = v => !/^(false|ні|no|0|off|)$/i.test(String(v ?? '').trim());
+const igOn = calOn && flagOn(cfg && cfg.calendar && cfg.calendar.instagram), reelsOn = flagOn(cfg && cfg.calendar && cfg.calendar.reels);
 const igItems = (() => { if (!igOn) return []; try { let d = JSON.parse(read(path.join(OUT, 'instagram.json'), '')); return Array.isArray(d.items) ? d.items : []; } catch (e) { return []; } })();
 const pageDays = JSON.parse(JSON.stringify(sortedDays));
 igItems.forEach(it => {
     if (!it || !/^\d{4}-\d{2}-\d{2}$/.test(it.date) || !/^https:\/\/www\.instagram\.com\//.test(it.url || '')) return;
+    let reel = it.reel === true || /\/reels?\//.test(it.url) || (+it.h > +it.w && +it.w > 0);
+    if ((reel && !reelsOn) || (cal.start && it.date < cal.start)) return;     // як на сайті: Рілси — лише з calendar.reels; стіна — від start
     let cap = String(it.caption || ''), first = cap.split('\n')[0].trim();
     (pageDays[it.date] = Array.isArray(pageDays[it.date]) ? pageDays[it.date] : []).push({ t: first, desc: cap.split('\n').slice(1).join('\n'), ig: it.url, p: it.poster || '' });
 });
