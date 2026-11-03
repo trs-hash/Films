@@ -947,6 +947,7 @@ const CASES = [
       for (const v of bad) { await r.page.evaluate(v => localStorage.setItem('lv', v), v); await r.page.reload(); await r.page.waitForTimeout(400);
         if (await r.page.locator('#since .since-new').count()) return false; }
       const ctx2 = await r.browser.newContext(); const p2 = await ctx2.newPage(); const errs = []; p2.on('pageerror', e => errs.push(e.message));
+      await p2.clock.setFixedTime(new Date('2026-09-29T15:00:00+03:00'));   // та сама «сьогодні», що й у решти сценаріїв (інакше вересень згорнеться в «Раніше»)
       await p2.addInitScript(() => { Object.defineProperty(window, 'localStorage', { get() { throw new Error('blocked'); } }); });
       await ctx2.route(/googleapis/, rr => rr.fulfill({ contentType: 'application/json', body: JSON.stringify({ items: /playlistId=UU1/.test(rr.request().url()) ? V_API.UU1 : [] }) }));
       await ctx2.route(/seasons\.json/, rr => rr.fulfill({ contentType: 'application/json', body: JSON.stringify(CAL({ start: '2026-09-20' })) }));
@@ -1076,10 +1077,10 @@ const CASES = [
       && await r.page.locator('section.season, .s-plate, .cal-s, #films, .cal-hidden, .poster').count() === 0 && !has(r, 'Сезон') && !has(r, 'Старт')
       && r.apiCalls.includes('UURSKTGA5a2hLrai_MXNaoUQ') && r.durCalls.length === 0 && !has(r, 'Скоро тут буде нове') && r.errs.length === 0
       && await r.page.$$eval('#app *', a => a.every(e => !/Стіна днів/.test(e.textContent) || e.closest('.sr-only') || e.querySelector('.sr-only')))],   // «Стіна днів» — лише для читачів екрана
-  ['E02 ?check на справжньому seasons.json: фільми — у попередньому перегляді з позначкою «сховано»; Дні — з 2 листопада, лише Instagram, Рілси показуємо; помилок нема', { path: '?check', api: REAL_API },
-    async r => await r.page.locator('.cal-hidden').count() === 1 && has(r, 'глядачі фільмів не бачать') && await r.page.locator('#films').count() === 1
-      && await r.page.locator('#cal').count() === 1 && has(r, 'старіші за 2 листопада 2026 не беремо; джерело лише Instagram') && has(r, 'ще не почався: до 2 листопада 2026')
-      && has(r, 'Помилок не знайдено')],
+  ['E02 ?check на справжньому seasons.json: календар з YouTube від 3 листопада; фільми, Студії й зустрічі — сховані (у попередньому перегляді з позначкою), Instagram вимкнено; помилок нема', { path: '?check', api: REAL_API },
+    async r => has(r, 'глядачі фільмів не бачать') && await r.page.locator('#films').count() === 1 && await r.page.locator('#cal').count() === 1
+      && has(r, 'старіші за 3 листопада 2026 не беремо; джерело UURSKTGA5a2hLrai_MXNaoUQ') && has(r, 'Студії (seasons.json → lectures) — сховано від глядачів')
+      && has(r, 'Зустрічі — сховано від глядачів') && !has(r, 'Дні з Instagram') && has(r, 'Помилок не знайдено')],
   ['E08 сезони календаря: між сезонами — шапка наступного (не завершеного); щотижневий сезон зі своїм плейлистом — окремим блоком під стіною; без хибних «нема плейлиста»', { path: '?check',
       seasons: Object.assign(CAL({ start: '2026-09-01' }), { seasons: [S1({ n: 1, format: 'daily', playlist: '', start: '2026-09-01', end: '2026-09-20' }),
         S1({ n: 2, format: 'daily', playlist: '', start: '2026-10-16', end: '2027-10-15' }), S1({ n: 3, title: 'Окрема тема', playlist: 'PL1', start: '2026-09-20', end: '2026-12-20' })] }),
@@ -1525,13 +1526,22 @@ const CASES = [
         && c.cfg.meetings.payments === 'online' && d.code === 1 && d.cfg.meetings.api === 'https://api.taras.kyiv.ua/zustrichi'
         && e.code === 0 && m.id === 'odesa-2011' && m.fee === 250 && m.capacity === 30 && m.time === '18:00' && e.msg.includes('Оплата — карткою через monobank') && f.code === 1 && /^❌/.test(f.msg);
     }],
-  ['ZM06 те, що записав бот, сайт показує: квиток, ціна, місця, у шапці — рядок; ?check без помилок', { path: '?check', now: '2026-11-05T12:00:00+02:00', api: REAL_API, lect: LJ,
+  ['ZM06 те, що записав бот, сайт показує: розділ зустрічей схований — бот попереджає, глядач нічого не бачить, ?check — попередній перегляд; увімкнено — квиток, ціна, місця, рядок у шапці', {
+      now: '2026-11-05T12:00:00+02:00', api: REAL_API, lect: LJ,
       seasons: () => meetRepo(REAL_CFG()).run('/zustrich\nдата: 14.11 19:00–21:00\nназва: Про звички й волю\nмісто: Київ\nмісце: Книгарня «Є»\nціна: 300\nмісць: 40').text },
     async r => {
-      const t = await r.page.getAttribute('#sup .meet-link', 'href');
-      await r.page.click('.tabs .tab:has-text("Зустрічі")'); await r.page.waitForTimeout(150);
-      const meta = await r.page.innerText('#z-kyiv-1411 .mt-meta');
-      return t === '#z-kyiv-1411' && meta.includes('300 ₴') && meta.includes('40 місць') && has(r, 'Помилок не знайдено') && !has(r, 'Приклад: назва зустрічі');
+      const z = meetRepo(REAL_CFG()), a = z.run('/zustrich\nдата: 14.11 19:00\nназва: Про звички й волю\nмісто: Київ');
+      const warned = a.code === 0 && a.msg.includes('розділ «Зустрічі» на сайті зараз схований') && a.cfg.meetings.enabled === false;
+      const quiet = await r.page.locator('#sup .meet-link, .tabs, #zustrichi').count() === 0;
+      const { r: r2, ctx } = await scenario(r.browser, { path: '?check', now: '2026-11-05T12:00:00+02:00', api: REAL_API, lect: LJ, seasons: a.text });
+      await r2.page.click('.tabs .tab:has-text("Зустрічі")'); await r2.page.waitForTimeout(150);
+      const preview = await r2.page.locator('#z-kyiv-1411').count() === 1 && has(r2, 'Помилок не знайдено'); await ctx.close();
+      const on = JSON.parse(a.text); on.meetings.enabled = true;
+      const { r: r3, ctx: c3 } = await scenario(r.browser, { now: '2026-11-05T12:00:00+02:00', api: REAL_API, lect: LJ, seasons: meetRepo(on).run('/zustrich\nid: kyiv-1411\nціна: 300\nмісць: 40').text });
+      const t = await r3.page.getAttribute('#sup .meet-link', 'href');
+      await r3.page.click('#sup .meet-link'); await r3.page.waitForTimeout(150);
+      const meta = await r3.page.innerText('#z-kyiv-1411 .mt-meta'); await c3.close();
+      return warned && quiet && preview && t === '#z-kyiv-1411' && meta.includes('300 ₴') && meta.includes('40 місць');
     }],
   ['ZM07 workflow «Зустріч із бота»: усе від бота — лише через env, 4 поля; шматки для бота компілюються', {},
     async () => {
@@ -1588,23 +1598,17 @@ const CASES = [
       const b = !r2.apiUrls.some(u => /playlistId=UC/.test(u)) && r2.apiUrls.filter(u => /UURSKTGA5a2hLrai_MXNaoUQ/.test(u)).length === 1 && await r2.page.locator('#cal .v-lnk').count() === 4;
       await c2.close(); return a && b;
     }],
-  ['E07 справжній seasons.json: Дні — з 2 листопада, лише Instagram (з Рілсами; старі YouTube-влоги — ні), Студії — YouTube з 26.10; до 2.11 — спокійне «Скоро»; Shorts — ні', {
-      now: '2026-11-05T12:00:00+02:00', shot: 'E07-real-live', lect: 404,
-      ig: { items: [IGI(1, '2026-10-30', 'Ще до старту', { url: 'https://www.instagram.com/reel/Old1/', reel: true }), IGI(2, '2026-11-02', 'Перший день', { url: 'https://www.instagram.com/reel/Day1/', reel: true, w: 1080, h: 1920 }),
-        IGI(3, '2026-11-04', 'Довге', { w: 1920, h: 1080 })] },
-      api: { UURSKTGA5a2hLrai_MXNaoUQ: [vid('alXg_sVZAQM', 'Нам все вдасться', '2026-10-20T12:00:00Z'), vid('leeX8C1WJag', 'Повернення', '2026-10-24T12:00:00Z'),
-        vid('3Dn4Ilcs-1g', 'Я любив тут жити', '2026-10-25T12:00:00Z'), vid('lecAAAAAAA1', 'Перша лекція', '2026-10-27T12:00:00Z'), vid('lecAAAAAAA2', 'Друга лекція', '2026-10-30T12:00:00Z'),
-        vid('sh', 'Шортс', '2026-10-28T10:00:00Z')].reverse(), 'PLS50DDpfd-9w': [vid('sh', 'Шортс', '2026-10-28T10:00:00Z')] } },
+  ['E07 справжній seasons.json: головна — лише календар з YouTube, відлік з першого відео від 3 листопада (старіше — ні); без вкладок, Студій, Instagram і зустрічей; Shorts — ні; до першого нового — «Скоро»', {
+      now: '2026-11-05T12:00:00+02:00', shot: 'E07-real-live', lect: LJ, ig: { items: [IGI(2, '2026-11-04', 'Рілс', { url: 'https://www.instagram.com/reel/Day1/', reel: true })] },
+      api: { UURSKTGA5a2hLrai_MXNaoUQ: [vid('alXg_sVZAQM', 'Нам все вдасться', '2026-10-20T12:00:00Z'), vid('day1aaaaaaa', 'Перший день', '2026-11-03T12:00:00Z'),
+        vid('day2aaaaaaa', 'Другий день', '2026-11-04T12:00:00Z'), vid('sh', 'Шортс', '2026-11-04T10:00:00Z')].reverse(), 'PLS50DDpfd-9w': [vid('sh', 'Шортс', '2026-11-04T10:00:00Z')] } },
     async r => {
-      const tabs = await r.page.$$eval('.tabs .tab', a => a.map(x => x.textContent + (x.classList.contains('on') ? '*' : '')));
-      const first = await r.page.$eval('#cal .cell', c => c.id), keys = await r.page.$$eval('#cal .v-lnk', a => a.map(x => x.dataset.k)), today = await r.page.locator('#cal-2026-11-05.today').count();
-      const tall = await r.page.locator('[data-k="ig17900000002"] img.v-thumb.tall').count();
-      await r.page.click('.tabs .tab:has-text("Студії")'); await r.page.waitForTimeout(200);
-      const lec = await r.page.$$eval('#lectures .poster', a => a.map(x => x.dataset.k));
-      const { r: r2, ctx } = await scenario(r.browser, { now: '2026-10-31T12:00:00+02:00', lect: 404, ig: { items: [] }, api: { UURSKTGA5a2hLrai_MXNaoUQ: [vid('lecAAAAAAA1', 'Перша лекція', '2026-10-27T12:00:00Z')], 'PLS50DDpfd-9w': [] } });
-      const soon = has(r2, 'Скоро тут зʼявиться перша стрічка') && await r2.page.locator('#cal .cell').count() === 0 && await r2.page.locator('.lpeek .lp').count() === 1 && r2.errs.length === 0; await ctx.close();
-      return tabs.join() === 'Дні*,Студії' && first === 'cal-2026-11-02' && keys.join() === 'ig17900000002,ig17900000003' && today === 1 && tall === 1
-        && lec.join() === 'lecAAAAAAA2,lecAAAAAAA1' && !has(r, 'Шортс') && !has(r, 'Нам все вдасться') && soon && r.errs.length === 0;
+      const first = await r.page.$eval('#cal .cell', c => c.id), keys = await r.page.$$eval('#cal .v-lnk', a => a.map(x => x.dataset.k));
+      const hidden = await r.page.locator('.tabs, .lpeek, #lectures, #zustrichi, #sup .meet-link').count() === 0;
+      const { r: r2, ctx } = await scenario(r.browser, { now: '2026-11-03T09:00:00+02:00', lect: 404, api: { UURSKTGA5a2hLrai_MXNaoUQ: [vid('alXg_sVZAQM', 'Нам все вдасться', '2026-10-20T12:00:00Z')], 'PLS50DDpfd-9w': [] } });
+      const soon = has(r2, 'Скоро тут зʼявиться перша стрічка') && await r2.page.locator('#cal .cell').count() === 0 && !has(r2, 'Нам все вдасться') && r2.errs.length === 0; await ctx.close();
+      return first === 'cal-2026-11-03' && keys.join() === 'day1aaaaaaa,day2aaaaaaa' && hidden && !has(r, 'Нам все вдасться') && !has(r, 'Шортс') && !has(r, 'Рілс')
+        && await r.page.locator('#cal-2026-11-05.today').count() === 1 && soon && r.errs.length === 0;
     }],
   ['E03 сховано, але є сезон — показано сезон, без заглушки; посилання #d= і «мій день» тихо нічого не роблять', { path: '#d=2026-09-21',
       seasons: Object.assign(CAL({ start: '2026-09-20', enabled: false }), { seasons: [S1()] }), api: { UU1: TAGGED, SH: [], PL1: TWO } },

@@ -9,13 +9,16 @@
   },
   "calendar": {
     "enabled": true,
-    "start": "2026-11-02",
-    "playlist": "",
-    "instagram": true,
+    "start": "2026-11-03",
+    "playlist": "UURSKTGA5a2hLrai_MXNaoUQ",
+    "exclude": [
+      "PLS50DDpfd-9w"
+    ],
+    "instagram": false,
     "reels": true
   },
   "lectures": {
-    "enabled": true,
+    "enabled": false,
     "start": "2026-10-26",
     "playlist": "UURSKTGA5a2hLrai_MXNaoUQ",
     "exclude": [
@@ -23,7 +26,7 @@
     ]
   },
   "meetings": {
-    "enabled": true,
+    "enabled": false,
     "api": "",
     "telegram": "",
     "payments": "onsite",

@@ -250,10 +250,11 @@ if (T.teaser != null) { if (/^(ні|no|false|0)$/i.test(T.teaser.trim())) it.tea
 delete it.enabled;                                                   // увімкнено (типово)
 if (!it.title) finish(false, 'Нема назви. Додай рядок «назва: …».');
 meet.items = meet.items.filter(x => !isObj(x) || x === it || !isSample(x));   // приклад-заготовка більше не потрібна
-if (meet.enabled === false || meet.enabled === 'false') meet.enabled = true;
+const hiddenAll = meet.enabled === false || /^(false|ні|no|0|off)$/i.test(String(meet.enabled ?? '').trim());   // розділ сховано власником — не вмикаємо самі
 meet.items.sort((a, b) => String(isObj(a) && a.date || '').localeCompare(String(isObj(b) && b.date || '')));
 save();
 let lines = [`Зустріч ${fresh ? 'додано' : 'оновлено'} — за хвилину-дві буде на сайті:`, describe(it), link(it)];
 if (+it.fee > 0) lines.push(meet.payments === 'online' && meet.api ? 'Оплата — карткою через monobank.' : 'Оплата — на місці (онлайн-оплата: /oplata online, коли підключиш monobank).');
 if (it.register !== false && !it.url && !meet.api && !meet.telegram) lines.push('⚠️ Форма реєстрації ще не підключена (нема api) — на сайті буде лише «Додати в календар».');
+if (hiddenAll) lines[0] = `Зустріч ${fresh ? 'додано' : 'оновлено'}, але розділ «Зустрічі» на сайті зараз схований (meetings.enabled: false) — глядачі її не побачать, доки не ввімкнеш:`;
 finish(true, lines.join('\n'), `зустріч: ${fresh ? 'додано' : 'оновлено'} «${it.title}»`);
