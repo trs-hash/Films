@@ -1077,9 +1077,9 @@ const CASES = [
       && await r.page.locator('section.season, .s-plate, .cal-s, #films, .cal-hidden, .poster').count() === 0 && !has(r, 'Сезон') && !has(r, 'Старт')
       && r.apiCalls.includes('UURSKTGA5a2hLrai_MXNaoUQ') && r.durCalls.length === 0 && !has(r, 'Скоро тут буде нове') && r.errs.length === 0
       && await r.page.$$eval('#app *', a => a.every(e => !/Стіна днів/.test(e.textContent) || e.closest('.sr-only') || e.querySelector('.sr-only')))],   // «Стіна днів» — лише для читачів екрана
-  ['E02 ?check на справжньому seasons.json: календар з YouTube від 15 листопада; фільми, Студії й зустрічі — сховані (у попередньому перегляді з позначкою), Instagram вимкнено; помилок нема', { path: '?check', api: REAL_API },
+  ['E02 ?check на справжньому seasons.json: календар з YouTube від 17 листопада; фільми, Студії й зустрічі — сховані (у попередньому перегляді з позначкою), Instagram вимкнено; помилок нема', { path: '?check', api: REAL_API },
     async r => has(r, 'глядачі фільмів не бачать') && await r.page.locator('#films').count() === 1 && await r.page.locator('#cal').count() === 1
-      && has(r, 'старіші за 15 листопада 2026 не беремо; джерело UURSKTGA5a2hLrai_MXNaoUQ') && has(r, 'Студії (seasons.json → lectures) — сховано від глядачів')
+      && has(r, 'старіші за 17 листопада 2026 не беремо; джерело UURSKTGA5a2hLrai_MXNaoUQ') && has(r, 'Студії (seasons.json → lectures) — сховано від глядачів')
       && has(r, 'Зустрічі — сховано від глядачів') && !has(r, 'Дні з Instagram') && has(r, 'Помилок не знайдено')],
   ['E08 сезони календаря: між сезонами — шапка наступного (не завершеного); щотижневий сезон зі своїм плейлистом — окремим блоком під стіною; без хибних «нема плейлиста»', { path: '?check',
       seasons: Object.assign(CAL({ start: '2026-09-01' }), { seasons: [S1({ n: 1, format: 'daily', playlist: '', start: '2026-09-01', end: '2026-09-20' }),
@@ -1598,14 +1598,14 @@ const CASES = [
       const b = !r2.apiUrls.some(u => /playlistId=UC/.test(u)) && r2.apiUrls.filter(u => /UURSKTGA5a2hLrai_MXNaoUQ/.test(u)).length === 1 && await r2.page.locator('#cal .v-lnk').count() === 4;
       await c2.close(); return a && b;
     }],
-  ['E07 справжній seasons.json: головна — лише календар з YouTube, відлік з першого відео від 15 листопада (20.10 і старіші — ні); без вкладок, Студій, Instagram і зустрічей; Shorts — ні; до першого нового — «Скоро»', {
+  ['E07 справжній seasons.json: головна — лише календар з YouTube, відлік з 17 листопада — старт марафону (20.10 і відео до 17-го — ні); без вкладок, Студій, Instagram і зустрічей; Shorts — ні; до першого нового — «Скоро»', {
       now: '2026-11-19T12:00:00+02:00', shot: 'E07-real-live', lect: LJ, ig: { items: [IGI(2, '2026-11-18', 'Рілс', { url: 'https://www.instagram.com/reel/Day1/', reel: true })] },
-      api: { UURSKTGA5a2hLrai_MXNaoUQ: [vid('alXg_sVZAQM', 'Нам все вдасться', '2026-10-20T12:00:00Z'), vid('old0aaaaaaa', 'До старту', '2026-11-10T12:00:00Z'),
+      api: { UURSKTGA5a2hLrai_MXNaoUQ: [vid('alXg_sVZAQM', 'Нам все вдасться', '2026-10-20T12:00:00Z'), vid('old0aaaaaaa', 'До старту', '2026-11-16T12:00:00Z'),
         vid('day1aaaaaaa', 'Перший день', '2026-11-17T12:00:00Z'), vid('day2aaaaaaa', 'Другий день', '2026-11-18T12:00:00Z'), vid('sh', 'Шортс', '2026-11-18T10:00:00Z')].reverse(), 'PLS50DDpfd-9w': [vid('sh', 'Шортс', '2026-11-18T10:00:00Z')] } },
     async r => {
       const first = await r.page.$eval('#cal .cell', c => c.id), keys = await r.page.$$eval('#cal .v-lnk', a => a.map(x => x.dataset.k));
       const hidden = await r.page.locator('.tabs, .lpeek, #lectures, #zustrichi, #sup .meet-link').count() === 0;
-      const { r: r2, ctx } = await scenario(r.browser, { now: '2026-11-15T09:00:00+02:00', lect: 404, api: { UURSKTGA5a2hLrai_MXNaoUQ: [vid('alXg_sVZAQM', 'Нам все вдасться', '2026-10-20T12:00:00Z')], 'PLS50DDpfd-9w': [] } });
+      const { r: r2, ctx } = await scenario(r.browser, { now: '2026-11-17T09:00:00+02:00', lect: 404, api: { UURSKTGA5a2hLrai_MXNaoUQ: [vid('alXg_sVZAQM', 'Нам все вдасться', '2026-10-20T12:00:00Z')], 'PLS50DDpfd-9w': [] } });
       const soon = has(r2, 'Скоро тут зʼявиться перша стрічка') && await r2.page.locator('#cal .cell').count() === 0 && !has(r2, 'Нам все вдасться') && r2.errs.length === 0; await ctx.close();
       return first === 'cal-2026-11-17' && keys.join() === 'day1aaaaaaa,day2aaaaaaa' && hidden && !has(r, 'Нам все вдасться') && !has(r, 'До старту') && !has(r, 'Шортс') && !has(r, 'Рілс')
         && await r.page.locator('#cal-2026-11-19.today').count() === 1 && soon && r.errs.length === 0;
