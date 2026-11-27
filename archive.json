@@ -1,16 +1,5 @@
 {
   "base": "https://video.taras.kyiv.ua",
-  "days": {
-    "2026-10-20": [
-      {
-        "t": "Нам все вдасться",
-        "p": "posters/alXg_sVZAQM.jpg",
-        "y": "alXg_sVZAQM",
-        "desc": "Текст Ясни Максимʼяк. 7 років. Киянка⠀\n⠀\ntaras.kyiv.ua\nhello@taras.kyiv.ua",
-        "ph": "posters/alXg_sVZAQM-hd.jpg",
-        "dur": 124
-      }
-    ]
-  },
-  "generated": "2026-11-26T07:05:39+02:00"
+  "days": {},
+  "generated": "2026-11-27T05:00:03+02:00"
 }
